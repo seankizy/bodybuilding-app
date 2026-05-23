@@ -234,10 +234,7 @@ const SEED_ENTRIES = [
 async function loadEntries() {
   try {
     const raw = localStorage.getItem("wj_entries");
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-    }
+    if (raw) { const p = JSON.parse(raw); if (Array.isArray(p) && p.length > 0) return p; }
   } catch {}
   return JSON.parse(JSON.stringify(SEED_ENTRIES));
 }
@@ -252,10 +249,7 @@ const SEED_WEIGHTS = [
 async function loadWeights() {
   try {
     const raw = localStorage.getItem("wj_weights");
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-    }
+    if (raw) { const p = JSON.parse(raw); if (Array.isArray(p) && p.length > 0) return p; }
   } catch {}
   return JSON.parse(JSON.stringify(SEED_WEIGHTS));
 }
@@ -263,15 +257,12 @@ async function saveWeights(weights) {
   try { localStorage.setItem("wj_weights", JSON.stringify(weights)); } catch {}
 }
 
-// ── GOOGLE DRIVE CSV EXPORT ───────────────────────────────────────────────────
-const DRIVE_FILE_ID = "1bPO9jJ9z8jvJOo4HpfeKOJ_vf80AWlkg";
-
+// ── CSV EXPORT (download to device) ──────────────────────────────────────────
 function buildCSV(entries, weights) {
   const rows = [
     ["TYPE","DATE","PROGRAM_DAY","WORKOUT_TITLE","EXERCISE","SET","WEIGHT_LBS","REPS","SESSION_NOTE","MOVEMENT_NOTE"]
   ];
-  // Workout rows
-  for (const e of entries) {
+  for (const e of [...entries].sort((a,b) => a.date.localeCompare(b.date))) {
     if (!e.movements || e.movements.length === 0) {
       rows.push(["WORKOUT", e.date, e.programDay ?? "", e.customTitle, "", "", "", "", csvEsc(e.note), ""]);
       continue;
@@ -287,7 +278,6 @@ function buildCSV(entries, weights) {
       }
     }
   }
-  // Weight rows
   for (const w of [...weights].sort((a,b) => a.date.localeCompare(b.date))) {
     rows.push(["WEIGHT", w.date, "", "", "", "", "", "", `${w.weight} ${w.unit}`, w.note ?? ""]);
   }
@@ -300,36 +290,15 @@ function csvEsc(v) {
   return v;
 }
 
-// Debounced Drive export — waits 2s after last change to avoid hammering the API
-let driveExportTimer = null;
-function scheduleDriveExport(entries, weights) {
-  clearTimeout(driveExportTimer);
-  driveExportTimer = setTimeout(() => exportToDrive(entries, weights), 2000);
-}
-
-async function exportToDrive(entries, weights) {
-  window.dispatchEvent(new CustomEvent("driveSync", { detail: "syncing" }));
-  try {
-    const csv = buildCSV(entries, weights);
-    const response = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model: "claude-sonnet-4-20250514",
-        max_tokens: 1000,
-        messages: [{
-          role: "user",
-          content: "Update the Google Drive file with ID \"" + DRIVE_FILE_ID + "\" by completely overwriting it with this exact CSV. Title: \"workout_journal_export.csv\". Content:\n\n" + csv
-        }],
-        mcp_servers: [{ type: "url", url: "https://drivemcp.googleapis.com/mcp/v1", name: "google-drive" }]
-      })
-    });
-    await response.json();
-    window.dispatchEvent(new CustomEvent("driveSync", { detail: "synced" }));
-  } catch (err) {
-    console.warn("Drive export failed:", err);
-    window.dispatchEvent(new CustomEvent("driveSync", { detail: "error" }));
-  }
+function downloadCSV(entries, weights) {
+  const csv = buildCSV(entries, weights);
+  const blob = new Blob([csv], { type: "text/csv" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `workout_journal_${todayStr()}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
 }
 
 // Find the most recent previous entry for a given program day (excluding the
@@ -357,7 +326,6 @@ export default function App() {
   const [weightUnit, setWeightUnit] = useState("lbs"); // "lbs" | "kg"
   const [showWeightForm, setShowWeightForm] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [syncStatus, setSyncStatus] = useState(""); // "syncing" | "synced" | "error"
   const [timerState, setTimerState] = useState(null); // { setIdx, total, remaining, running }
   const timerRef = useRef(null);
 
@@ -371,29 +339,19 @@ export default function App() {
       setWeightLog(w);
       setLoading(false);
     });
-    // Listen for Drive sync status events
-    const handler = (e) => {
-      setSyncStatus(e.detail);
-      if (e.detail === "synced") setTimeout(() => setSyncStatus(""), 3000);
-    };
-    window.addEventListener("driveSync", handler);
-    return () => window.removeEventListener("driveSync", handler);
+    if ("Notification" in window && Notification.permission === "default") {
+      Notification.requestPermission();
+    }
   }, []);
 
   // Persist entries whenever they change (skip initial empty state)
   useEffect(() => {
-    if (!loading && entries.length > 0) {
-      saveEntries(entries);
-      scheduleDriveExport(entries, weightLog);
-    }
+    if (!loading && entries.length > 0) saveEntries(entries);
   }, [entries, loading]);
 
   // Persist weight log whenever it changes
   useEffect(() => {
-    if (!loading) {
-      saveWeights(weightLog);
-      scheduleDriveExport(entries, weightLog);
-    }
+    if (!loading) saveWeights(weightLog);
   }, [weightLog, loading]);
 
   function mutate(fn) {
@@ -1166,19 +1124,13 @@ export default function App() {
           <div style={{ fontSize: 13, color: "#4b5563" }}>
             {entries.length} session{entries.length !== 1 ? "s" : ""} logged
           </div>
-          {syncStatus === "syncing" && (
-            <div style={{ fontSize: 11, color: "#4b5563", fontFamily: "monospace", display: "flex", alignItems: "center", gap: 4 }}>
-              <span style={{ animation: "spin 1s linear infinite", display: "inline-block" }}>↻</span> Saving to Drive…
-            </div>
-          )}
-          {syncStatus === "synced" && (
-            <div style={{ fontSize: 11, color: "#4ade80", fontFamily: "monospace", display: "flex", alignItems: "center", gap: 4 }}>
-              ✓ Saved to Drive
-            </div>
-          )}
-          {syncStatus === "error" && (
-            <div style={{ fontSize: 11, color: "#f87171", fontFamily: "monospace" }}>⚠ Drive sync failed</div>
-          )}
+          <button
+            onClick={() => downloadCSV(entries, weightLog)}
+            style={{ padding: "4px 12px", borderRadius: 8, background: "transparent",
+              border: "1px solid #1f2937", color: "#4b5563", fontSize: 11,
+              fontFamily: "monospace", fontWeight: 700, cursor: "pointer" }}>
+            ↓ Export CSV
+          </button>
         </div>
       </div>
 
