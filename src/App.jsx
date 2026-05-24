@@ -230,7 +230,7 @@ const SEED_ENTRIES = [
   },
 ];
 
-// ── STORAGE (localStorage — persists across deployments) ────────────────────
+// ── STORAGE (localStorage) ───────────────────────────────────────────────────
 async function loadEntries() {
   try {
     const raw = localStorage.getItem("wj_entries");
@@ -257,48 +257,76 @@ async function saveWeights(weights) {
   try { localStorage.setItem("wj_weights", JSON.stringify(weights)); } catch {}
 }
 
-// ── CSV EXPORT (download to device) ──────────────────────────────────────────
-function buildCSV(entries, weights) {
-  const rows = [
-    ["TYPE","DATE","PROGRAM_DAY","WORKOUT_TITLE","EXERCISE","SET","WEIGHT_LBS","REPS","SESSION_NOTE","MOVEMENT_NOTE"]
-  ];
-  for (const e of [...entries].sort((a,b) => a.date.localeCompare(b.date))) {
-    if (!e.movements || e.movements.length === 0) {
-      rows.push(["WORKOUT", e.date, e.programDay ?? "", e.customTitle, "", "", "", "", csvEsc(e.note), ""]);
-      continue;
-    }
-    for (const mv of e.movements) {
-      if (!mv.sets || mv.sets.length === 0) {
-        rows.push(["WORKOUT", e.date, e.programDay ?? "", e.customTitle, mv.name, "", "", "", csvEsc(e.note), csvEsc(mv.note)]);
-        continue;
-      }
-      for (let i = 0; i < mv.sets.length; i++) {
+// ── EXCEL EXPORT (SheetJS) ────────────────────────────────────────────────────
+async function downloadXLSX(entries, weights) {
+  const XLSX = await import("https://cdn.sheetjs.com/xlsx-0.20.3/package/xlsx.mjs");
+
+  const sorted = [...entries].sort((a, b) => a.date.localeCompare(b.date));
+
+  // ── Sheet 1: Workouts (all sets) ──
+  const workoutRows = [["Date","Program Day","Workout","Exercise","Set #","Weight (lbs)","Reps","Set Done","Session Note","Movement Note"]];
+  for (const e of sorted) {
+    for (const mv of (e.movements ?? [])) {
+      for (let i = 0; i < (mv.sets ?? []).length; i++) {
         const s = mv.sets[i];
-        rows.push(["WORKOUT", e.date, e.programDay ?? "", e.customTitle, mv.name, i + 1, s.w ?? "", s.r ?? "", i === 0 ? csvEsc(e.note) : "", i === 0 ? csvEsc(mv.note) : ""]);
+        workoutRows.push([
+          e.date,
+          e.programDay ?? "",
+          e.customTitle ?? "",
+          mv.name ?? "",
+          i + 1,
+          s.w !== "" ? parseFloat(s.w) : "",
+          s.r !== "" ? parseFloat(s.r) : "",
+          s.done ? "✓" : "",
+          i === 0 ? (e.note ?? "") : "",
+          i === 0 ? (mv.note ?? "") : "",
+        ]);
       }
     }
   }
+
+  // ── Sheet 2: Weight Log ──
+  const weightRows = [["Date","Weight","Unit"]];
   for (const w of [...weights].sort((a,b) => a.date.localeCompare(b.date))) {
-    rows.push(["WEIGHT", w.date, "", "", "", "", "", "", `${w.weight} ${w.unit}`, w.note ?? ""]);
+    weightRows.push([w.date, parseFloat(w.weight), w.unit]);
   }
-  return rows.map(r => r.map(v => String(v ?? "")).join(",")).join("\n");
-}
 
-function csvEsc(v) {
-  if (!v) return "";
-  if (v.includes(",") || v.includes('"') || v.includes("\n")) return `"${v.replace(/"/g, '""')}"`;
-  return v;
-}
+  // ── Sheet 3: Progress Summary (best set per exercise per session) ──
+  const summaryMap = {};
+  for (const e of sorted) {
+    for (const mv of (e.movements ?? [])) {
+      const key = mv.name ?? "Unknown";
+      if (!summaryMap[key]) summaryMap[key] = [];
+      const best = (mv.sets ?? []).reduce((b, s) => {
+        const vol = (parseFloat(s.w) || 0) * (parseFloat(s.r) || 0);
+        return vol > b.vol ? { w: s.w, r: s.r, vol } : b;
+      }, { w: "", r: "", vol: 0 });
+      summaryMap[key].push({ date: e.date, workout: e.customTitle, weight: best.w, reps: best.r });
+    }
+  }
+  const summaryRows = [["Exercise","Date","Workout","Best Weight (lbs)","Best Reps"]];
+  for (const [ex, sessions] of Object.entries(summaryMap)) {
+    for (const s of sessions) {
+      summaryRows.push([ex, s.date, s.workout, s.weight !== "" ? parseFloat(s.weight) : "", s.reps !== "" ? parseFloat(s.reps) : ""]);
+    }
+  }
 
-function downloadCSV(entries, weights) {
-  const csv = buildCSV(entries, weights);
-  const blob = new Blob([csv], { type: "text/csv" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `workout_journal_${todayStr()}.csv`;
-  a.click();
-  URL.revokeObjectURL(url);
+  // ── Build workbook ──
+  const wb = XLSX.utils.book_new();
+
+  const ws1 = XLSX.utils.aoa_to_sheet(workoutRows);
+  ws1["!cols"] = [12,10,22,26,6,14,6,8,24,24].map(w => ({ wch: w }));
+  XLSX.utils.book_append_sheet(wb, ws1, "Workouts");
+
+  const ws2 = XLSX.utils.aoa_to_sheet(weightRows);
+  ws2["!cols"] = [12,10,6].map(w => ({ wch: w }));
+  XLSX.utils.book_append_sheet(wb, ws2, "Weight Log");
+
+  const ws3 = XLSX.utils.aoa_to_sheet(summaryRows);
+  ws3["!cols"] = [26,12,22,16,10].map(w => ({ wch: w }));
+  XLSX.utils.book_append_sheet(wb, ws3, "Progress Summary");
+
+  XLSX.writeFile(wb, `workout_journal_${todayStr()}.xlsx`);
 }
 
 // Find the most recent previous entry for a given program day (excluding the
@@ -1125,11 +1153,11 @@ export default function App() {
             {entries.length} session{entries.length !== 1 ? "s" : ""} logged
           </div>
           <button
-            onClick={() => downloadCSV(entries, weightLog)}
+            onClick={() => downloadXLSX(entries, weightLog)}
             style={{ padding: "4px 12px", borderRadius: 8, background: "transparent",
-              border: "1px solid #1f2937", color: "#4b5563", fontSize: 11,
+              border: "1px solid #4ade8044", color: "#4ade80", fontSize: 11,
               fontFamily: "monospace", fontWeight: 700, cursor: "pointer" }}>
-            ↓ Export CSV
+            ↓ Export Excel
           </button>
         </div>
       </div>
