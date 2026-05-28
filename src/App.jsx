@@ -174,6 +174,32 @@ function downloadCSV(entries, weights) {
   a.click();
   URL.revokeObjectURL(url);
 }
+function downloadJSON(entries, weights) {
+  const payload = { version: 2, exportedAt: new Date().toISOString(), entries, weights };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `workout_backup_${todayStr()}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+function readJSONBackup(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      try {
+        const parsed = JSON.parse(e.target.result);
+        // Support both raw array and versioned object
+        const entries = Array.isArray(parsed) ? parsed : (parsed.entries ?? []);
+        const weights = Array.isArray(parsed) ? [] : (parsed.weights ?? []);
+        resolve({ entries, weights });
+      } catch { reject(new Error("Invalid JSON file")); }
+    };
+    reader.onerror = () => reject(new Error("Could not read file"));
+    reader.readAsText(file);
+  });
+}
 
 function getLastSession(entries, programDay) {
   return [...entries]
@@ -202,6 +228,12 @@ export default function App() {
   const [showStopwatch, setShowStopwatch] = useState(false);
   const [stopwatchElapsed, setStopwatchElapsed] = useState(0);
   const [stopwatchRunning, setStopwatchRunning] = useState(false);
+  // Data tab state
+  const [filterDay, setFilterDay] = useState(null);
+  const [expandedId, setExpandedId] = useState(null);
+  const [importStatus, setImportStatus] = useState(null);
+  const [importMsg, setImportMsg] = useState("");
+  const fileInputRef = useRef(null);
   const timerRef = useRef(null);
   const stopwatchRef = useRef(null);
 
@@ -770,6 +802,142 @@ export default function App() {
     );
   }
 
+  // ── DATA TAB ─────────────────────────────────────────────────────────────
+  if (tab === "data") {
+    const sorted_all = [...entries].sort((a, b) => b.date.localeCompare(a.date));
+    const filtered = filterDay === null ? sorted_all : sorted_all.filter(e => e.programDay === filterDay);
+    const totalSets = entries.reduce((n, e) => n + e.movements.reduce((m, mv) => m + mv.sets.filter(s => s.r).length, 0), 0);
+    const totalSessions = entries.length;
+
+    async function handleImport(file) {
+      try {
+        const { entries: newEntries, weights: newWeights } = await readJSONBackup(file);
+        if (!Array.isArray(newEntries)) throw new Error("No entries found in file");
+        // Merge: keep existing entries not in backup, add all from backup
+        const existingIds = new Set(entries.map(e => String(e.id)));
+        const toAdd = newEntries.filter(e => !existingIds.has(String(e.id)));
+        const merged = [...entries, ...toAdd].sort((a, b) => b.date.localeCompare(a.date));
+        mutate(() => merged);
+        if (newWeights.length > 0) {
+          const existingWIds = new Set(weightLog.map(w => String(w.id)));
+          const wToAdd = newWeights.filter(w => !existingWIds.has(String(w.id)));
+          setWeightLog(prev => [...prev, ...wToAdd].sort((a, b) => b.date.localeCompare(a.date)));
+        }
+        setImportStatus("success");
+        setImportMsg(`Imported ${toAdd.length} new session${toAdd.length !== 1 ? "s" : ""}${newWeights.length > 0 ? ` + ${newWeights.length} weight entries` : ""}`);
+      } catch (err) {
+        setImportStatus("error");
+        setImportMsg(err.message || "Import failed");
+      }
+    }
+
+    return (
+      <Shell>
+        <div style={{ padding: "52px 18px 20px", background: "linear-gradient(160deg,#0a0f0d 0%,#0f1a12 100%)" }}>
+          <div style={{ fontSize: 11, letterSpacing: 3, color: "#374151", textTransform: "uppercase", fontFamily: "monospace", marginBottom: 4 }}>Backup & History</div>
+          <div style={{ fontSize: 30, fontWeight: 900, color: "#f9fafb", lineHeight: 1, fontFamily: "'Georgia', serif", fontStyle: "italic" }}>Data</div>
+          <div style={{ display: "flex", gap: 20, marginTop: 10 }}>
+            <div><div style={{ fontSize: 22, fontWeight: 900, color: "#4ade80", fontFamily: "monospace" }}>{totalSessions}</div><div style={{ fontSize: 10, color: "#4b5563", letterSpacing: 1, textTransform: "uppercase", fontFamily: "monospace" }}>Sessions</div></div>
+            <div><div style={{ fontSize: 22, fontWeight: 900, color: "#60a5fa", fontFamily: "monospace" }}>{totalSets}</div><div style={{ fontSize: 10, color: "#4b5563", letterSpacing: 1, textTransform: "uppercase", fontFamily: "monospace" }}>Sets Logged</div></div>
+            <div><div style={{ fontSize: 22, fontWeight: 900, color: "#f97316", fontFamily: "monospace" }}>{weightLog.length}</div><div style={{ fontSize: 10, color: "#4b5563", letterSpacing: 1, textTransform: "uppercase", fontFamily: "monospace" }}>Weigh-ins</div></div>
+          </div>
+        </div>
+
+        {/* Export / Import */}
+        <div style={{ padding: "16px 18px 8px" }}>
+          <div style={{ fontSize: 11, letterSpacing: 2, color: "#374151", textTransform: "uppercase", fontFamily: "monospace", fontWeight: 700, marginBottom: 10 }}>Backup</div>
+          <div style={{ display: "flex", gap: 10, marginBottom: 10 }}>
+            <button onClick={() => downloadJSON(entries, weightLog)} style={{ flex: 1, padding: "13px", borderRadius: 14, background: "#0a1f0a", border: "1.5px solid #4ade8044", color: "#4ade80", fontSize: 13, fontWeight: 800, cursor: "pointer", fontFamily: "monospace" }}>
+              ↓ Export JSON
+            </button>
+            <button onClick={() => downloadCSV(entries, weightLog)} style={{ flex: 1, padding: "13px", borderRadius: 14, background: "#0a0f1a", border: "1.5px solid #60a5fa44", color: "#60a5fa", fontSize: 13, fontWeight: 800, cursor: "pointer", fontFamily: "monospace" }}>
+              ↓ Export CSV
+            </button>
+          </div>
+          <input ref={fileInputRef} type="file" accept=".json" style={{ display: "none" }}
+            onChange={e => { if (e.target.files[0]) handleImport(e.target.files[0]); e.target.value = ""; }} />
+          <button onClick={() => { setImportStatus(null); fileInputRef.current?.click(); }}
+            style={{ width: "100%", padding: "13px", borderRadius: 14, background: "#1a1200", border: "1.5px solid #fbbf2444", color: "#fbbf24", fontSize: 13, fontWeight: 800, cursor: "pointer", fontFamily: "monospace" }}>
+            ↑ Import JSON Backup
+          </button>
+          {importStatus && (
+            <div style={{ marginTop: 10, padding: "10px 14px", borderRadius: 10, background: importStatus === "success" ? "#0a1f0a" : "#1a0a0a", border: `1px solid ${importStatus === "success" ? "#4ade8044" : "#f8717144"}`, color: importStatus === "success" ? "#4ade80" : "#f87171", fontSize: 13, fontFamily: "monospace" }}>
+              {importStatus === "success" ? "✓ " : "✕ "}{importMsg}
+            </div>
+          )}
+        </div>
+
+        {/* Filter by day */}
+        <div style={{ padding: "8px 18px 4px" }}>
+          <div style={{ fontSize: 11, letterSpacing: 2, color: "#374151", textTransform: "uppercase", fontFamily: "monospace", fontWeight: 700, marginBottom: 8 }}>Session History · {filtered.length} shown</div>
+          <div style={{ display: "flex", gap: 6, overflowX: "auto", paddingBottom: 4, scrollbarWidth: "none" }}>
+            <button onClick={() => setFilterDay(null)} style={{ flexShrink: 0, padding: "5px 12px", borderRadius: 8, border: "none", cursor: "pointer", fontFamily: "monospace", fontSize: 11, fontWeight: 700, background: filterDay === null ? "#4ade80" : "#1f2937", color: filterDay === null ? "#0a0f0d" : "#6b7280" }}>All</button>
+            {Object.entries(PROGRAM).filter(([,d]) => d.exercises.length > 0).map(([dn, d]) => (
+              <button key={dn} onClick={() => setFilterDay(filterDay === Number(dn) ? null : Number(dn))}
+                style={{ flexShrink: 0, padding: "5px 12px", borderRadius: 8, border: "none", cursor: "pointer", fontFamily: "monospace", fontSize: 11, fontWeight: 700, background: filterDay === Number(dn) ? d.color : "#1f2937", color: filterDay === Number(dn) ? "#0a0f0d" : d.color }}>
+                Day {dn}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* History list */}
+        <div style={{ padding: "4px 18px 100px" }}>
+          {filtered.length === 0 ? (
+            <div style={{ padding: "40px 0", textAlign: "center", color: "#374151", fontSize: 13, fontFamily: "monospace" }}>No sessions found</div>
+          ) : filtered.map(entry => {
+            const prog = entry.programDay ? PROGRAM[entry.programDay] : null;
+            const color = prog?.color ?? "#4b5563";
+            const expanded = expandedId === entry.id;
+            const totalVol = entry.movements.reduce((n, mv) =>
+              n + mv.sets.reduce((s, set) => s + (parseFloat(set.w)||0) * (parseFloat(set.r)||0), 0), 0);
+            return (
+              <div key={entry.id} style={{ marginBottom: 8, borderRadius: 14, overflow: "hidden", background: "#0d1117", border: `1.5px solid ${expanded ? color + "66" : "#1f2937"}` }}>
+                <div style={{ height: 3, background: prog ? color : "#1f2937" }} />
+                <div onClick={() => setExpandedId(expanded ? null : entry.id)}
+                  style={{ padding: "12px 14px", cursor: "pointer", display: "flex", alignItems: "center", gap: 12 }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 10, color: "#4b5563", fontFamily: "monospace", letterSpacing: 1, marginBottom: 2 }}>
+                      {fmtDate(entry.date)}{entry.programDay ? ` · DAY ${entry.programDay}` : ""}
+                      {entry.completedAt && <span style={{ color: "#4ade80", marginLeft: 6 }}>✓</span>}
+                    </div>
+                    <div style={{ fontSize: 15, fontWeight: 700, color: "#f9fafb" }}>{entry.customTitle || "Custom Session"}</div>
+                    <div style={{ fontSize: 11, color: "#4b5563", fontFamily: "monospace", marginTop: 2 }}>
+                      {entry.movements.length} movements
+                      {totalVol > 0 && <span style={{ color: "#6b7280", marginLeft: 8 }}>{Math.round(totalVol).toLocaleString()} lbs total vol</span>}
+                    </div>
+                  </div>
+                  <div style={{ color: "#374151", fontSize: 14, fontFamily: "monospace", transition: "transform 0.2s", transform: expanded ? "rotate(90deg)" : "none" }}>›</div>
+                </div>
+                {expanded && (
+                  <div style={{ borderTop: "1px solid #1f2937", padding: "10px 14px 14px" }}>
+                    {entry.note && <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 10, fontStyle: "italic" }}>{entry.note}</div>}
+                    {entry.movements.map(mv => (
+                      <div key={mv.id} style={{ marginBottom: 10 }}>
+                        <div style={{ fontSize: 12, fontWeight: 700, color: "#9ca3af", marginBottom: 4, fontFamily: "monospace" }}>
+                          {mv.programRef ? `${mv.programRef}. ` : ""}{mv.name}
+                        </div>
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
+                          {mv.sets.map((s, si) => (
+                            <span key={si} style={{ fontSize: 11, fontFamily: "monospace", padding: "3px 8px", borderRadius: 6, background: s.r ? color + "22" : "#1f2937", border: `1px solid ${s.r ? color + "44" : "#374151"}`, color: s.r ? color : "#4b5563" }}>
+                              {s.w ? `${s.w}×` : "BW×"}{s.r || "–"}
+                            </span>
+                          ))}
+                          {mv.note && <span style={{ fontSize: 10, color: "#4b5563", fontStyle: "italic", alignSelf: "center", marginLeft: 4 }}>{mv.note}</span>}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+        <BottomNav tab={tab} setTab={setTab} />
+      </Shell>
+    );
+  }
+
   // ── WEIGHT TRACKER ────────────────────────────────────────────────────────
   if (tab === "weight") {
     const sorted_w = [...weightLog].sort((a, b) => b.date.localeCompare(a.date));
@@ -928,9 +1096,9 @@ export default function App() {
         <div style={{ fontSize: 30, fontWeight: 900, color: "#f9fafb", lineHeight: 1, fontFamily: "'Georgia', serif", fontStyle: "italic" }}>My Workouts</div>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 6 }}>
           <div style={{ fontSize: 13, color: "#4b5563" }}>{entries.length} session{entries.length !== 1 ? "s" : ""} logged</div>
-          <button onClick={() => downloadCSV(entries, weightLog)}
+          <button onClick={() => setTab("data")}
             style={{ padding: "4px 12px", borderRadius: 8, background: "transparent", border: "1px solid #1f2937", color: "#4b5563", fontSize: 11, fontFamily: "monospace", fontWeight: 700, cursor: "pointer" }}>
-            ↓ Export CSV
+            🗄️ Data
           </button>
         </div>
       </div>
@@ -1107,7 +1275,7 @@ function timerBtn(bg, bright) {
   return { padding: "5px 12px", borderRadius: 8, border: "none", cursor: "pointer", background: bg, color: bright ? "#0a0f0d" : "#9ca3af", fontSize: 12, fontWeight: 700, fontFamily: "monospace" };
 }
 function BottomNav({ tab, setTab }) {
-  const tabs = [{ id: "journal", label: "Journal", icon: "📋" }, { id: "weight", label: "Weight", icon: "⚖️" }];
+  const tabs = [{ id: "journal", label: "Journal", icon: "📋" }, { id: "weight", label: "Weight", icon: "⚖️" }, { id: "data", label: "Data", icon: "🗄️" }];
   return (
     <div style={{ position: "fixed", bottom: 0, left: "50%", transform: "translateX(-50%)", width: "100%", maxWidth: 430, background: "#0d1117", borderTop: "1px solid #1f2937", display: "flex", padding: "8px 0 24px", zIndex: 50 }}>
       {tabs.map(t => (
