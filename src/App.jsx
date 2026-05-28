@@ -99,112 +99,9 @@ function newMovement(name = "") {
   return { id: Date.now() + Math.random(), name, sets: [{ w: "", r: "" }], note: "" };
 }
 
-// ── SEED DATA ────────────────────────────────────────────────────────────────
-const SEED_ENTRIES = [
-  {
-    id: 1000001,
-    date: "2026-05-07",
-    programDay: 1,
-    customTitle: "Heavy Squats & Legs",
-    note: "",
-    movements: [
-      { id: 1000101, name: "Barbell Squat", programRef: "A", setsTarget: 4, repsTarget: "8–12", rest: "2m 30s", note: "",
-        lastSets: null, lastDate: null,
-        sets: [{ w: "105", r: "12" }, { w: "110", r: "12" }, { w: "115", r: "12" }, { w: "115", r: "9" }] },
-      { id: 1000102, name: "45-Degree Leg Press", programRef: "B", setsTarget: 2, repsTarget: "6–10", rest: "2m", note: "",
-        lastSets: null, lastDate: null,
-        sets: [{ w: "440", r: "10" }, { w: "440", r: "9" }] },
-      { id: 1000103, name: "Leg Extension", programRef: "C", setsTarget: 3, repsTarget: "10–15", rest: "1m", note: "",
-        lastSets: null, lastDate: null,
-        sets: [{ w: "70", r: "9" }, { w: "70", r: "10" }, { w: "70", r: "10" }] },
-      { id: 1000104, name: "DB Walking Lunge", programRef: "D", setsTarget: 2, repsTarget: "10 each leg", rest: "1m", note: "",
-        lastSets: null, lastDate: null,
-        sets: [{ w: "70", r: "10" }, { w: "70", r: "7" }] },
-      { id: 1000105, name: "Seated Calf Raises", programRef: "E", setsTarget: 4, repsTarget: "10–15", rest: "1m", note: "",
-        lastSets: null, lastDate: null,
-        sets: [{ w: "150", r: "15" }, { w: "150", r: "15" }, { w: "150", r: "14" }, { w: "155", r: "14" }] },
-    ],
-  },
-  {
-    id: 1000002,
-    date: "2026-05-07",
-    programDay: 2,
-    customTitle: "Heavy Bench & Chest",
-    note: "",
-    movements: [
-      { id: 1000201, name: "Smith Machine Bench Press", programRef: "A", setsTarget: 4, repsTarget: "8–10", rest: "3m", note: "",
-        lastSets: null, lastDate: null,
-        sets: [{ w: "185", r: "10" }, { w: "185", r: "10" }, { w: "185", r: "12" }, { w: "190", r: "9" }] },
-      { id: 1000202, name: "Close Grip Press", programRef: "B", setsTarget: 3, repsTarget: "8–10", rest: "1m", note: "",
-        lastSets: null, lastDate: null,
-        sets: [{ w: "155", r: "8" }, { w: "155", r: "5" }, { w: "135", r: "8" }] },
-      { id: 1000203, name: "DB Incline Chest Press", programRef: "C", setsTarget: 3, repsTarget: "8–12", rest: "1m 30s", note: "",
-        lastSets: null, lastDate: null,
-        sets: [{ w: "60", r: "12" }, { w: "60", r: "9" }, { w: "60", r: "10" }] },
-      { id: 1000204, name: "Tricep Overhead Extension", programRef: "D", setsTarget: 3, repsTarget: "10–15", rest: "1m", note: "",
-        lastSets: null, lastDate: null,
-        sets: [{ w: "40", r: "12" }, { w: "40", r: "10" }, { w: "40", r: "10" }] },
-      { id: 1000205, name: "Dual Handle Cable Pushdown", programRef: "E", setsTarget: 3, repsTarget: "10–15", rest: "1m", note: "",
-        lastSets: null, lastDate: null,
-        sets: [{ w: "40", r: "10" }, { w: "40", r: "11" }, { w: "40", r: "10" }] },
-    ],
-  },
-  {
-    id: 1000004,
-    date: "2026-05-07",
-    programDay: 6,
-    customTitle: "Secondary Lower Body",
-    note: "",
-    movements: [
-      { id: 1000601, name: "Hack Squat", programRef: "A", setsTarget: 4, repsTarget: "8–10", rest: "2m 30s", note: "",
-        lastSets: null, lastDate: null,
-        sets: [{ w: "290", r: "10" }, { w: "290", r: "10" }, { w: "310", r: "11" }, { w: "310", r: "12" }] },
-      { id: 1000602, name: "DB Bulgarian Split Squat", programRef: "B", setsTarget: 2, repsTarget: "8–10", rest: "1m", note: "",
-        lastSets: null, lastDate: null,
-        sets: [{ w: "60", r: "9" }, { w: "60", r: "11" }] },
-      { id: 1000603, name: "Lat Bias Pulldown", programRef: "C", setsTarget: 3, repsTarget: "10–12", rest: "1m", note: "",
-        lastSets: null, lastDate: null,
-        sets: [{ w: "130", r: "12" }, { w: "135", r: "10" }, { w: "135", r: "10" }] },
-      { id: 1000604, name: "Lat Bias Cable Row", programRef: "D", setsTarget: 3, repsTarget: "10–12", rest: "1m", note: "",
-        lastSets: null, lastDate: null,
-        sets: [{ w: "130", r: "12" }, { w: "130", r: "11" }, { w: "130", r: "9" }] },
-      { id: 1000605, name: "EZ Bar Cable Curl", programRef: "E", setsTarget: 4, repsTarget: "10–12", rest: "1m", note: "",
-        lastSets: null, lastDate: null,
-        sets: [{ w: "35", r: "12" }, { w: "35", r: "10" }, { w: "35", r: "11" }, { w: "35", r: "6" }] },
-      { id: 1000606, name: "DB Hammer Curl", programRef: "F", setsTarget: 3, repsTarget: "10–12", rest: "1m", note: "",
-        lastSets: null, lastDate: null,
-        sets: [{ w: "22.5", r: "12" }, { w: "22.5", r: "12" }, { w: "22.8", r: "11" }] },
-    ],
-  },
-  {
-    id: 1000005,
-    date: "2026-05-07",
-    programDay: 7,
-    customTitle: "Overhead Press & Push",
-    note: "",
-    movements: [
-      { id: 1000701, name: "DB Shoulder Press", programRef: "A", setsTarget: 4, repsTarget: "5–8", rest: "2m", note: "",
-        lastSets: null, lastDate: null,
-        sets: [{ w: "60", r: "8" }, { w: "60", r: "8" }, { w: "60", r: "7" }, { w: "60", r: "7" }] },
-      { id: 1000702, name: "Single Arm Cable Lateral Raise", programRef: "B", setsTarget: 4, repsTarget: "10–15", rest: "1m", note: "",
-        lastSets: null, lastDate: null,
-        sets: [{ w: "7.5", r: "15" }, { w: "7.5", r: "15" }, { w: "7.5", r: "10" }, { w: "7.5", r: "9" }] },
-      { id: 1000703, name: "Incline Chest Press", programRef: "C", setsTarget: 3, repsTarget: "8–12", rest: "1m", note: "",
-        lastSets: null, lastDate: null,
-        sets: [{ w: "145", r: "10" }, { w: "145", r: "5" }, { w: "145", r: "6" }] },
-      { id: 1000704, name: "Reverse DB Rear Delt Fly", programRef: "D", setsTarget: 3, repsTarget: "12–15", rest: "1m", note: "",
-        lastSets: null, lastDate: null,
-        sets: [{ w: "12.5", r: "13" }, { w: "12.5", r: "15" }, { w: "15", r: "12" }] },
-      { id: 1000705, name: "Dip Machine", programRef: "E", setsTarget: 3, repsTarget: "10–12", rest: "1m", note: "Weight not logged",
-        lastSets: null, lastDate: null,
-        sets: [{ w: "", r: "8" }, { w: "", r: "7" }, { w: "", r: "5" }] },
-      { id: 1000706, name: "Tricep Pushdown EZ Bar", programRef: "F", setsTarget: 3, repsTarget: "12–15", rest: "1m", note: "Tempo: 1-0-1-0",
-        lastSets: null, lastDate: null,
-        sets: [{ w: "55", r: "10" }, { w: "55", r: "7" }, { w: "50", r: "8" }] },
-    ],
-  },
-];
-
+// ── SEED DATA (empty — real data lives in localStorage) ─────────────────────
+const SEED_ENTRIES = [];
+const SEED_WEIGHTS = [];
 // ── STORAGE (localStorage — persists across deployments) ──────────────────
 async function loadEntries() {
   try {
@@ -216,10 +113,7 @@ async function loadEntries() {
 async function saveEntries(entries) {
   try { localStorage.setItem("wj_entries", JSON.stringify(entries)); } catch {}
 }
-const SEED_WEIGHTS = [
-  { id: 2000001, date: "2026-05-21", weight: "195.0", unit: "lbs", note: "" },
-  { id: 2000002, date: "2026-05-22", weight: "193.6", unit: "lbs", note: "" },
-];
+
 async function loadWeights() {
   try {
     const raw = localStorage.getItem("wj_weights");
