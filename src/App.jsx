@@ -111,7 +111,17 @@ async function loadEntries() {
   return JSON.parse(JSON.stringify(SEED_ENTRIES));
 }
 async function saveEntries(entries) {
-  try { localStorage.setItem("wj_entries", JSON.stringify(entries)); } catch {}
+  try {
+    const data = JSON.stringify(entries);
+    localStorage.setItem("wj_entries", data);
+    // Warn if storage is getting large (>4MB)
+    const kb = Math.round(data.length / 1024);
+    if (kb > 4096) console.warn(`[Journal] Storage at ${kb}KB — consider exporting CSV backup`);
+  } catch (e) {
+    if (e.name === "QuotaExceededError") {
+      alert("Storage full — please export your data as CSV from the journal header, then contact support.");
+    }
+  }
 }
 
 async function loadWeights() {
