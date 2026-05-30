@@ -107,15 +107,15 @@ const SEED_ENTRIES = [
     customTitle: "Heavy Squats & Legs", note: "", completedAt: null,
     movements: [
       { id: 1000101, name: "Barbell Squat", programRef: "A", setsTarget: 4, repsTarget: "8–12", rest: "2m 30s", note: "", doneAt: null, lastSets: null, lastDate: null,
-        sets: [{ w: "105", r: "12" }, { w: "110", r: "12" }, { w: "115", r: "12" }, { w: "115", r: "9" }] },
+        sets: [{ w: "47.5", r: "12" }, { w: "50", r: "12" }, { w: "52", r: "12" }, { w: "52", r: "9" }] },
       { id: 1000102, name: "45-Degree Leg Press", programRef: "B", setsTarget: 2, repsTarget: "6–10", rest: "2m", note: "", doneAt: null, lastSets: null, lastDate: null,
-        sets: [{ w: "440", r: "10" }, { w: "440", r: "9" }] },
+        sets: [{ w: "199.5", r: "10" }, { w: "199.5", r: "9" }] },
       { id: 1000103, name: "Leg Extension", programRef: "C", setsTarget: 3, repsTarget: "10–15", rest: "1m", note: "", doneAt: null, lastSets: null, lastDate: null,
-        sets: [{ w: "70", r: "9" }, { w: "70", r: "10" }, { w: "70", r: "10" }] },
+        sets: [{ w: "32", r: "9" }, { w: "32", r: "10" }, { w: "32", r: "10" }] },
       { id: 1000104, name: "DB Walking Lunge", programRef: "D", setsTarget: 2, repsTarget: "10 each leg", rest: "1m", note: "", doneAt: null, lastSets: null, lastDate: null,
-        sets: [{ w: "70", r: "10" }, { w: "70", r: "7" }] },
+        sets: [{ w: "32", r: "10" }, { w: "32", r: "7" }] },
       { id: 1000105, name: "Seated Calf Raises", programRef: "E", setsTarget: 4, repsTarget: "10–15", rest: "1m", note: "", doneAt: null, lastSets: null, lastDate: null,
-        sets: [{ w: "150", r: "15" }, { w: "150", r: "15" }, { w: "150", r: "14" }, { w: "155", r: "14" }] },
+        sets: [{ w: "68", r: "15" }, { w: "68", r: "15" }, { w: "68", r: "14" }, { w: "70.5", r: "14" }] },
     ],
   },
   {
@@ -123,15 +123,15 @@ const SEED_ENTRIES = [
     customTitle: "Heavy Bench & Chest", note: "", completedAt: null,
     movements: [
       { id: 1000201, name: "Smith Machine Bench Press", programRef: "A", setsTarget: 4, repsTarget: "8–10", rest: "3m", note: "", doneAt: null, lastSets: null, lastDate: null,
-        sets: [{ w: "185", r: "10" }, { w: "185", r: "10" }, { w: "185", r: "12" }, { w: "190", r: "9" }] },
+        sets: [{ w: "84", r: "10" }, { w: "84", r: "10" }, { w: "84", r: "12" }, { w: "86", r: "9" }] },
       { id: 1000202, name: "Close Grip Press", programRef: "B", setsTarget: 3, repsTarget: "8–10", rest: "1m", note: "", doneAt: null, lastSets: null, lastDate: null,
-        sets: [{ w: "155", r: "8" }, { w: "155", r: "5" }, { w: "135", r: "8" }] },
+        sets: [{ w: "70.5", r: "8" }, { w: "70.5", r: "5" }, { w: "61", r: "8" }] },
       { id: 1000203, name: "DB Incline Chest Press", programRef: "C", setsTarget: 3, repsTarget: "8–12", rest: "1m 30s", note: "", doneAt: null, lastSets: null, lastDate: null,
-        sets: [{ w: "60", r: "12" }, { w: "60", r: "9" }, { w: "60", r: "10" }] },
+        sets: [{ w: "27", r: "12" }, { w: "27", r: "9" }, { w: "27", r: "10" }] },
       { id: 1000204, name: "Tricep Overhead Extension", programRef: "D", setsTarget: 3, repsTarget: "10–15", rest: "1m", note: "", doneAt: null, lastSets: null, lastDate: null,
-        sets: [{ w: "40", r: "12" }, { w: "40", r: "10" }, { w: "40", r: "10" }] },
+        sets: [{ w: "18", r: "12" }, { w: "18", r: "10" }, { w: "18", r: "10" }] },
       { id: 1000205, name: "Dual Handle Cable Pushdown", programRef: "E", setsTarget: 3, repsTarget: "10–15", rest: "1m", note: "", doneAt: null, lastSets: null, lastDate: null,
-        sets: [{ w: "40", r: "10" }, { w: "40", r: "11" }, { w: "40", r: "10" }] },
+        sets: [{ w: "18", r: "10" }, { w: "18", r: "11" }, { w: "18", r: "10" }] },
     ],
   },
   {
@@ -139,15 +139,15 @@ const SEED_ENTRIES = [
     customTitle: "Posterior Chain", note: "", completedAt: null,
     movements: [
       { id: 1000401, name: "Prone Hamstring Curl", programRef: "A", setsTarget: 4, repsTarget: "2×10-12, 2×15-20", rest: "1m", note: "", doneAt: null, lastSets: null, lastDate: null,
-        sets: [{ w: "70", r: "12" }, { w: "70", r: "8" }, { w: "50", r: "16" }, { w: "50", r: "13" }] },
+        sets: [{ w: "32", r: "12" }, { w: "32", r: "8" }, { w: "22.5", r: "16" }, { w: "22.5", r: "13" }] },
       { id: 1000402, name: "Romanian Deadlift", programRef: "B", setsTarget: 3, repsTarget: "6–10", rest: "1m 30s", note: "", doneAt: null, lastSets: null, lastDate: null,
-        sets: [{ w: "155", r: "10" }, { w: "155", r: "10" }, { w: "155", r: "6" }] },
+        sets: [{ w: "70.5", r: "10" }, { w: "70.5", r: "10" }, { w: "70.5", r: "6" }] },
       { id: 1000403, name: "Booty Builder", programRef: "C", setsTarget: 2, repsTarget: "20–25", rest: "1m", note: "", doneAt: null, lastSets: null, lastDate: null,
-        sets: [{ w: "135", r: "17" }, { w: "135", r: "13" }] },
+        sets: [{ w: "61", r: "17" }, { w: "61", r: "13" }] },
       { id: 1000404, name: "Barbell Bent Over Row", programRef: "D", setsTarget: 3, repsTarget: "6–10", rest: "1m 30s", note: "", doneAt: null, lastSets: null, lastDate: null,
-        sets: [{ w: "115", r: "10" }, { w: "115", r: "10" }, { w: "115", r: "" }] },
+        sets: [{ w: "52", r: "10" }, { w: "52", r: "10" }, { w: "52", r: "" }] },
       { id: 1000405, name: "Upper Back Lat Pulldown", programRef: "E", setsTarget: 3, repsTarget: "8–12", rest: "1m 30s", note: "", doneAt: null, lastSets: null, lastDate: null,
-        sets: [{ w: "120", r: "10" }, { w: "120", r: "11" }, { w: "120", r: "9" }] },
+        sets: [{ w: "54.5", r: "10" }, { w: "54.5", r: "11" }, { w: "54.5", r: "9" }] },
     ],
   },
   {
@@ -155,17 +155,17 @@ const SEED_ENTRIES = [
     customTitle: "Secondary Lower Body", note: "", completedAt: null,
     movements: [
       { id: 1000601, name: "Hack Squat", programRef: "A", setsTarget: 4, repsTarget: "8–10", rest: "2m 30s", note: "", doneAt: null, lastSets: null, lastDate: null,
-        sets: [{ w: "290", r: "10" }, { w: "290", r: "10" }, { w: "310", r: "11" }, { w: "310", r: "12" }] },
+        sets: [{ w: "131.5", r: "10" }, { w: "131.5", r: "10" }, { w: "140.5", r: "11" }, { w: "140.5", r: "12" }] },
       { id: 1000602, name: "DB Bulgarian Split Squat", programRef: "B", setsTarget: 2, repsTarget: "8–10", rest: "1m", note: "", doneAt: null, lastSets: null, lastDate: null,
-        sets: [{ w: "60", r: "9" }, { w: "60", r: "11" }] },
+        sets: [{ w: "27", r: "9" }, { w: "27", r: "11" }] },
       { id: 1000603, name: "Lat Bias Pulldown", programRef: "C", setsTarget: 3, repsTarget: "10–12", rest: "1m", note: "", doneAt: null, lastSets: null, lastDate: null,
-        sets: [{ w: "130", r: "12" }, { w: "135", r: "10" }, { w: "135", r: "10" }] },
+        sets: [{ w: "59", r: "12" }, { w: "61", r: "10" }, { w: "61", r: "10" }] },
       { id: 1000604, name: "Lat Bias Cable Row", programRef: "D", setsTarget: 3, repsTarget: "10–12", rest: "1m", note: "", doneAt: null, lastSets: null, lastDate: null,
-        sets: [{ w: "130", r: "12" }, { w: "130", r: "11" }, { w: "130", r: "9" }] },
+        sets: [{ w: "59", r: "12" }, { w: "59", r: "11" }, { w: "59", r: "9" }] },
       { id: 1000605, name: "EZ Bar Cable Curl", programRef: "E", setsTarget: 4, repsTarget: "10–12", rest: "1m", note: "", doneAt: null, lastSets: null, lastDate: null,
-        sets: [{ w: "35", r: "12" }, { w: "35", r: "10" }, { w: "35", r: "11" }, { w: "35", r: "6" }] },
+        sets: [{ w: "16", r: "12" }, { w: "16", r: "10" }, { w: "16", r: "11" }, { w: "16", r: "6" }] },
       { id: 1000606, name: "DB Hammer Curl", programRef: "F", setsTarget: 3, repsTarget: "10–12", rest: "1m", note: "", doneAt: null, lastSets: null, lastDate: null,
-        sets: [{ w: "22.5", r: "12" }, { w: "22.5", r: "12" }, { w: "22.8", r: "11" }] },
+        sets: [{ w: "10", r: "12" }, { w: "10", r: "12" }, { w: "10.5", r: "11" }] },
     ],
   },
   {
@@ -173,17 +173,17 @@ const SEED_ENTRIES = [
     customTitle: "Overhead Press & Push", note: "", completedAt: null,
     movements: [
       { id: 1000701, name: "DB Shoulder Press", programRef: "A", setsTarget: 4, repsTarget: "5–8", rest: "2m", note: "", doneAt: null, lastSets: null, lastDate: null,
-        sets: [{ w: "60", r: "8" }, { w: "60", r: "8" }, { w: "60", r: "7" }, { w: "60", r: "7" }] },
+        sets: [{ w: "27", r: "8" }, { w: "27", r: "8" }, { w: "27", r: "7" }, { w: "27", r: "7" }] },
       { id: 1000702, name: "Single Arm Cable Lateral Raise", programRef: "B", setsTarget: 4, repsTarget: "10–15", rest: "1m", note: "", doneAt: null, lastSets: null, lastDate: null,
-        sets: [{ w: "7.5", r: "15" }, { w: "7.5", r: "15" }, { w: "7.5", r: "10" }, { w: "7.5", r: "9" }] },
+        sets: [{ w: "3.5", r: "15" }, { w: "3.5", r: "15" }, { w: "3.5", r: "10" }, { w: "3.5", r: "9" }] },
       { id: 1000703, name: "Incline Chest Press", programRef: "C", setsTarget: 3, repsTarget: "8–12", rest: "1m", note: "", doneAt: null, lastSets: null, lastDate: null,
-        sets: [{ w: "145", r: "10" }, { w: "145", r: "5" }, { w: "145", r: "6" }] },
+        sets: [{ w: "66", r: "10" }, { w: "66", r: "5" }, { w: "66", r: "6" }] },
       { id: 1000704, name: "Reverse DB Rear Delt Fly", programRef: "D", setsTarget: 3, repsTarget: "12–15", rest: "1m", note: "", doneAt: null, lastSets: null, lastDate: null,
-        sets: [{ w: "12.5", r: "13" }, { w: "12.5", r: "15" }, { w: "15", r: "12" }] },
+        sets: [{ w: "5.5", r: "13" }, { w: "5.5", r: "15" }, { w: "7", r: "12" }] },
       { id: 1000705, name: "Dip Machine", programRef: "E", setsTarget: 3, repsTarget: "10–12", rest: "1m", note: "Weight not logged", doneAt: null, lastSets: null, lastDate: null,
         sets: [{ w: "", r: "8" }, { w: "", r: "7" }, { w: "", r: "5" }] },
       { id: 1000706, name: "Tricep Cable Pushdown EZ Bar", programRef: "F", setsTarget: 3, repsTarget: "12–15", rest: "1m", note: "Tempo: 1-0-1-0", doneAt: null, lastSets: null, lastDate: null,
-        sets: [{ w: "55", r: "10" }, { w: "55", r: "7" }, { w: "50", r: "8" }] },
+        sets: [{ w: "25", r: "10" }, { w: "25", r: "7" }, { w: "22.5", r: "8" }] },
     ],
   },
 ];
@@ -306,7 +306,7 @@ export default function App() {
   const [weightLog, setWeightLog] = useState([]);
   const [weightInput, setWeightInput] = useState("");
   const [weightDate, setWeightDate] = useState(todayStr());
-  const [weightUnit, setWeightUnit] = useState("lbs");
+  const [weightUnit, setWeightUnit] = useState("kg");
   const [showWeightForm, setShowWeightForm] = useState(false);
   const [loading, setLoading] = useState(true);
   const [timerState, setTimerState] = useState(null);
@@ -1418,7 +1418,7 @@ function SetRow({ num, weight, reps, repsTarget, done, color, onW, onR, onDelete
       <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
         <div style={{ fontSize: 10, letterSpacing: 1.5, color: "#374151", textTransform: "uppercase", fontFamily: "monospace" }}>Weight</div>
         <input type="number" inputMode="decimal" value={weight} onChange={e => onW(e.target.value)} placeholder="0" style={setInput(color)} />
-        <div style={{ fontSize: 10, color: "#374151", fontFamily: "monospace" }}>lbs</div>
+        <div style={{ fontSize: 10, color: "#374151", fontFamily: "monospace" }}>kg</div>
       </div>
       <div style={{ color: "#1f2937", fontSize: 16, fontWeight: 300 }}>×</div>
       <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
