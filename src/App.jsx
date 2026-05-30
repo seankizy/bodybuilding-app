@@ -975,6 +975,8 @@ export default function App() {
             const prog = entry.programDay ? PROGRAM[entry.programDay] : null;
             const color = prog?.color ?? "#4b5563";
             const expanded = expandedId === entry.id;
+            const entryProg = entry.programDay ? PROGRAM[entry.programDay] : null;
+            const entryColor = entryProg?.color ?? "#4ade80";
             const totalVol = entry.movements.reduce((n, mv) =>
               n + mv.sets.reduce((s, set) => s + (parseFloat(set.w)||0) * (parseFloat(set.r)||0), 0), 0);
             return (
@@ -1005,7 +1007,7 @@ export default function App() {
                         </div>
                         <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
                           {mv.sets.map((s, si) => (
-                            <span key={si} style={{ fontSize: 11, fontFamily: "monospace", padding: "3px 8px", borderRadius: 6, background: s.r ? color + "22" : "#1f2937", border: `1px solid ${s.r ? color + "44" : "#374151"}`, color: s.r ? color : "#4b5563" }}>
+                            <span key={si} style={{ fontSize: 11, fontFamily: "monospace", padding: "3px 8px", borderRadius: 6, background: s.r ? entryColor + "22" : "#1f2937", border: `1px solid ${s.r ? entryColor + "44" : "#374151"}`, color: s.r ? entryColor : "#4b5563" }}>
                               {s.w ? `${s.w}×` : "BW×"}{s.r || "–"}
                             </span>
                           ))}
