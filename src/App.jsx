@@ -338,7 +338,7 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    if (!loading && entries.length > 0) saveEntries(entries);
+    if (!loading) saveEntries(entries);
   }, [entries, loading]);
 
   useEffect(() => {
@@ -1043,7 +1043,11 @@ export default function App() {
     function addWeight() {
       if (!weightInput || isNaN(parseFloat(weightInput))) return;
       const entry = { id: Date.now(), date: weightDate, weight: weightInput, unit: weightUnit, note: "" };
-      setWeightLog(prev => [entry, ...prev.filter(w => w.date !== weightDate)]);
+      setWeightLog(prev => {
+        const updated = [entry, ...prev.filter(w => w.date !== weightDate)];
+        saveWeights(updated); // save directly — don't rely solely on useEffect
+        return updated;
+      });
       setWeightInput("");
       setShowWeightForm(false);
     }
@@ -1135,7 +1139,7 @@ export default function App() {
                       )}
                     </div>
                   </div>
-                  <button onClick={() => setWeightLog(prev => prev.filter(x => x.id !== w.id))}
+                  <button onClick={() => setWeightLog(prev => { const updated = prev.filter(x => x.id !== w.id); saveWeights(updated); return updated; })}
                     style={{ width: 30, height: 30, borderRadius: 8, background: "#1a0a0a", border: "1px solid #3b1515", color: "#dc2626", fontSize: 16, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>×</button>
                 </div>
               );
