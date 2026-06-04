@@ -223,7 +223,7 @@ async function saveWeights(weights) {
 
 // ── CSV EXPORT ────────────────────────────────────────────────────────────────
 function buildCSV(entries, weights) {
-  const rows = [["TYPE","DATE","PROGRAM_DAY","WORKOUT_TITLE","EXERCISE","SET","WEIGHT_LBS","REPS","SESSION_NOTE","MOVEMENT_NOTE"]];
+  const rows = [["TYPE","DATE","PROGRAM_DAY","WORKOUT_TITLE","EXERCISE","SET","WEIGHT_KG","REPS","SESSION_NOTE","MOVEMENT_NOTE"]];
   for (const e of [...entries].sort((a,b) => a.date.localeCompare(b.date))) {
     if (!e.movements || e.movements.length === 0) {
       rows.push(["WORKOUT", e.date, e.programDay ?? "", e.customTitle, "", "", "", "", csvEsc(e.note), ""]);
@@ -241,7 +241,7 @@ function buildCSV(entries, weights) {
     }
   }
   for (const w of [...weights].sort((a,b) => a.date.localeCompare(b.date))) {
-    rows.push(["WEIGHT", w.date, "", "", "", "", "", "", `${w.weight} ${w.unit}`, w.note ?? ""]);
+    rows.push(["BODY_WEIGHT", w.date, "", "", "", "", w.weight, w.unit, csvEsc(w.note ?? ""), ""]);
   }
   return rows.map(r => r.map(v => String(v ?? "")).join(",")).join("\n");
 }
@@ -306,7 +306,7 @@ export default function App() {
   const [weightLog, setWeightLog] = useState([]);
   const [weightInput, setWeightInput] = useState("");
   const [weightDate, setWeightDate] = useState(todayStr());
-  const [weightUnit, setWeightUnit] = useState("kg");
+  const [weightUnit, setWeightUnit] = useState("lbs");
   const [showWeightForm, setShowWeightForm] = useState(false);
   const [loading, setLoading] = useState(true);
   const [timerState, setTimerState] = useState(null);
@@ -585,6 +585,44 @@ export default function App() {
           }
         />
 
+        {/* Sticky rest timer — appears at top when active, stays visible while scrolling */}
+        {timerState && !showStopwatch && (() => {
+          const restSecs = restToSeconds(activeMv.rest);
+          const remaining = timerState.remaining;
+          const running = timerState.running;
+          const done = timerState.done;
+          const pct = restSecs > 0 ? remaining / restSecs : 0;
+          const R = 18; const circ = 2 * Math.PI * R;
+          const mins = Math.floor(remaining / 60), secs = remaining % 60;
+          const timeStr = mins > 0 ? `${mins}:${String(secs).padStart(2,"0")}` : `${secs}s`;
+          return (
+            <div style={{ position: "sticky", top: 0, zIndex: 20, margin: "0 0 4px", padding: "10px 18px", background: done ? "#0a1f0a" : "#0a0f0d", borderBottom: `2px solid ${done ? color + "88" : color + "44"}`, display: "flex", alignItems: "center", gap: 14 }}>
+              <div style={{ position: "relative", width: 44, height: 44, flexShrink: 0 }}>
+                <svg width="44" height="44" style={{ transform: "rotate(-90deg)" }}>
+                  <circle cx="22" cy="22" r={R} fill="none" stroke="#1f2937" strokeWidth="3" />
+                  <circle cx="22" cy="22" r={R} fill="none" stroke={color} strokeWidth="3"
+                    strokeDasharray={`${circ * pct} ${circ}`} strokeLinecap="round"
+                    style={{ transition: "stroke-dasharray 0.5s linear" }} />
+                </svg>
+                <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: remaining >= 60 ? 10 : 13, fontWeight: 900, fontFamily: "monospace", color: done ? color : "#f9fafb" }}>
+                  {done ? "GO" : timeStr}
+                </div>
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 10, letterSpacing: 2, color: done ? color : "#6b7280", fontFamily: "monospace", textTransform: "uppercase", marginBottom: 4 }}>
+                  {done ? "✓ Rest complete — go!" : `Rest · ${activeMv.rest}`}
+                </div>
+                <div style={{ display: "flex", gap: 6 }}>
+                  {!done && running && <button onClick={pauseTimer} style={{ ...btnStyle("#1f2937", "#9ca3af"), padding: "4px 10px", fontSize: 11 }}>⏸</button>}
+                  {!done && !running && <button onClick={resumeTimer} style={{ ...btnStyle(color + "22", color), padding: "4px 10px", fontSize: 11 }}>▶</button>}
+                  <button onClick={() => resetTimer(restSecs)} style={{ ...btnStyle("#1f2937", "#6b7280"), padding: "4px 10px", fontSize: 11 }}>↺</button>
+                  {done && <button onClick={dismissTimer} style={{ ...btnStyle(color, "#0a0f0d"), padding: "4px 14px", fontSize: 12, fontWeight: 800 }}>Dismiss</button>}
+                </div>
+              </div>
+            </div>
+          );
+        })()}
+
         <div style={{ padding: "4px 18px 16px" }}>
           {activeMv.programRef && (
             <div style={{ fontSize: 11, letterSpacing: 2, color: "#6b7280", textTransform: "uppercase", marginBottom: 6, fontFamily: "monospace" }}>
@@ -615,7 +653,7 @@ export default function App() {
             <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
               {activeMv.lastSets.map((s, i) => (
                 <span key={i} style={{ fontSize: 12, fontFamily: "monospace", fontWeight: 700, padding: "4px 9px", borderRadius: 7, background: "#0d2318", border: "1px solid #1a3a22", color: "#4ade8088" }}>
-                  {s.w ? `${s.w}lb` : "BW"}×{s.r || "?"}
+                  {s.w ? `${s.w}kg` : "BW"}×{s.r || "?"}
                 </span>
               ))}
             </div>
@@ -649,7 +687,6 @@ export default function App() {
 
         {!showStopwatch && activeMv.sets.map((s, i) => {
           const restSecs = restToSeconds(activeMv.rest);
-          const isTimerSet = timerState?.setIdx === i;
           const setDone = !!s.done;
           return (
             <div key={i}>
@@ -675,19 +712,6 @@ export default function App() {
                   }
                 }}
               />
-              {i < activeMv.sets.length - 1 && (
-                <RestTimer
-                  restSecs={restSecs}
-                  restLabel={activeMv.rest}
-                  color={color}
-                  timerState={isTimerSet ? timerState : null}
-                  onStart={() => startTimer(i, restSecs)}
-                  onPause={pauseTimer}
-                  onResume={resumeTimer}
-                  onReset={() => resetTimer(restSecs)}
-                  onDismiss={dismissTimer}
-                />
-              )}
             </div>
           );
         })}
@@ -1435,7 +1459,7 @@ function SetRow({ num, weight, reps, repsTarget, done, color, onW, onR, onDelete
           placeholder={repRange ? `${repRange.min}–${repRange.max}` : "0"}
           style={{ ...setInput(color), borderColor: inRange ? color : belowRange ? "#f97316" : aboveRange ? "#60a5fa" : undefined }} />
         <div style={{ fontSize: 10, fontFamily: "monospace", fontWeight: 700, color: inRange ? color : belowRange ? "#f97316" : aboveRange ? "#60a5fa" : "#374151" }}>
-          {inRange ? "✓ in range" : belowRange ? "↑ go heavier" : aboveRange ? "↓ go lighter" : "reps"}
+          {inRange ? "✓ in range" : belowRange ? "↓ go lighter" : aboveRange ? "↑ go heavier" : "reps"}
         </div>
       </div>
       <button onClick={onDone} style={{ width: 44, height: 44, borderRadius: 12, flexShrink: 0, background: done ? color : "#111827", border: `2px solid ${done ? color : "#1f2937"}`, color: done ? "#0a0f0d" : "#374151", fontSize: done ? 18 : 16, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.15s", fontWeight: 900 }}>✓</button>
