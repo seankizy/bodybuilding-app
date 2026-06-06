@@ -566,10 +566,11 @@ export default function App() {
       const ts = new Date().toISOString();
       updateMovement(activeEntry.id, activeMv.id, { doneAt: ts });
       dismissTimer();
-      // Show stopwatch between movements
       if (nextMv) {
-        startStopwatch();
-        setShowStopwatch(true);
+        // Jump straight to next movement and auto-start a 90s rest timer at the top
+        setActiveMvId(nextMv.id);
+        setShowStopwatch(false);
+        startTimer("movement", 90); // 1.5 min between-movement rest, auto-starts
       } else {
         setView("entry");
       }
@@ -585,13 +586,13 @@ export default function App() {
           }
         />
 
-        {/* Sticky rest timer — appears at top when active, stays visible while scrolling */}
-        {timerState && !showStopwatch && (() => {
-          const restSecs = restToSeconds(activeMv.rest);
+        {/* Sticky top timer — only for between-MOVEMENT rest (auto-started on Done·Next) */}
+        {timerState && timerState.setIdx === "movement" && !showStopwatch && (() => {
           const remaining = timerState.remaining;
           const running = timerState.running;
           const done = timerState.done;
-          const pct = restSecs > 0 ? remaining / restSecs : 0;
+          const total = timerState.total || 90;
+          const pct = total > 0 ? remaining / total : 0;
           const R = 18; const circ = 2 * Math.PI * R;
           const mins = Math.floor(remaining / 60), secs = remaining % 60;
           const timeStr = mins > 0 ? `${mins}:${String(secs).padStart(2,"0")}` : `${secs}s`;
@@ -610,12 +611,12 @@ export default function App() {
               </div>
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 10, letterSpacing: 2, color: done ? color : "#6b7280", fontFamily: "monospace", textTransform: "uppercase", marginBottom: 4 }}>
-                  {done ? "✓ Rest complete — go!" : `Rest · ${activeMv.rest}`}
+                  {done ? "✓ Rest complete — start!" : "Rest before this movement · 1m 30s"}
                 </div>
                 <div style={{ display: "flex", gap: 6 }}>
                   {!done && running && <button onClick={pauseTimer} style={{ ...btnStyle("#1f2937", "#9ca3af"), padding: "4px 10px", fontSize: 11 }}>⏸</button>}
                   {!done && !running && <button onClick={resumeTimer} style={{ ...btnStyle(color + "22", color), padding: "4px 10px", fontSize: 11 }}>▶</button>}
-                  <button onClick={() => resetTimer(restSecs)} style={{ ...btnStyle("#1f2937", "#6b7280"), padding: "4px 10px", fontSize: 11 }}>↺</button>
+                  <button onClick={() => resetTimer(90)} style={{ ...btnStyle("#1f2937", "#6b7280"), padding: "4px 10px", fontSize: 11 }}>↺</button>
                   {done && <button onClick={dismissTimer} style={{ ...btnStyle(color, "#0a0f0d"), padding: "4px 14px", fontSize: 12, fontWeight: 800 }}>Dismiss</button>}
                 </div>
               </div>
@@ -688,6 +689,7 @@ export default function App() {
         {!showStopwatch && activeMv.sets.map((s, i) => {
           const restSecs = restToSeconds(activeMv.rest);
           const setDone = !!s.done;
+          const isTimerSet = timerState?.setIdx === i; // between-set timer for this set
           return (
             <div key={i}>
               <SetRow
@@ -712,6 +714,20 @@ export default function App() {
                   }
                 }}
               />
+              {/* Inline rest timer between sets (not after the last set) */}
+              {i < activeMv.sets.length - 1 && (
+                <RestTimer
+                  restSecs={restSecs}
+                  restLabel={activeMv.rest}
+                  color={color}
+                  timerState={isTimerSet ? timerState : null}
+                  onStart={() => startTimer(i, restSecs)}
+                  onPause={pauseTimer}
+                  onResume={resumeTimer}
+                  onReset={() => resetTimer(restSecs)}
+                  onDismiss={dismissTimer}
+                />
+              )}
             </div>
           );
         })}
