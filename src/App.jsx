@@ -1,17 +1,19 @@
 import { useState, useEffect, useRef } from "react";
 
 // ── PROGRAM DATA ──────────────────────────────────────────────────────────────
+// type: "compound" (leave 1–2 RIR) or "isolation" (failure OK on last set)
+// muscle: primary muscle group for weekly volume tracking
 const PROGRAM = {
   1: {
     title: "Heavy Squats & Legs",
     tag: "LEGS",
     color: "#4ade80",
     exercises: [
-      { id: "A", name: "Barbell Squat (power rack)", sets: 4, reps: "8–12", rest: "2m 30s" },
-      { id: "B", name: "Leg Press Machine", sets: 2, reps: "6–10", rest: "2m" },
-      { id: "C", name: "Leg Extension", sets: 3, reps: "10–15", rest: "1m" },
-      { id: "D", name: "DB Walking Lunge", sets: 2, reps: "10 each leg", rest: "1m" },
-      { id: "E", name: "Seated Calf Raises (DB on knees)", sets: 4, reps: "10–15", rest: "1m" },
+      { id: "A", name: "Barbell Squat (power rack)", sets: 4, reps: "8–12", rest: "2m 30s", type: "compound", muscle: "Quads" },
+      { id: "B", name: "Leg Press Machine", sets: 2, reps: "6–10", rest: "2m", type: "compound", muscle: "Quads" },
+      { id: "C", name: "Leg Extension", sets: 3, reps: "10–15", rest: "1m", type: "isolation", muscle: "Quads" },
+      { id: "D", name: "DB Walking Lunge", sets: 2, reps: "10 each leg", rest: "1m", type: "compound", muscle: "Glutes" },
+      { id: "E", name: "Seated Calf Raises (DB on knees)", sets: 4, reps: "10–15", rest: "1m", type: "isolation", muscle: "Calves" },
     ],
   },
   2: {
@@ -19,11 +21,11 @@ const PROGRAM = {
     tag: "PUSH",
     color: "#60a5fa",
     exercises: [
-      { id: "A", name: "Barbell Bench Press (power rack)", sets: 4, reps: "8–10", rest: "3m" },
-      { id: "B", name: "Close Grip Barbell Bench Press", sets: 3, reps: "8–10", rest: "1m" },
-      { id: "C", name: "DB Incline Chest Press", sets: 3, reps: "8–12", rest: "1m 30s" },
-      { id: "D", name: "Tricep Overhead Extension (DB or EZ bar)", sets: 3, reps: "10–15", rest: "1m" },
-      { id: "E", name: "Cable Pushdown (Carnelli)", sets: 3, reps: "10–15", rest: "1m" },
+      { id: "A", name: "Barbell Bench Press (power rack)", sets: 4, reps: "8–10", rest: "3m", type: "compound", muscle: "Chest" },
+      { id: "B", name: "Close Grip Barbell Bench Press", sets: 3, reps: "8–10", rest: "1m", type: "compound", muscle: "Triceps" },
+      { id: "C", name: "DB Incline Chest Press", sets: 3, reps: "8–12", rest: "1m 30s", type: "compound", muscle: "Chest" },
+      { id: "D", name: "Tricep Overhead Extension (DB or EZ bar)", sets: 3, reps: "10–15", rest: "1m", type: "isolation", muscle: "Triceps" },
+      { id: "E", name: "Cable Pushdown (Carnelli)", sets: 3, reps: "10–15", rest: "1m", type: "isolation", muscle: "Triceps" },
     ],
   },
   3: { title: "Rest Day", tag: "REST", color: "#6b7280", exercises: [] },
@@ -32,11 +34,11 @@ const PROGRAM = {
     tag: "PULL",
     color: "#f97316",
     exercises: [
-      { id: "A", name: "Prone Hamstring Curl", sets: 4, reps: "2×10-12, 2×15-20", rest: "1m" },
-      { id: "B", name: "Romanian Deadlift (barbell)", sets: 3, reps: "6–10", rest: "1m 30s" },
-      { id: "C", name: "Barbell Hip Thrust (bench + barbell)", sets: 2, reps: "20–25", rest: "1m" },
-      { id: "D", name: "Barbell Bent Over Row", sets: 3, reps: "6–10", rest: "1m 30s" },
-      { id: "E", name: "Lat Pulldown (Carnelli)", sets: 3, reps: "8–12", rest: "1m 30s" },
+      { id: "A", name: "Prone Hamstring Curl", sets: 4, reps: "2×10-12, 2×15-20", rest: "1m", type: "isolation", muscle: "Hamstrings" },
+      { id: "B", name: "Romanian Deadlift (barbell)", sets: 3, reps: "6–10", rest: "1m 30s", type: "compound", muscle: "Hamstrings" },
+      { id: "C", name: "Barbell Hip Thrust (bench + barbell)", sets: 2, reps: "20–25", rest: "1m", type: "compound", muscle: "Glutes" },
+      { id: "D", name: "Barbell Bent Over Row", sets: 3, reps: "6–10", rest: "1m 30s", type: "compound", muscle: "Back" },
+      { id: "E", name: "Lat Pulldown (Carnelli)", sets: 3, reps: "8–12", rest: "1m 30s", type: "compound", muscle: "Back" },
     ],
   },
   5: { title: "Rest Day", tag: "REST", color: "#6b7280", exercises: [] },
@@ -45,12 +47,12 @@ const PROGRAM = {
     tag: "LEGS",
     color: "#a78bfa",
     exercises: [
-      { id: "A", name: "Barbell Front Squat (power rack)", sets: 4, reps: "8–10", rest: "2m 30s" },
-      { id: "B", name: "DB Bulgarian Split Squat", sets: 2, reps: "8–10", rest: "1m" },
-      { id: "C", name: "Lat Pulldown (Carnelli)", sets: 3, reps: "10–12", rest: "1m" },
-      { id: "D", name: "Cable Row (Carnelli low pulley)", sets: 3, reps: "10–12", rest: "1m" },
-      { id: "E", name: "EZ Bar Curl", sets: 4, reps: "10–12", rest: "1m" },
-      { id: "F", name: "DB Hammer Curl", sets: 3, reps: "10–12", rest: "1m" },
+      { id: "A", name: "Barbell Front Squat (power rack)", sets: 4, reps: "8–10", rest: "2m 30s", type: "compound", muscle: "Quads" },
+      { id: "B", name: "DB Bulgarian Split Squat", sets: 2, reps: "8–10", rest: "1m", type: "compound", muscle: "Quads" },
+      { id: "C", name: "Lat Pulldown (Carnelli)", sets: 3, reps: "10–12", rest: "1m", type: "compound", muscle: "Back" },
+      { id: "D", name: "Cable Row (Carnelli low pulley)", sets: 3, reps: "10–12", rest: "1m", type: "compound", muscle: "Back" },
+      { id: "E", name: "EZ Bar Curl", sets: 4, reps: "10–12", rest: "1m", type: "isolation", muscle: "Biceps" },
+      { id: "F", name: "DB Hammer Curl", sets: 3, reps: "10–12", rest: "1m", type: "isolation", muscle: "Biceps" },
     ],
   },
   7: {
@@ -58,15 +60,19 @@ const PROGRAM = {
     tag: "PUSH",
     color: "#f43f5e",
     exercises: [
-      { id: "A", name: "DB Shoulder Press", sets: 4, reps: "5–8", rest: "2m" },
-      { id: "B", name: "DB Lateral Raise (leaning)", sets: 4, reps: "10–15", rest: "1m" },
-      { id: "C", name: "Incline Barbell Press (rack + bench)", sets: 3, reps: "8–12", rest: "1m" },
-      { id: "D", name: "Reverse DB Rear Delt Fly", sets: 3, reps: "12–15", rest: "1m" },
-      { id: "E", name: "Weighted Dips (belt or DB between legs)", sets: 3, reps: "10–12", rest: "1m" },
-      { id: "F", name: "Tricep Pushdown EZ Bar (cable machine)", sets: 3, reps: "12–15", rest: "1m" },
+      { id: "A", name: "DB Shoulder Press", sets: 4, reps: "5–8", rest: "2m", type: "compound", muscle: "Shoulders" },
+      { id: "B", name: "DB Lateral Raise (leaning)", sets: 4, reps: "10–15", rest: "1m", type: "isolation", muscle: "Shoulders" },
+      { id: "C", name: "Incline Barbell Press (rack + bench)", sets: 3, reps: "8–12", rest: "1m", type: "compound", muscle: "Chest" },
+      { id: "D", name: "Reverse DB Rear Delt Fly", sets: 3, reps: "12–15", rest: "1m", type: "isolation", muscle: "Shoulders" },
+      { id: "E", name: "Weighted Dips (belt or DB between legs)", sets: 3, reps: "10–12", rest: "1m", type: "compound", muscle: "Chest" },
+      { id: "F", name: "Tricep Pushdown EZ Bar (cable machine)", sets: 3, reps: "12–15", rest: "1m", type: "isolation", muscle: "Triceps" },
     ],
   },
 };
+
+// Mesocycle config — RP-style 5-week block then deload
+const MESO_LENGTH = 5; // weeks before deload
+const MESO_START = "2026-05-07"; // week 1 anchor (first logged session)
 
 // ── HELPERS ──────────────────────────────────────────────────────────────────
 function todayStr() {
@@ -223,25 +229,25 @@ async function saveWeights(weights) {
 
 // ── CSV EXPORT ────────────────────────────────────────────────────────────────
 function buildCSV(entries, weights) {
-  const rows = [["TYPE","DATE","PROGRAM_DAY","WORKOUT_TITLE","EXERCISE","SET","WEIGHT_KG","REPS","SESSION_NOTE","MOVEMENT_NOTE"]];
+  const rows = [["TYPE","DATE","PROGRAM_DAY","WORKOUT_TITLE","EXERCISE","SET","WEIGHT_KG","REPS","RIR","SESSION_NOTE","MOVEMENT_NOTE"]];
   for (const e of [...entries].sort((a,b) => a.date.localeCompare(b.date))) {
     if (!e.movements || e.movements.length === 0) {
-      rows.push(["WORKOUT", e.date, e.programDay ?? "", e.customTitle, "", "", "", "", csvEsc(e.note), ""]);
+      rows.push(["WORKOUT", e.date, e.programDay ?? "", e.customTitle, "", "", "", "", "", csvEsc(e.note), ""]);
       continue;
     }
     for (const mv of e.movements) {
       if (!mv.sets || mv.sets.length === 0) {
-        rows.push(["WORKOUT", e.date, e.programDay ?? "", e.customTitle, mv.name, "", "", "", csvEsc(e.note), csvEsc(mv.note)]);
+        rows.push(["WORKOUT", e.date, e.programDay ?? "", e.customTitle, mv.name, "", "", "", "", csvEsc(e.note), csvEsc(mv.note)]);
         continue;
       }
       for (let i = 0; i < mv.sets.length; i++) {
         const s = mv.sets[i];
-        rows.push(["WORKOUT", e.date, e.programDay ?? "", e.customTitle, mv.name, i + 1, s.w ?? "", s.r ?? "", i === 0 ? csvEsc(e.note) : "", i === 0 ? csvEsc(mv.note) : ""]);
+        rows.push(["WORKOUT", e.date, e.programDay ?? "", e.customTitle, mv.name, i + 1, s.w ?? "", s.r ?? "", s.rir ?? "", i === 0 ? csvEsc(e.note) : "", i === 0 ? csvEsc(mv.note) : ""]);
       }
     }
   }
   for (const w of [...weights].sort((a,b) => a.date.localeCompare(b.date))) {
-    rows.push(["BODY_WEIGHT", w.date, "", "", "", "", w.weight, w.unit, csvEsc(w.note ?? ""), ""]);
+    rows.push(["BODY_WEIGHT", w.date, "", "", "", "", w.weight, w.unit, "", csvEsc(w.note ?? ""), ""]);
   }
   return rows.map(r => r.map(v => String(v ?? "")).join(",")).join("\n");
 }
@@ -291,6 +297,88 @@ function getLastSession(entries, programDay) {
   return [...entries]
     .filter(e => e.programDay === programDay)
     .sort((a, b) => b.date.localeCompare(a.date))[0] ?? null;
+}
+
+// ── RIR FEEDBACK (movement-type aware) ────────────────────────────────────────
+// Compounds: leave 1–2 in the tank. Isolation: failure OK on the last set.
+function rirFeedback(rir, type, isLastSet) {
+  if (rir === "" || rir === null || rir === undefined) return null;
+  const r = parseInt(rir);
+  if (isNaN(r)) return null;
+  if (type === "compound") {
+    if (r === 0) return { color: "#f97316", msg: "⚠ Leave 1–2 in tank on compounds" };
+    if (r <= 2) return { color: "#4ade80", msg: "✓ Ideal effort" };
+    return { color: "#60a5fa", msg: "↑ Push a bit harder" };
+  } else {
+    // isolation
+    if (isLastSet) {
+      if (r <= 1) return { color: "#4ade80", msg: "✓ Failure earned here" };
+      return { color: "#fbbf24", msg: "↑ Push closer to failure" };
+    }
+    if (r <= 2) return { color: "#4ade80", msg: "✓ Good effort" };
+    return { color: "#60a5fa", msg: "↑ A little harder" };
+  }
+}
+
+// ── WEEKLY VOLUME PER MUSCLE ──────────────────────────────────────────────────
+// RP-style volume landmarks (sets/muscle/week): MEV → MAV → MRV
+const VOLUME_LANDMARKS = {
+  Chest:     { mev: 10, mav: 18, mrv: 22 },
+  Back:      { mev: 10, mav: 20, mrv: 25 },
+  Quads:     { mev: 8,  mav: 16, mrv: 20 },
+  Hamstrings:{ mev: 6,  mav: 14, mrv: 18 },
+  Glutes:    { mev: 6,  mav: 14, mrv: 18 },
+  Shoulders: { mev: 8,  mav: 18, mrv: 26 },
+  Biceps:    { mev: 8,  mav: 16, mrv: 20 },
+  Triceps:   { mev: 8,  mav: 16, mrv: 20 },
+  Calves:    { mev: 8,  mav: 16, mrv: 20 },
+};
+function weekStart(dateStr) {
+  // Monday-start week key
+  const d = new Date(dateStr + "T12:00:00");
+  const day = (d.getDay() + 6) % 7; // 0 = Monday
+  d.setDate(d.getDate() - day);
+  return d.toISOString().slice(0, 10);
+}
+function weeklyVolume(entries, weekKey) {
+  // Counts working sets (reps logged) per muscle for the given week
+  const vol = {};
+  for (const e of entries) {
+    if (weekStart(e.date) !== weekKey) continue;
+    for (const mv of e.movements) {
+      // Use stored muscle, or look it up from PROGRAM via programDay + programRef
+      let muscle = mv.muscle;
+      if (!muscle && e.programDay && mv.programRef) {
+        const progEx = PROGRAM[e.programDay]?.exercises.find(x => x.id === mv.programRef);
+        muscle = progEx?.muscle;
+      }
+      if (!muscle) continue;
+      const workingSets = mv.sets.filter(s => s.r && String(s.r).trim() !== "").length;
+      vol[muscle] = (vol[muscle] || 0) + workingSets;
+    }
+  }
+  return vol;
+}
+function volumeStatus(sets, muscle) {
+  const lm = VOLUME_LANDMARKS[muscle];
+  if (!lm) return { label: "—", color: "#6b7280" };
+  if (sets < lm.mev) return { label: "below MEV", color: "#60a5fa" };
+  if (sets <= lm.mav) return { label: "productive", color: "#4ade80" };
+  if (sets <= lm.mrv) return { label: "high", color: "#fbbf24" };
+  return { label: "over MRV", color: "#f87171" };
+}
+
+// ── MESOCYCLE ─────────────────────────────────────────────────────────────────
+function mesocycleWeek(entries) {
+  // Determine current week number from earliest session date
+  const dated = entries.filter(e => e.movements.length > 0).map(e => e.date).sort();
+  const anchor = dated[0] ?? MESO_START;
+  const a = new Date(anchor + "T12:00:00");
+  const now = new Date();
+  const diffWeeks = Math.floor((now - a) / (7 * 24 * 60 * 60 * 1000));
+  const weekInMeso = (diffWeeks % MESO_LENGTH) + 1;
+  const isDeload = weekInMeso === MESO_LENGTH;
+  return { week: weekInMeso, total: MESO_LENGTH, isDeload, cycle: Math.floor(diffWeeks / MESO_LENGTH) + 1 };
 }
 
 // ── MAIN APP ──────────────────────────────────────────────────────────────────
@@ -461,6 +549,7 @@ export default function App() {
         const seeded = Array.from({ length: ex.sets }, (_, i) => ({
           w: lastSets[i]?.w ?? "",
           r: lastSets[i]?.r ?? "",
+          rir: "",
         }));
         return {
           ...newMovement(ex.name),
@@ -469,6 +558,8 @@ export default function App() {
           setsTarget: ex.sets,
           repsTarget: ex.reps,
           rest: ex.rest,
+          type: ex.type ?? "compound",
+          muscle: ex.muscle ?? "",
           sets: seeded,
           lastSets: lastSets.length > 0 ? lastSets : null,
           lastDate: last?.date ?? null,
@@ -509,7 +600,7 @@ export default function App() {
   function addSet(entryId, mvId) {
     mutate(prev => prev.map(e => e.id === entryId
       ? { ...e, movements: e.movements.map(m => m.id === mvId
-          ? { ...m, sets: [...m.sets, { w: m.sets.at(-1)?.w ?? "", r: "" }] }
+          ? { ...m, sets: [...m.sets, { w: m.sets.at(-1)?.w ?? "", r: "", rir: "" }] }
           : m) }
       : e));
   }
@@ -597,7 +688,7 @@ export default function App() {
           const mins = Math.floor(remaining / 60), secs = remaining % 60;
           const timeStr = mins > 0 ? `${mins}:${String(secs).padStart(2,"0")}` : `${secs}s`;
           return (
-            <div style={{ position: "sticky", top: 0, zIndex: 20, margin: "0 0 4px", padding: "10px 18px", background: done ? "#0a1f0a" : "#0a0f0d", borderBottom: `2px solid ${done ? color + "88" : color + "44"}`, display: "flex", alignItems: "center", gap: 14 }}>
+            <div style={{ position: "sticky", top: 0, zIndex: 20, margin: "0 0 4px", padding: "10px 18px", background: done ? "#0a1f0a" : "#0e1116", borderBottom: `2px solid ${done ? color + "88" : color + "44"}`, display: "flex", alignItems: "center", gap: 14 }}>
               <div style={{ position: "relative", width: 44, height: 44, flexShrink: 0 }}>
                 <svg width="44" height="44" style={{ transform: "rotate(-90deg)" }}>
                   <circle cx="22" cy="22" r={R} fill="none" stroke="#1f2937" strokeWidth="3" />
@@ -617,7 +708,7 @@ export default function App() {
                   {!done && running && <button onClick={pauseTimer} style={{ ...btnStyle("#1f2937", "#9ca3af"), padding: "4px 10px", fontSize: 11 }}>⏸</button>}
                   {!done && !running && <button onClick={resumeTimer} style={{ ...btnStyle(color + "22", color), padding: "4px 10px", fontSize: 11 }}>▶</button>}
                   <button onClick={() => resetTimer(90)} style={{ ...btnStyle("#1f2937", "#6b7280"), padding: "4px 10px", fontSize: 11 }}>↺</button>
-                  {done && <button onClick={dismissTimer} style={{ ...btnStyle(color, "#0a0f0d"), padding: "4px 14px", fontSize: 12, fontWeight: 800 }}>Dismiss</button>}
+                  {done && <button onClick={dismissTimer} style={{ ...btnStyle(color, "#0e1116"), padding: "4px 14px", fontSize: 12, fontWeight: 800 }}>Dismiss</button>}
                 </div>
               </div>
             </div>
@@ -679,7 +770,7 @@ export default function App() {
                 dismissStopwatch();
                 if (nextMv) { setActiveMvId(nextMv.id); setTimerState(null); }
                 else setView("entry");
-              }} style={{ ...btnStyle("#fbbf24", "#0a0f0d"), padding: "8px 16px", fontWeight: 800 }}>
+              }} style={{ ...btnStyle("#fbbf24", "#0e1116"), padding: "8px 16px", fontWeight: 800 }}>
                 Next: {nextMv?.name?.split(" ")[0] || "Done"} →
               </button>
             </div>
@@ -694,8 +785,10 @@ export default function App() {
             <div key={i}>
               <SetRow
                 num={i + 1}
-                weight={s.w} reps={s.r}
+                weight={s.w} reps={s.r} rir={s.rir ?? ""}
                 repsTarget={activeMv.repsTarget ?? null}
+                type={activeMv.type ?? (activeEntry.programDay && activeMv.programRef ? (PROGRAM[activeEntry.programDay]?.exercises.find(x => x.id === activeMv.programRef)?.type ?? "compound") : "compound")}
+                isLastSet={i === activeMv.sets.length - 1}
                 done={setDone}
                 color={color}
                 onW={v => updateSet(activeEntry.id, activeMv.id, i, "w", v)}
@@ -705,6 +798,7 @@ export default function App() {
                     startTimer(i, restSecs);
                   }
                 }}
+                onRIR={v => updateSet(activeEntry.id, activeMv.id, i, "rir", v)}
                 onDelete={activeMv.sets.length > 1 ? () => removeSet(activeEntry.id, activeMv.id, i) : null}
                 onDone={() => {
                   const ts = s.done ? null : new Date().toISOString();
@@ -764,7 +858,7 @@ export default function App() {
                 background: isLast
                   ? "linear-gradient(135deg, #4ade80, #22c55e)"
                   : `linear-gradient(135deg, ${color}, ${color}cc)`,
-                border: "none", color: "#0a0f0d",
+                border: "none", color: "#0e1116",
                 fontSize: 15, fontWeight: 900, cursor: "pointer",
                 fontFamily: "monospace", letterSpacing: 1,
                 boxShadow: `0 4px 24px ${color}33`,
@@ -914,7 +1008,7 @@ export default function App() {
               }} style={{
                 width: "100%", padding: "18px", borderRadius: 16,
                 background: "linear-gradient(135deg, #4ade80, #22c55e)",
-                border: "none", color: "#0a0f0d",
+                border: "none", color: "#0e1116",
                 fontSize: 16, fontWeight: 900, cursor: "pointer",
                 fontFamily: "monospace", letterSpacing: 1,
                 boxShadow: "0 4px 24px #4ade8033",
@@ -924,6 +1018,59 @@ export default function App() {
             )}
           </div>
         )}
+      </Shell>
+    );
+  }
+
+  // ── VOLUME TAB ───────────────────────────────────────────────────────────
+  if (tab === "volume") {
+    const thisWeek = weekStart(todayStr());
+    const vol = weeklyVolume(entries, thisWeek);
+    const allMuscles = Object.keys(VOLUME_LANDMARKS);
+    const weekLabel = new Date(thisWeek + "T12:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" });
+    return (
+      <Shell>
+        <div style={{ padding: "52px 18px 20px", background: "linear-gradient(160deg,#0e1116 0%,#0f1a12 100%)" }}>
+          <div style={{ fontSize: 11, letterSpacing: 3, color: "#374151", textTransform: "uppercase", fontFamily: "monospace", marginBottom: 4 }}>Weekly Sets Per Muscle</div>
+          <div style={{ fontSize: 30, fontWeight: 900, color: "#f9fafb", lineHeight: 1, fontFamily: "'DM Sans', -apple-system, sans-serif", letterSpacing: -0.5 }}>Volume</div>
+          <div style={{ fontSize: 13, color: "#4b5563", marginTop: 6, fontFamily: "monospace" }}>Week of {weekLabel} · resets Monday</div>
+        </div>
+        <div style={{ padding: "12px 18px 100px" }}>
+          {allMuscles.map(muscle => {
+            const sets = vol[muscle] || 0;
+            const lm = VOLUME_LANDMARKS[muscle];
+            const status = volumeStatus(sets, muscle);
+            const pct = Math.min(100, (sets / lm.mrv) * 100);
+            const mevPct = (lm.mev / lm.mrv) * 100;
+            const mavPct = (lm.mav / lm.mrv) * 100;
+            return (
+              <div key={muscle} style={{ marginBottom: 14, padding: "14px 16px", borderRadius: 14, background: "#0d1117", border: "1.5px solid #1f2937" }}>
+                <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 10 }}>
+                  <div style={{ fontSize: 15, fontWeight: 800, color: "#f9fafb" }}>{muscle}</div>
+                  <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
+                    <span style={{ fontSize: 22, fontWeight: 900, color: status.color, fontFamily: "monospace" }}>{sets}</span>
+                    <span style={{ fontSize: 11, color: "#4b5563", fontFamily: "monospace" }}>sets · {status.label}</span>
+                  </div>
+                </div>
+                {/* Volume bar with MEV/MAV/MRV markers */}
+                <div style={{ position: "relative", height: 10, borderRadius: 5, background: "#1f2937", overflow: "hidden" }}>
+                  <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: `${pct}%`, background: status.color, borderRadius: 5, transition: "width 0.3s" }} />
+                  <div style={{ position: "absolute", left: `${mevPct}%`, top: 0, bottom: 0, width: 1.5, background: "#6b7280" }} />
+                  <div style={{ position: "absolute", left: `${mavPct}%`, top: 0, bottom: 0, width: 1.5, background: "#6b7280" }} />
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between", marginTop: 4, fontSize: 9, color: "#374151", fontFamily: "monospace" }}>
+                  <span>MEV {lm.mev}</span>
+                  <span>MAV {lm.mav}</span>
+                  <span>MRV {lm.mrv}</span>
+                </div>
+              </div>
+            );
+          })}
+          <div style={{ padding: "8px 4px", fontSize: 11, color: "#4b5563", fontFamily: "monospace", lineHeight: 1.6 }}>
+            MEV = minimum effective volume · MAV = max adaptive (the productive zone) · MRV = max recoverable. Stay in the green band for growth; back off if you're over MRV repeatedly.
+          </div>
+        </div>
+        <BottomNav tab={tab} setTab={setTab} />
       </Shell>
     );
   }
@@ -959,9 +1106,9 @@ export default function App() {
 
     return (
       <Shell>
-        <div style={{ padding: "52px 18px 20px", background: "linear-gradient(160deg,#0a0f0d 0%,#0f1a12 100%)" }}>
+        <div style={{ padding: "52px 18px 20px", background: "linear-gradient(160deg,#0e1116 0%,#0f1a12 100%)" }}>
           <div style={{ fontSize: 11, letterSpacing: 3, color: "#374151", textTransform: "uppercase", fontFamily: "monospace", marginBottom: 4 }}>Backup & History</div>
-          <div style={{ fontSize: 30, fontWeight: 900, color: "#f9fafb", lineHeight: 1, fontFamily: "'Georgia', serif", fontStyle: "italic" }}>Data</div>
+          <div style={{ fontSize: 30, fontWeight: 900, color: "#f9fafb", lineHeight: 1, fontFamily: "'DM Sans', -apple-system, sans-serif", letterSpacing: -0.5 }}>Data</div>
           <div style={{ display: "flex", gap: 20, marginTop: 10 }}>
             <div><div style={{ fontSize: 22, fontWeight: 900, color: "#4ade80", fontFamily: "monospace" }}>{totalSessions}</div><div style={{ fontSize: 10, color: "#4b5563", letterSpacing: 1, textTransform: "uppercase", fontFamily: "monospace" }}>Sessions</div></div>
             <div><div style={{ fontSize: 22, fontWeight: 900, color: "#60a5fa", fontFamily: "monospace" }}>{totalSets}</div><div style={{ fontSize: 10, color: "#4b5563", letterSpacing: 1, textTransform: "uppercase", fontFamily: "monospace" }}>Sets Logged</div></div>
@@ -997,10 +1144,10 @@ export default function App() {
         <div style={{ padding: "8px 18px 4px" }}>
           <div style={{ fontSize: 11, letterSpacing: 2, color: "#374151", textTransform: "uppercase", fontFamily: "monospace", fontWeight: 700, marginBottom: 8 }}>Session History · {filtered.length} shown</div>
           <div style={{ display: "flex", gap: 6, overflowX: "auto", paddingBottom: 4, scrollbarWidth: "none" }}>
-            <button onClick={() => setFilterDay(null)} style={{ flexShrink: 0, padding: "5px 12px", borderRadius: 8, border: "none", cursor: "pointer", fontFamily: "monospace", fontSize: 11, fontWeight: 700, background: filterDay === null ? "#4ade80" : "#1f2937", color: filterDay === null ? "#0a0f0d" : "#6b7280" }}>All</button>
+            <button onClick={() => setFilterDay(null)} style={{ flexShrink: 0, padding: "5px 12px", borderRadius: 8, border: "none", cursor: "pointer", fontFamily: "monospace", fontSize: 11, fontWeight: 700, background: filterDay === null ? "#4ade80" : "#1f2937", color: filterDay === null ? "#0e1116" : "#6b7280" }}>All</button>
             {Object.entries(PROGRAM).filter(([,d]) => d.exercises.length > 0).map(([dn, d]) => (
               <button key={dn} onClick={() => setFilterDay(filterDay === Number(dn) ? null : Number(dn))}
-                style={{ flexShrink: 0, padding: "5px 12px", borderRadius: 8, border: "none", cursor: "pointer", fontFamily: "monospace", fontSize: 11, fontWeight: 700, background: filterDay === Number(dn) ? d.color : "#1f2937", color: filterDay === Number(dn) ? "#0a0f0d" : d.color }}>
+                style={{ flexShrink: 0, padding: "5px 12px", borderRadius: 8, border: "none", cursor: "pointer", fontFamily: "monospace", fontSize: 11, fontWeight: 700, background: filterDay === Number(dn) ? d.color : "#1f2937", color: filterDay === Number(dn) ? "#0e1116" : d.color }}>
                 Day {dn}
               </button>
             ))}
@@ -1094,9 +1241,9 @@ export default function App() {
     const CHART_H = 140, CHART_W = 340;
     return (
       <Shell>
-        <div style={{ padding: "52px 18px 16px", background: "linear-gradient(160deg,#0a0f0d 0%,#0f1a12 100%)" }}>
+        <div style={{ padding: "52px 18px 16px", background: "linear-gradient(160deg,#0e1116 0%,#0f1a12 100%)" }}>
           <div style={{ fontSize: 11, letterSpacing: 3, color: "#374151", textTransform: "uppercase", fontFamily: "monospace", marginBottom: 4 }}>Body Weight</div>
-          <div style={{ fontSize: 30, fontWeight: 900, color: "#f9fafb", lineHeight: 1, fontFamily: "'Georgia', serif", fontStyle: "italic" }}>Weight Tracker</div>
+          <div style={{ fontSize: 30, fontWeight: 900, color: "#f9fafb", lineHeight: 1, fontFamily: "'DM Sans', -apple-system, sans-serif", letterSpacing: -0.5 }}>Weight Tracker</div>
           {latest && (
             <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginTop: 8 }}>
               <span style={{ fontSize: 36, fontWeight: 900, color: "#4ade80", fontFamily: "monospace" }}>{latest.weight}</span>
@@ -1148,7 +1295,7 @@ export default function App() {
         )}
         <div style={{ padding: "14px 18px 4px" }}>
           <button onClick={() => { setWeightDate(todayStr()); setWeightInput(""); setShowWeightForm(true); }}
-            style={{ width: "100%", padding: "14px", borderRadius: 14, background: "#4ade80", border: "none", color: "#0a0f0d", fontSize: 15, fontWeight: 800, cursor: "pointer", fontFamily: "monospace" }}>
+            style={{ width: "100%", padding: "14px", borderRadius: 14, background: "#4ade80", border: "none", color: "#0e1116", fontSize: 15, fontWeight: 800, cursor: "pointer", fontFamily: "monospace" }}>
             + LOG WEIGHT
           </button>
         </div>
@@ -1202,14 +1349,14 @@ export default function App() {
                   <label style={labelStyle}>Weight</label>
                   <div style={{ display: "flex", gap: 6 }}>
                     {["lbs", "kg"].map(u => (
-                      <button key={u} onClick={() => setWeightUnit(u)} style={{ padding: "4px 12px", borderRadius: 8, border: "none", cursor: "pointer", fontFamily: "monospace", fontSize: 12, fontWeight: 700, background: weightUnit === u ? "#4ade80" : "#1f2937", color: weightUnit === u ? "#0a0f0d" : "#6b7280" }}>{u}</button>
+                      <button key={u} onClick={() => setWeightUnit(u)} style={{ padding: "4px 12px", borderRadius: 8, border: "none", cursor: "pointer", fontFamily: "monospace", fontSize: 12, fontWeight: 700, background: weightUnit === u ? "#4ade80" : "#1f2937", color: weightUnit === u ? "#0e1116" : "#6b7280" }}>{u}</button>
                     ))}
                   </div>
                 </div>
                 <input type="number" inputMode="decimal" style={{ ...modalInput, fontSize: 28, fontWeight: 900, textAlign: "center", padding: "14px" }}
                   value={weightInput} onChange={e => setWeightInput(e.target.value)} placeholder="0.0" autoFocus />
               </div>
-              <button onClick={addWeight} style={{ width: "100%", padding: "15px", borderRadius: 14, background: "#4ade80", border: "none", color: "#0a0f0d", fontSize: 15, fontWeight: 800, cursor: "pointer", fontFamily: "monospace" }}>
+              <button onClick={addWeight} style={{ width: "100%", padding: "15px", borderRadius: 14, background: "#4ade80", border: "none", color: "#0e1116", fontSize: 15, fontWeight: 800, cursor: "pointer", fontFamily: "monospace" }}>
                 SAVE →
               </button>
             </div>
@@ -1223,9 +1370,9 @@ export default function App() {
   // ── JOURNAL HOME ──────────────────────────────────────────────────────────
   return (
     <Shell>
-      <div style={{ padding: "52px 18px 20px", background: "linear-gradient(160deg,#0a0f0d 0%,#0f1a12 100%)" }}>
+      <div style={{ padding: "52px 18px 20px", background: "linear-gradient(160deg,#0e1116 0%,#0f1a12 100%)" }}>
         <div style={{ fontSize: 11, letterSpacing: 3, color: "#374151", textTransform: "uppercase", fontFamily: "monospace", marginBottom: 4 }}>Training Journal</div>
-        <div style={{ fontSize: 30, fontWeight: 900, color: "#f9fafb", lineHeight: 1, fontFamily: "'Georgia', serif", fontStyle: "italic" }}>My Workouts</div>
+        <div style={{ fontSize: 30, fontWeight: 900, color: "#f9fafb", lineHeight: 1, fontFamily: "'DM Sans', -apple-system, sans-serif", letterSpacing: -0.5 }}>My Workouts</div>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 6 }}>
           <div style={{ fontSize: 13, color: "#4b5563" }}>{entries.length} session{entries.length !== 1 ? "s" : ""} logged</div>
           <button onClick={() => setTab("data")}
@@ -1235,8 +1382,42 @@ export default function App() {
         </div>
       </div>
 
-      <div style={{ padding: "12px 0 4px" }}>
-        <div style={{ fontSize: 11, letterSpacing: 2, color: "#374151", textTransform: "uppercase", fontFamily: "monospace", padding: "0 18px", marginBottom: 8 }}>Program Days</div>
+      {/* Mesocycle banner */}
+      {(() => {
+        const meso = mesocycleWeek(entries);
+        const dimColor = meso.isDeload ? "#fbbf24" : "#4ade80";
+        return (
+          <div style={{ margin: "12px 18px 4px", padding: "14px 16px", borderRadius: 14, background: meso.isDeload ? "#1a1200" : "#0d1117", border: `1.5px solid ${meso.isDeload ? "#fbbf2444" : "#1f2937"}` }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+              <div style={{ fontSize: 11, letterSpacing: 2, color: dimColor, textTransform: "uppercase", fontFamily: "monospace", fontWeight: 700 }}>
+                Mesocycle {meso.cycle} · Week {meso.week} of {meso.total}
+              </div>
+              <div style={{ fontSize: 11, color: "#4b5563", fontFamily: "monospace" }}>{meso.isDeload ? "DELOAD" : "ACCUMULATION"}</div>
+            </div>
+            <div style={{ display: "flex", gap: 5 }}>
+              {Array.from({ length: meso.total }, (_, i) => {
+                const wk = i + 1;
+                const isCurrent = wk === meso.week;
+                const isDeloadWk = wk === meso.total;
+                return (
+                  <div key={i} style={{ flex: 1, height: 6, borderRadius: 3, background: isCurrent ? (isDeloadWk ? "#fbbf24" : "#4ade80") : wk < meso.week ? "#1f3a28" : "#1f2937" }} />
+                );
+              })}
+            </div>
+            {meso.isDeload && (
+              <div style={{ fontSize: 12, color: "#fbbf24", fontFamily: "monospace", marginTop: 8 }}>
+                ⚠ Deload week — drop volume ~50%, keep weights, leave 3–4 RIR
+              </div>
+            )}
+            {!meso.isDeload && meso.week >= 3 && (
+              <div style={{ fontSize: 12, color: "#6b7280", fontFamily: "monospace", marginTop: 8 }}>
+                Add a set to lagging muscles this week · deload in {meso.total - meso.week} wk{meso.total - meso.week !== 1 ? "s" : ""}
+              </div>
+            )}
+          </div>
+        );
+      })()}
+
         <div style={{ display: "flex", gap: 8, overflowX: "auto", padding: "2px 18px 8px", scrollbarWidth: "none" }}>
           {Object.entries(PROGRAM).map(([dn, d]) => (
             <div key={dn} style={{ flexShrink: 0, padding: "8px 12px", borderRadius: 12, background: "#111827", border: `1.5px solid ${d.color}33`, cursor: "pointer", minWidth: 60, textAlign: "center" }}
@@ -1250,7 +1431,7 @@ export default function App() {
 
       <div style={{ padding: "4px 18px 8px" }}>
         <button onClick={() => { setNewProgramDay(null); setNewDate(todayStr()); setShowNewModal(true); }}
-          style={{ width: "100%", padding: "14px", borderRadius: 14, background: "#4ade80", border: "none", color: "#0a0f0d", fontSize: 15, fontWeight: 800, cursor: "pointer", fontFamily: "monospace", letterSpacing: 1 }}>
+          style={{ width: "100%", padding: "14px", borderRadius: 14, background: "#4ade80", border: "none", color: "#0e1116", fontSize: 15, fontWeight: 800, cursor: "pointer", fontFamily: "monospace", letterSpacing: 1 }}>
           + LOG TODAY'S SESSION
         </button>
       </div>
@@ -1335,9 +1516,9 @@ export default function App() {
             <div style={{ marginBottom: 18 }}>
               <label style={labelStyle}>Program Day (optional)</label>
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 6 }}>
-                <div onClick={() => setNewProgramDay(null)} style={{ padding: "7px 14px", borderRadius: 10, cursor: "pointer", fontSize: 13, fontWeight: 700, fontFamily: "monospace", background: newProgramDay === null ? "#4ade80" : "#111827", color: newProgramDay === null ? "#0a0f0d" : "#6b7280", border: `1.5px solid ${newProgramDay === null ? "#4ade80" : "#1f2937"}` }}>Custom</div>
+                <div onClick={() => setNewProgramDay(null)} style={{ padding: "7px 14px", borderRadius: 10, cursor: "pointer", fontSize: 13, fontWeight: 700, fontFamily: "monospace", background: newProgramDay === null ? "#4ade80" : "#111827", color: newProgramDay === null ? "#0e1116" : "#6b7280", border: `1.5px solid ${newProgramDay === null ? "#4ade80" : "#1f2937"}` }}>Custom</div>
                 {Object.entries(PROGRAM).map(([dn, d]) => (
-                  <div key={dn} onClick={() => setNewProgramDay(Number(dn))} style={{ padding: "7px 14px", borderRadius: 10, cursor: "pointer", fontSize: 13, fontWeight: 700, fontFamily: "monospace", background: newProgramDay === Number(dn) ? d.color : "#111827", color: newProgramDay === Number(dn) ? "#0a0f0d" : d.color, border: `1.5px solid ${newProgramDay === Number(dn) ? d.color : d.color + "33"}` }}>Day {dn}</div>
+                  <div key={dn} onClick={() => setNewProgramDay(Number(dn))} style={{ padding: "7px 14px", borderRadius: 10, cursor: "pointer", fontSize: 13, fontWeight: 700, fontFamily: "monospace", background: newProgramDay === Number(dn) ? d.color : "#111827", color: newProgramDay === Number(dn) ? "#0e1116" : d.color, border: `1.5px solid ${newProgramDay === Number(dn) ? d.color : d.color + "33"}` }}>Day {dn}</div>
                 ))}
               </div>
               {newProgramDay && (() => {
@@ -1354,7 +1535,7 @@ export default function App() {
                 );
               })()}
             </div>
-            <button onClick={createEntry} style={{ width: "100%", padding: "15px", borderRadius: 14, background: "#4ade80", border: "none", color: "#0a0f0d", fontSize: 15, fontWeight: 800, cursor: "pointer", fontFamily: "monospace" }}>
+            <button onClick={createEntry} style={{ width: "100%", padding: "15px", borderRadius: 14, background: "#4ade80", border: "none", color: "#0e1116", fontSize: 15, fontWeight: 800, cursor: "pointer", fontFamily: "monospace" }}>
               CREATE SESSION →
             </button>
           </div>
@@ -1378,7 +1559,7 @@ function RestTimer({ restSecs, restLabel, color, timerState, onStart, onPause, o
   const mins = Math.floor(remaining / 60), secs = remaining % 60;
   const timeStr = mins > 0 ? `${mins}:${String(secs).padStart(2, "0")}` : `${secs}s`;
   return (
-    <div style={{ margin: "2px 18px 8px", padding: "10px 14px", borderRadius: 14, background: done ? "#0a1f0a" : "#0a0f0d", border: `1px solid ${done ? color + "66" : "#1f2937"}`, display: "flex", alignItems: "center", gap: 12, transition: "background 0.3s, border-color 0.3s" }}>
+    <div style={{ margin: "2px 18px 8px", padding: "10px 14px", borderRadius: 14, background: done ? "#0a1f0a" : "#0e1116", border: `1px solid ${done ? color + "66" : "#1f2937"}`, display: "flex", alignItems: "center", gap: 12, transition: "background 0.3s, border-color 0.3s" }}>
       <div style={{ position: "relative", width: 52, height: 52, flexShrink: 0 }}>
         <svg width="52" height="52" style={{ transform: "rotate(-90deg)" }}>
           <circle cx="26" cy="26" r={R} fill="none" stroke="#1f2937" strokeWidth="3" />
@@ -1404,10 +1585,10 @@ function RestTimer({ restSecs, restLabel, color, timerState, onStart, onPause, o
   );
 }
 function timerBtn(bg, bright) {
-  return { padding: "5px 12px", borderRadius: 8, border: "none", cursor: "pointer", background: bg, color: bright ? "#0a0f0d" : "#9ca3af", fontSize: 12, fontWeight: 700, fontFamily: "monospace" };
+  return { padding: "5px 12px", borderRadius: 8, border: "none", cursor: "pointer", background: bg, color: bright ? "#0e1116" : "#9ca3af", fontSize: 12, fontWeight: 700, fontFamily: "monospace" };
 }
 function BottomNav({ tab, setTab }) {
-  const tabs = [{ id: "journal", label: "Journal", icon: "📋" }, { id: "weight", label: "Weight", icon: "⚖️" }, { id: "data", label: "Data", icon: "🗄️" }];
+  const tabs = [{ id: "journal", label: "Journal", icon: "📋" }, { id: "volume", label: "Volume", icon: "📊" }, { id: "weight", label: "Weight", icon: "⚖️" }, { id: "data", label: "Data", icon: "🗄️" }];
   return (
     <div style={{ position: "fixed", bottom: 0, left: "50%", transform: "translateX(-50%)", width: "100%", maxWidth: 430, background: "#0d1117", borderTop: "1px solid #1f2937", display: "flex", padding: "8px 0 24px", zIndex: 50 }}>
       {tabs.map(t => (
@@ -1421,7 +1602,7 @@ function BottomNav({ tab, setTab }) {
   );
 }
 function Shell({ children }) {
-  return <div style={{ background: "#080c0a", minHeight: "100vh", color: "#f9fafb", fontFamily: "'DM Sans', 'Helvetica Neue', sans-serif", maxWidth: 430, margin: "0 auto", overflowX: "hidden" }}>{children}</div>;
+  return <div style={{ background: "#0a0c10", minHeight: "100vh", color: "#f9fafb", fontFamily: "'DM Sans', 'Helvetica Neue', sans-serif", maxWidth: 430, margin: "0 auto", overflowX: "hidden" }}>{children}</div>;
 }
 function TopBar({ left, right }) {
   return <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "52px 18px 8px" }}>{left}{right}</div>;
@@ -1442,8 +1623,8 @@ function GhostBtn({ onClick, children }) {
   return <button onClick={onClick} style={{ display: "block", width: "calc(100% - 36px)", margin: "4px 18px", padding: "13px", borderRadius: 14, background: "transparent", border: "1.5px dashed #1f2937", color: "#374151", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "monospace" }}>{children}</button>;
 }
 
-// CHANGE 2: Fixed rep feedback — below range = go lighter, above = go heavier
-function SetRow({ num, weight, reps, repsTarget, done, color, onW, onR, onDelete, onDone }) {
+// SetRow with weight, reps, RIR selector, and movement-type-aware feedback
+function SetRow({ num, weight, reps, rir, repsTarget, type, isLastSet, done, color, onW, onR, onRIR, onDelete, onDone }) {
   const repRange = (() => {
     if (!repsTarget) return null;
     const m = repsTarget.match(/(\d+)\s*[–\-]\s*(\d+)/);
@@ -1454,34 +1635,59 @@ function SetRow({ num, weight, reps, repsTarget, done, color, onW, onR, onDelete
   })();
   const repVal = parseFloat(reps);
   const inRange = repRange && !isNaN(repVal) && repVal >= repRange.min && repVal <= repRange.max;
-  // FIXED: below range = weight too heavy → go lighter; above range = weight too easy → go heavier
-  const belowRange = repRange && !isNaN(repVal) && repVal < repRange.min;  // couldn't get min reps = too heavy
-  const aboveRange = repRange && !isNaN(repVal) && repVal > repRange.max;  // got more than max = too light
+  const belowRange = repRange && !isNaN(repVal) && repVal < repRange.min;
+  const aboveRange = repRange && !isNaN(repVal) && repVal > repRange.max;
+  const rirFb = rirFeedback(rir, type, isLastSet);
 
   return (
-    <div style={{ margin: "0 18px 4px", padding: "12px 14px", borderRadius: 14, background: done ? "#0a1a10" : "#0d1117", border: `1px solid ${done ? color + "44" : "#1f2937"}`, display: "flex", alignItems: "center", gap: 10, transition: "background 0.2s, border-color 0.2s", opacity: done ? 0.75 : 1 }}>
-      <div style={{ width: 26, height: 26, borderRadius: 7, background: "#111827", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 800, color: "#4b5563", fontFamily: "monospace", flexShrink: 0 }}>{num}</div>
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-        <div style={{ fontSize: 10, letterSpacing: 1.5, color: "#374151", textTransform: "uppercase", fontFamily: "monospace" }}>Weight</div>
-        <input type="number" inputMode="decimal" value={weight} onChange={e => onW(e.target.value)} placeholder="0" style={setInput(color)} />
-        <div style={{ fontSize: 10, color: "#374151", fontFamily: "monospace" }}>kg</div>
-      </div>
-      <div style={{ color: "#1f2937", fontSize: 16, fontWeight: 300 }}>×</div>
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-        <div style={{ fontSize: 10, letterSpacing: 1.5, color: "#374151", textTransform: "uppercase", fontFamily: "monospace" }}>
-          Reps{repRange ? ` ${repRange.min}–${repRange.max}` : ""}
+    <div style={{ margin: "0 18px 4px", padding: "12px 14px", borderRadius: 14, background: done ? "#0a1a10" : "#0d1117", border: `1px solid ${done ? color + "44" : "#1f2937"}`, transition: "background 0.2s, border-color 0.2s", opacity: done ? 0.75 : 1 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <div style={{ width: 26, height: 26, borderRadius: 7, background: "#111827", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 800, color: "#4b5563", fontFamily: "monospace", flexShrink: 0 }}>{num}</div>
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
+          <div style={{ fontSize: 10, letterSpacing: 1.5, color: "#374151", textTransform: "uppercase", fontFamily: "monospace" }}>Weight</div>
+          <input type="number" inputMode="decimal" value={weight} onChange={e => onW(e.target.value)} placeholder="0" style={setInput(color)} />
+          <div style={{ fontSize: 10, color: "#374151", fontFamily: "monospace" }}>kg</div>
         </div>
-        <input type="number" inputMode="numeric" value={reps} onChange={e => onR(e.target.value)}
-          placeholder={repRange ? `${repRange.min}–${repRange.max}` : "0"}
-          style={{ ...setInput(color), borderColor: inRange ? color : belowRange ? "#f97316" : aboveRange ? "#60a5fa" : undefined }} />
-        <div style={{ fontSize: 10, fontFamily: "monospace", fontWeight: 700, color: inRange ? color : belowRange ? "#f97316" : aboveRange ? "#60a5fa" : "#374151" }}>
-          {inRange ? "✓ in range" : belowRange ? "↓ go lighter" : aboveRange ? "↑ go heavier" : "reps"}
+        <div style={{ color: "#1f2937", fontSize: 16, fontWeight: 300 }}>×</div>
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
+          <div style={{ fontSize: 10, letterSpacing: 1.5, color: "#374151", textTransform: "uppercase", fontFamily: "monospace" }}>
+            Reps{repRange ? ` ${repRange.min}–${repRange.max}` : ""}
+          </div>
+          <input type="number" inputMode="numeric" value={reps} onChange={e => onR(e.target.value)}
+            placeholder={repRange ? `${repRange.min}–${repRange.max}` : "0"}
+            style={{ ...setInput(color), borderColor: inRange ? color : belowRange ? "#f97316" : aboveRange ? "#60a5fa" : undefined }} />
+          <div style={{ fontSize: 10, fontFamily: "monospace", fontWeight: 700, color: inRange ? color : belowRange ? "#f97316" : aboveRange ? "#60a5fa" : "#374151" }}>
+            {inRange ? "✓ in range" : belowRange ? "↓ go lighter" : aboveRange ? "↑ go heavier" : "reps"}
+          </div>
         </div>
+        <button onClick={onDone} style={{ width: 44, height: 44, borderRadius: 12, flexShrink: 0, background: done ? color : "#111827", border: `2px solid ${done ? color : "#1f2937"}`, color: done ? "#0e1116" : "#374151", fontSize: done ? 18 : 16, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.15s", fontWeight: 900 }}>✓</button>
+        {onDelete && (
+          <button onClick={onDelete} style={{ width: 28, height: 28, borderRadius: 8, background: "#1a0a0a", border: "1px solid #3b1515", color: "#dc2626", fontSize: 16, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>×</button>
+        )}
       </div>
-      <button onClick={onDone} style={{ width: 44, height: 44, borderRadius: 12, flexShrink: 0, background: done ? color : "#111827", border: `2px solid ${done ? color : "#1f2937"}`, color: done ? "#0a0f0d" : "#374151", fontSize: done ? 18 : 16, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.15s", fontWeight: 900 }}>✓</button>
-      {onDelete && (
-        <button onClick={onDelete} style={{ width: 28, height: 28, borderRadius: 8, background: "#1a0a0a", border: "1px solid #3b1515", color: "#dc2626", fontSize: 16, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>×</button>
-      )}
+      {/* RIR row */}
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 10, paddingTop: 10, borderTop: "1px solid #161d27" }}>
+        <div style={{ fontSize: 10, letterSpacing: 1.5, color: "#4b5563", textTransform: "uppercase", fontFamily: "monospace", flexShrink: 0 }}>RIR</div>
+        <div style={{ display: "flex", gap: 5 }}>
+          {["0", "1", "2", "3", "4"].map(v => {
+            const sel = String(rir) === v;
+            return (
+              <button key={v} onClick={() => onRIR(sel ? "" : v)} style={{
+                width: 30, height: 30, borderRadius: 8, cursor: "pointer",
+                background: sel ? color : "#111827",
+                border: `1.5px solid ${sel ? color : "#1f2937"}`,
+                color: sel ? "#0e1116" : "#6b7280",
+                fontSize: 13, fontWeight: 800, fontFamily: "monospace",
+              }}>{v}</button>
+            );
+          })}
+        </div>
+        {rirFb && (
+          <div style={{ fontSize: 10, fontFamily: "monospace", fontWeight: 700, color: rirFb.color, marginLeft: "auto", textAlign: "right", lineHeight: 1.2 }}>
+            {rirFb.msg}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -1489,7 +1695,7 @@ function SetRow({ num, weight, reps, repsTarget, done, color, onW, onR, onDelete
 function setInput(color) {
   return { width: "100%", background: "#111827", border: `1.5px solid #1f2937`, borderRadius: 10, padding: "8px 6px", fontSize: 20, fontWeight: 800, color: "#f9fafb", textAlign: "center", outline: "none", WebkitAppearance: "none", fontFamily: "monospace" };
 }
-const bigInput = { width: "100%", background: "transparent", border: "none", borderBottom: "1.5px solid #1f2937", padding: "6px 0", fontSize: 22, fontWeight: 800, color: "#f9fafb", outline: "none", fontFamily: "'Georgia', serif", fontStyle: "italic", boxSizing: "border-box" };
+const bigInput = { width: "100%", background: "transparent", border: "none", borderBottom: "1.5px solid #1f2937", padding: "6px 0", fontSize: 22, fontWeight: 800, color: "#f9fafb", outline: "none", fontFamily: "'DM Sans', -apple-system, sans-serif", letterSpacing: -0.5, boxSizing: "border-box" };
 const ghostInput = { width: "100%", background: "transparent", border: "none", padding: "4px 0", outline: "none", fontFamily: "monospace", boxSizing: "border-box", color: "#6b7280" };
 const noteArea = { width: "calc(100% - 36px)", margin: "0 18px", background: "#0d1117", border: "1.5px solid #1f2937", borderRadius: 14, padding: "12px 14px", fontSize: 14, color: "#d1d5db", outline: "none", resize: "none", fontFamily: "'DM Sans', sans-serif", lineHeight: 1.6, boxSizing: "border-box" };
 const modalInput = { width: "100%", background: "#111827", border: "1.5px solid #1f2937", borderRadius: 10, padding: "11px 14px", fontSize: 15, color: "#f9fafb", outline: "none", fontFamily: "monospace", boxSizing: "border-box" };
