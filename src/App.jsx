@@ -1,4 +1,31 @@
 import { useState, useEffect, useRef } from "react";
+import {
+  ClipboardList, BarChart3, Scale, Database, Dumbbell, Timer,
+  Check, X, Plus, ChevronRight, ChevronLeft, RotateCcw, Pause, Play,
+  TrendingUp, Trophy, Moon, Flame, ArrowDown, ArrowUp, Download, Upload, Pencil
+} from "lucide-react";
+
+// ── DESIGN TOKENS ─────────────────────────────────────────────────────────────
+// Typography: clean sans for labels/body, monospace reserved for NUMBERS (data is the hero)
+const SANS = "'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+const MONO = "'DM Mono', 'SF Mono', ui-monospace, monospace";
+// Dark palette — layered surfaces for depth
+const C = {
+  bg: "#0a0a0a",        // near-black base
+  surface: "#111110",   // card base (warm black)
+  surface2: "#1a1916",  // raised card
+  line: "#2a2823",      // borders (warm dark)
+  lineSoft: "#1c1b18",  // subtle dividers
+  text: "#f5f1e8",      // primary text (warm white)
+  textMid: "#a89f8c",   // secondary (muted gold-grey)
+  textDim: "#6b6557",   // tertiary
+  accent: "#d4af37",    // primary brand — GOLD
+  amber: "#d4af37",     // alias to gold (collapse extra colors)
+  blue: "#d4af37",      // alias to gold (was a 3rd color, now unified)
+  red: "#e05a4d",       // single highlight color — red
+};
+const shadow = "0 2px 12px rgba(0,0,0,0.4), 0 1px 3px rgba(0,0,0,0.3)";
+const shadowLg = "0 8px 30px rgba(0,0,0,0.5)";
 
 // ── PROGRAM DATA ──────────────────────────────────────────────────────────────
 // type: "compound" (leave 1–2 RIR) or "isolation" (failure OK on last set)
@@ -7,7 +34,7 @@ const PROGRAM = {
   1: {
     title: "Heavy Squats & Legs",
     tag: "LEGS",
-    color: "#4ade80",
+    color: "#d4af37",
     exercises: [
       { id: "A", name: "Barbell Squat (power rack)", sets: 4, reps: "8–12", rest: "2m 30s", type: "compound", muscle: "Quads" },
       { id: "B", name: "Leg Press Machine", sets: 2, reps: "6–10", rest: "2m", type: "compound", muscle: "Quads" },
@@ -19,7 +46,7 @@ const PROGRAM = {
   2: {
     title: "Heavy Bench & Chest",
     tag: "PUSH",
-    color: "#60a5fa",
+    color: "#e8c860",
     exercises: [
       { id: "A", name: "Barbell Bench Press (power rack)", sets: 4, reps: "8–10", rest: "3m", type: "compound", muscle: "Chest" },
       { id: "B", name: "Close Grip Barbell Bench Press", sets: 3, reps: "8–10", rest: "1m", type: "compound", muscle: "Triceps" },
@@ -28,11 +55,11 @@ const PROGRAM = {
       { id: "E", name: "Cable Pushdown (Carnelli)", sets: 3, reps: "10–15", rest: "1m", type: "isolation", muscle: "Triceps" },
     ],
   },
-  3: { title: "Rest Day", tag: "REST", color: "#6b7280", exercises: [] },
+  3: { title: "Rest Day", tag: "REST", color: "#a89f8c", exercises: [] },
   4: {
     title: "Posterior Chain",
     tag: "PULL",
-    color: "#f97316",
+    color: "#b8893b",
     exercises: [
       { id: "A", name: "Prone Hamstring Curl", sets: 4, reps: "2×10-12, 2×15-20", rest: "1m", type: "isolation", muscle: "Hamstrings" },
       { id: "B", name: "Romanian Deadlift (barbell)", sets: 3, reps: "6–10", rest: "1m 30s", type: "compound", muscle: "Hamstrings" },
@@ -41,11 +68,11 @@ const PROGRAM = {
       { id: "E", name: "Lat Pulldown (Carnelli)", sets: 3, reps: "8–12", rest: "1m 30s", type: "compound", muscle: "Back" },
     ],
   },
-  5: { title: "Rest Day", tag: "REST", color: "#6b7280", exercises: [] },
+  5: { title: "Rest Day", tag: "REST", color: "#a89f8c", exercises: [] },
   6: {
     title: "Secondary Lower Body",
     tag: "LEGS",
-    color: "#a78bfa",
+    color: "#c9a227",
     exercises: [
       { id: "A", name: "Barbell Front Squat (power rack)", sets: 4, reps: "8–10", rest: "2m 30s", type: "compound", muscle: "Quads" },
       { id: "B", name: "DB Bulgarian Split Squat", sets: 2, reps: "8–10", rest: "1m", type: "compound", muscle: "Quads" },
@@ -58,7 +85,7 @@ const PROGRAM = {
   7: {
     title: "Overhead Press & Push",
     tag: "PUSH",
-    color: "#f43f5e",
+    color: "#d9b04a",
     exercises: [
       { id: "A", name: "DB Shoulder Press", sets: 4, reps: "5–8", rest: "2m", type: "compound", muscle: "Shoulders" },
       { id: "B", name: "DB Lateral Raise (leaning)", sets: 4, reps: "10–15", rest: "1m", type: "isolation", muscle: "Shoulders" },
@@ -306,17 +333,17 @@ function rirFeedback(rir, type, isLastSet) {
   const r = parseInt(rir);
   if (isNaN(r)) return null;
   if (type === "compound") {
-    if (r === 0) return { color: "#f97316", msg: "⚠ Leave 1–2 in tank on compounds" };
-    if (r <= 2) return { color: "#4ade80", msg: "✓ Ideal effort" };
-    return { color: "#60a5fa", msg: "↑ Push a bit harder" };
+    if (r === 0) return { color: "#e05a4d", msg: "⚠ Leave 1–2 in tank on compounds" };
+    if (r <= 2) return { color: "#d4af37", msg: "✓ Ideal effort" };
+    return { color: "#d4af37", msg: "↑ Push a bit harder" };
   } else {
     // isolation
     if (isLastSet) {
-      if (r <= 1) return { color: "#4ade80", msg: "✓ Failure earned here" };
-      return { color: "#fbbf24", msg: "↑ Push closer to failure" };
+      if (r <= 1) return { color: "#d4af37", msg: "✓ Failure earned here" };
+      return { color: "#d4af37", msg: "↑ Push closer to failure" };
     }
-    if (r <= 2) return { color: "#4ade80", msg: "✓ Good effort" };
-    return { color: "#60a5fa", msg: "↑ A little harder" };
+    if (r <= 2) return { color: "#d4af37", msg: "✓ Good effort" };
+    return { color: "#d4af37", msg: "↑ A little harder" };
   }
 }
 
@@ -361,24 +388,32 @@ function weeklyVolume(entries, weekKey) {
 }
 function volumeStatus(sets, muscle) {
   const lm = VOLUME_LANDMARKS[muscle];
-  if (!lm) return { label: "—", color: "#6b7280" };
-  if (sets < lm.mev) return { label: "below MEV", color: "#60a5fa" };
-  if (sets <= lm.mav) return { label: "productive", color: "#4ade80" };
-  if (sets <= lm.mrv) return { label: "high", color: "#fbbf24" };
-  return { label: "over MRV", color: "#f87171" };
+  if (!lm) return { label: "—", color: "#a89f8c" };
+  if (sets < lm.mev) return { label: "below MEV", color: "#d4af37" };
+  if (sets <= lm.mav) return { label: "productive", color: "#d4af37" };
+  if (sets <= lm.mrv) return { label: "high", color: "#d4af37" };
+  return { label: "over MRV", color: "#e05a4d" };
 }
 
 // ── MESOCYCLE ─────────────────────────────────────────────────────────────────
-function mesocycleWeek(entries) {
-  // Determine current week number from earliest session date
-  const dated = entries.filter(e => e.movements.length > 0).map(e => e.date).sort();
-  const anchor = dated[0] ?? MESO_START;
+function mesocycleWeek(entries, override) {
+  // override = { anchorDate, weekAtAnchor } set manually by the user; takes priority
+  let anchor, baseWeekOffset;
+  if (override && override.anchorDate) {
+    anchor = override.anchorDate;
+    baseWeekOffset = (override.weekAtAnchor || 1) - 1; // weeks already elapsed at anchor
+  } else {
+    const dated = entries.filter(e => e.movements.length > 0).map(e => e.date).sort();
+    anchor = dated[0] ?? MESO_START;
+    baseWeekOffset = 0;
+  }
   const a = new Date(anchor + "T12:00:00");
   const now = new Date();
-  const diffWeeks = Math.floor((now - a) / (7 * 24 * 60 * 60 * 1000));
-  const weekInMeso = (diffWeeks % MESO_LENGTH) + 1;
+  const diffWeeks = Math.floor((now - a) / (7 * 24 * 60 * 60 * 1000)) + baseWeekOffset;
+  const safeDiff = Math.max(0, diffWeeks);
+  const weekInMeso = (safeDiff % MESO_LENGTH) + 1;
   const isDeload = weekInMeso === MESO_LENGTH;
-  return { week: weekInMeso, total: MESO_LENGTH, isDeload, cycle: Math.floor(diffWeeks / MESO_LENGTH) + 1 };
+  return { week: weekInMeso, total: MESO_LENGTH, isDeload, cycle: Math.floor(safeDiff / MESO_LENGTH) + 1 };
 }
 
 // ── MAIN APP ──────────────────────────────────────────────────────────────────
@@ -397,6 +432,8 @@ export default function App() {
   const [weightUnit, setWeightUnit] = useState("lbs");
   const [showWeightForm, setShowWeightForm] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [mesoOverride, setMesoOverride] = useState(null); // { anchorDate, weekAtAnchor }
+  const [showMesoEdit, setShowMesoEdit] = useState(false);
   const [timerState, setTimerState] = useState(null);
   // NEW: between-movement stopwatch
   const [showStopwatch, setShowStopwatch] = useState(false);
@@ -420,10 +457,19 @@ export default function App() {
       setWeightLog(w);
       setLoading(false);
     });
+    try {
+      const raw = localStorage.getItem("wj_meso");
+      if (raw) setMesoOverride(JSON.parse(raw));
+    } catch {}
     if ("Notification" in window && Notification.permission === "default") {
       Notification.requestPermission();
     }
   }, []);
+
+  function saveMesoOverride(o) {
+    setMesoOverride(o);
+    try { localStorage.setItem("wj_meso", JSON.stringify(o)); } catch {}
+  }
 
   useEffect(() => {
     if (!loading) saveEntries(entries);
@@ -637,7 +683,7 @@ export default function App() {
       <Shell>
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "100vh", gap: 12 }}>
           <div style={{ fontSize: 32 }}>🏋️</div>
-          <div style={{ fontSize: 14, color: "#4b5563", fontFamily: "monospace", letterSpacing: 2 }}>LOADING…</div>
+          <div style={{ fontSize: 14, color: "#6b6557", fontFamily: SANS, letterSpacing: 2 }}>LOADING…</div>
         </div>
       </Shell>
     );
@@ -646,7 +692,7 @@ export default function App() {
   // ── MOVEMENT DETAIL ───────────────────────────────────────────────────────
   if (view === "movement" && activeEntry && activeMv) {
     const prog = activeEntry.programDay ? PROGRAM[activeEntry.programDay] : null;
-    const color = prog?.color ?? "#4ade80";
+    const color = prog?.color ?? "#d4af37";
     const allMvs = activeEntry.movements;
     const curIdx = allMvs.findIndex(m => m.id === activeMv.id);
     const nextMv = allMvs[curIdx + 1] ?? null;
@@ -673,7 +719,7 @@ export default function App() {
           left={<BackBtn onClick={() => { setView("entry"); setShowStopwatch(false); resetStopwatch(); dismissTimer(); }} label={activeEntry.customTitle || "Entry"} />}
           right={
             <button onClick={() => { deleteMovement(activeEntry.id, activeMv.id); }}
-              style={btnStyle("#7f1d1d", "#f87171")}>Delete</button>
+              style={btnStyle("#7a2c22", "#e05a4d")}>Delete</button>
           }
         />
 
@@ -688,27 +734,27 @@ export default function App() {
           const mins = Math.floor(remaining / 60), secs = remaining % 60;
           const timeStr = mins > 0 ? `${mins}:${String(secs).padStart(2,"0")}` : `${secs}s`;
           return (
-            <div style={{ position: "sticky", top: 0, zIndex: 20, margin: "0 0 4px", padding: "10px 18px", background: done ? "#0a1f0a" : "#0e1116", borderBottom: `2px solid ${done ? color + "88" : color + "44"}`, display: "flex", alignItems: "center", gap: 14 }}>
+            <div style={{ position: "sticky", top: 0, zIndex: 20, margin: "0 0 4px", padding: "10px 18px", background: done ? "#1a1607" : "#111110", borderBottom: `2px solid ${done ? color + "88" : color + "44"}`, display: "flex", alignItems: "center", gap: 14 }}>
               <div style={{ position: "relative", width: 44, height: 44, flexShrink: 0 }}>
                 <svg width="44" height="44" style={{ transform: "rotate(-90deg)" }}>
-                  <circle cx="22" cy="22" r={R} fill="none" stroke="#1f2937" strokeWidth="3" />
+                  <circle cx="22" cy="22" r={R} fill="none" stroke="#2a2823" strokeWidth="3" />
                   <circle cx="22" cy="22" r={R} fill="none" stroke={color} strokeWidth="3"
                     strokeDasharray={`${circ * pct} ${circ}`} strokeLinecap="round"
                     style={{ transition: "stroke-dasharray 0.5s linear" }} />
                 </svg>
-                <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: remaining >= 60 ? 10 : 13, fontWeight: 900, fontFamily: "monospace", color: done ? color : "#f9fafb" }}>
+                <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: remaining >= 60 ? 10 : 13, fontWeight: 900, fontFamily: SANS, color: done ? color : "#f5f1e8" }}>
                   {done ? "GO" : timeStr}
                 </div>
               </div>
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 10, letterSpacing: 2, color: done ? color : "#6b7280", fontFamily: "monospace", textTransform: "uppercase", marginBottom: 4 }}>
+                <div style={{ fontSize: 10, letterSpacing: 2, color: done ? color : "#a89f8c", fontFamily: SANS, textTransform: "uppercase", marginBottom: 4 }}>
                   {done ? "✓ Rest complete — start!" : "Rest before this movement · 1m 30s"}
                 </div>
                 <div style={{ display: "flex", gap: 6 }}>
-                  {!done && running && <button onClick={pauseTimer} style={{ ...btnStyle("#1f2937", "#9ca3af"), padding: "4px 10px", fontSize: 11 }}>⏸</button>}
+                  {!done && running && <button onClick={pauseTimer} style={{ ...btnStyle("#2a2823", "#a89f8c"), padding: "4px 10px", fontSize: 11 }}>⏸</button>}
                   {!done && !running && <button onClick={resumeTimer} style={{ ...btnStyle(color + "22", color), padding: "4px 10px", fontSize: 11 }}>▶</button>}
-                  <button onClick={() => resetTimer(90)} style={{ ...btnStyle("#1f2937", "#6b7280"), padding: "4px 10px", fontSize: 11 }}>↺</button>
-                  {done && <button onClick={dismissTimer} style={{ ...btnStyle(color, "#0e1116"), padding: "4px 14px", fontSize: 12, fontWeight: 800 }}>Dismiss</button>}
+                  <button onClick={() => resetTimer(90)} style={{ ...btnStyle("#2a2823", "#a89f8c"), padding: "4px 10px", fontSize: 11 }}>↺</button>
+                  {done && <button onClick={dismissTimer} style={{ ...btnStyle(color, "#111110"), padding: "4px 14px", fontSize: 12, fontWeight: 800 }}>Dismiss</button>}
                 </div>
               </div>
             </div>
@@ -717,7 +763,7 @@ export default function App() {
 
         <div style={{ padding: "4px 18px 16px" }}>
           {activeMv.programRef && (
-            <div style={{ fontSize: 11, letterSpacing: 2, color: "#6b7280", textTransform: "uppercase", marginBottom: 6, fontFamily: "monospace" }}>
+            <div style={{ fontSize: 11, letterSpacing: 2, color: "#a89f8c", textTransform: "uppercase", marginBottom: 6, fontFamily: SANS }}>
               {prog?.title} · {activeMv.programRef}
             </div>
           )}
@@ -732,19 +778,19 @@ export default function App() {
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 8 }}>
               <Pill color={color}>{activeMv.setsTarget} sets</Pill>
               <Pill color={color}>{activeMv.repsTarget} reps</Pill>
-              {activeMv.rest && <Pill color="#6b7280">Rest {activeMv.rest}</Pill>}
+              {activeMv.rest && <Pill color="#a89f8c">Rest {activeMv.rest}</Pill>}
             </div>
           )}
         </div>
 
         {activeMv.lastSets && activeMv.lastDate && (
-          <div style={{ margin: "0 18px 14px", padding: "10px 14px", borderRadius: 12, background: "#0a1a10", border: "1px solid #1a3a22" }}>
-            <div style={{ fontSize: 10, letterSpacing: 2, color: "#374151", textTransform: "uppercase", fontFamily: "monospace", marginBottom: 6 }}>
+          <div style={{ margin: "0 18px 14px", padding: "10px 14px", borderRadius: 12, background: "#161410", border: "1px solid #3a3318" }}>
+            <div style={{ fontSize: 10, letterSpacing: 2, color: "#6b6557", textTransform: "uppercase", fontFamily: SANS, marginBottom: 6 }}>
               Last session · {fmtDate(activeMv.lastDate)}
             </div>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
               {activeMv.lastSets.map((s, i) => (
-                <span key={i} style={{ fontSize: 12, fontFamily: "monospace", fontWeight: 700, padding: "4px 9px", borderRadius: 7, background: "#0d2318", border: "1px solid #1a3a22", color: "#4ade8088" }}>
+                <span key={i} style={{ fontSize: 12, fontFamily: SANS, fontWeight: 700, padding: "4px 9px", borderRadius: 7, background: "#1a1607", border: "1px solid #3a3318", color: "#d4af3788" }}>
                   {s.w ? `${s.w}kg` : "BW"}×{s.r || "?"}
                 </span>
               ))}
@@ -756,21 +802,21 @@ export default function App() {
 
         {/* CHANGE 1: Stopwatch between movements — shown after finishing a movement */}
         {showStopwatch && (
-          <div style={{ margin: "0 18px 14px", padding: "16px", borderRadius: 14, background: "#0a1200", border: "2px solid #fbbf2466" }}>
-            <div style={{ fontSize: 11, letterSpacing: 2, color: "#fbbf24", textTransform: "uppercase", fontFamily: "monospace", marginBottom: 8 }}>⏱ Rest Before Next Movement</div>
-            <div style={{ fontSize: 42, fontWeight: 900, color: "#fbbf24", fontFamily: "monospace", letterSpacing: 4, textAlign: "center" }}>
+          <div style={{ margin: "0 18px 14px", padding: "16px", borderRadius: 14, background: "#1a1607", border: "2px solid #d4af3766" }}>
+            <div style={{ fontSize: 11, letterSpacing: 2, color: "#d4af37", textTransform: "uppercase", fontFamily: SANS, marginBottom: 8 }}>Rest Before Next Movement</div>
+            <div style={{ fontSize: 42, fontWeight: 900, color: "#d4af37", fontFamily: SANS, letterSpacing: 4, textAlign: "center" }}>
               {`${Math.floor(stopwatchElapsed / 60)}:${String(stopwatchElapsed % 60).padStart(2, "0")}`}
             </div>
             <div style={{ display: "flex", gap: 8, marginTop: 12, justifyContent: "center" }}>
-              <button onClick={toggleStopwatch} style={{ ...btnStyle("#1a1200", "#fbbf24"), padding: "8px 16px" }}>
+              <button onClick={toggleStopwatch} style={{ ...btnStyle("#1a1607", "#d4af37"), padding: "8px 16px" }}>
                 {stopwatchRunning ? "⏸ Pause" : "▶ Resume"}
               </button>
-              <button onClick={resetStopwatch} style={{ ...btnStyle("#1f2937", "#6b7280"), padding: "8px 14px" }}>↺</button>
+              <button onClick={resetStopwatch} style={{ ...btnStyle("#2a2823", "#a89f8c"), padding: "8px 14px" }}>↺</button>
               <button onClick={() => {
                 dismissStopwatch();
                 if (nextMv) { setActiveMvId(nextMv.id); setTimerState(null); }
                 else setView("entry");
-              }} style={{ ...btnStyle("#fbbf24", "#0e1116"), padding: "8px 16px", fontWeight: 800 }}>
+              }} style={{ ...btnStyle("#d4af37", "#111110"), padding: "8px 16px", fontWeight: 800 }}>
                 Next: {nextMv?.name?.split(" ")[0] || "Done"} →
               </button>
             </div>
@@ -842,12 +888,12 @@ export default function App() {
             {alreadyDone ? (
               <div style={{ display: "flex", gap: 10 }}>
                 <button onClick={() => updateMovement(activeEntry.id, activeMv.id, { doneAt: null })}
-                  style={{ flex: 1, padding: "13px", borderRadius: 14, background: "transparent", border: "1px solid #1f2937", color: "#4b5563", fontSize: 13, fontFamily: "monospace", fontWeight: 700, cursor: "pointer" }}>
+                  style={{ flex: 1, padding: "13px", borderRadius: 14, background: "transparent", border: "1px solid #2a2823", color: "#6b6557", fontSize: 13, fontFamily: SANS, fontWeight: 700, cursor: "pointer" }}>
                   ↩ Undo Done
                 </button>
                 {nextMv && (
                   <button onClick={() => { dismissTimer(); setActiveMvId(nextMv.id); }}
-                    style={{ flex: 2, padding: "13px", borderRadius: 14, background: "#111827", border: "1px solid #1f2937", color: "#f9fafb", fontSize: 14, fontFamily: "monospace", fontWeight: 800, cursor: "pointer" }}>
+                    style={{ flex: 2, padding: "13px", borderRadius: 14, background: "#1a1916", border: "1px solid #2a2823", color: "#f5f1e8", fontSize: 14, fontFamily: SANS, fontWeight: 800, cursor: "pointer" }}>
                     Next: {nextMv.name || "Movement"} →
                   </button>
                 )}
@@ -856,11 +902,11 @@ export default function App() {
               <button onClick={finishAndAdvance} style={{
                 width: "100%", padding: "18px", borderRadius: 16,
                 background: isLast
-                  ? "linear-gradient(135deg, #4ade80, #22c55e)"
+                  ? "linear-gradient(135deg, #d4af37, #c4a030)"
                   : `linear-gradient(135deg, ${color}, ${color}cc)`,
-                border: "none", color: "#0e1116",
+                border: "none", color: "#111110",
                 fontSize: 15, fontWeight: 900, cursor: "pointer",
-                fontFamily: "monospace", letterSpacing: 1,
+                fontFamily: SANS, letterSpacing: 1,
                 boxShadow: `0 4px 24px ${color}33`,
               }}>
                 {isLast ? "✓ FINISH LAST MOVEMENT" : `✓ DONE · NEXT: ${(nextMv?.name || "Next").toUpperCase()}`}
@@ -875,7 +921,7 @@ export default function App() {
   // ── ENTRY DETAIL ──────────────────────────────────────────────────────────
   if (view === "entry" && activeEntry) {
     const prog = activeEntry.programDay ? PROGRAM[activeEntry.programDay] : null;
-    const color = prog?.color ?? "#4ade80";
+    const color = prog?.color ?? "#d4af37";
     const isRest = prog?.exercises?.length === 0;
 
     return (
@@ -884,11 +930,11 @@ export default function App() {
           left={<BackBtn onClick={() => setView("journal")} label="Journal" />}
           right={
             <button onClick={() => deleteEntry(activeEntry.id)}
-              style={btnStyle("#7f1d1d", "#f87171")}>Delete</button>
+              style={btnStyle("#7a2c22", "#e05a4d")}>Delete</button>
           }
         />
         <div style={{ padding: "4px 18px 0" }}>
-          <input type="date" style={{ ...ghostInput, fontSize: 13, color: "#6b7280", marginBottom: 6 }}
+          <input type="date" style={{ ...ghostInput, fontSize: 13, color: "#a89f8c", marginBottom: 6 }}
             value={activeEntry.date}
             onChange={e => updateEntry(activeEntry.id, { date: e.target.value })} />
           <input style={bigInput} value={activeEntry.customTitle}
@@ -908,10 +954,10 @@ export default function App() {
           placeholder="How did today feel? Energy, sleep, PRs, anything…" rows={3} />
 
         {isRest ? (
-          <div style={{ margin: "20px 18px", padding: "28px 20px", borderRadius: 16, background: "#111827", border: "1px solid #1f2937", textAlign: "center" }}>
-            <div style={{ fontSize: 36, marginBottom: 8 }}>🌙</div>
-            <div style={{ color: "#e5e7eb", fontWeight: 700, fontSize: 18 }}>Rest Day</div>
-            <div style={{ color: "#6b7280", fontSize: 13, marginTop: 4 }}>Recovery is part of the program</div>
+          <div style={{ margin: "20px 18px", padding: "28px 20px", borderRadius: 16, background: "#1a1916", border: "1px solid #2a2823", textAlign: "center" }}>
+            <div style={{ display: "flex", justifyContent: "center", marginBottom: 10 }}><Moon size={34} color={C.textMid} strokeWidth={1.8} /></div>
+            <div style={{ color: "#f5f1e8", fontWeight: 700, fontSize: 18 }}>Rest Day</div>
+            <div style={{ color: "#a89f8c", fontSize: 13, marginTop: 4 }}>Recovery is part of the program</div>
           </div>
         ) : (
           <>
@@ -922,7 +968,7 @@ export default function App() {
               const canMoveDown = i < activeEntry.movements.length - 1;
               return (
                 <div key={mv.id}>
-                  <MvCard color={mvDone ? "#4ade80" : color}
+                  <MvCard color={mvDone ? "#d4af37" : color}
                     onClick={() => { setActiveMvId(mv.id); setView("movement"); setShowStopwatch(false); resetStopwatch(); }}>
                     <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
                       <div onClick={e => {
@@ -931,30 +977,30 @@ export default function App() {
                         updateMovement(activeEntry.id, mv.id, { doneAt: ts });
                       }} style={{
                         width: 34, height: 34, borderRadius: 10, flexShrink: 0,
-                        background: mvDone ? "#4ade8022" : "#111827",
-                        border: `2px solid ${mvDone ? "#4ade80" : "#1f2937"}`,
+                        background: mvDone ? "#d4af3722" : "#1a1916",
+                        border: `2px solid ${mvDone ? "#d4af37" : "#2a2823"}`,
                         display: "flex", alignItems: "center", justifyContent: "center",
                         fontSize: 16, cursor: "pointer", transition: "all 0.15s",
                       }}>
-                        {mvDone ? "✓" : <span style={{ fontSize: 11, fontFamily: "monospace", fontWeight: 800, color: "#374151" }}>{mv.programRef ?? String(i + 1)}</span>}
+                        {mvDone ? "✓" : <span style={{ fontSize: 11, fontFamily: SANS, fontWeight: 800, color: "#6b6557" }}>{mv.programRef ?? String(i + 1)}</span>}
                       </div>
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontWeight: 700, fontSize: 15, color: mvDone ? "#4ade80" : "#f9fafb", lineHeight: 1.3,
+                        <div style={{ fontWeight: 700, fontSize: 15, color: mvDone ? "#d4af37" : "#f5f1e8", lineHeight: 1.3,
                           textDecoration: mvDone ? "line-through" : "none", opacity: mvDone ? 0.7 : 1 }}>
-                          {mv.name || <span style={{ color: "#4b5563" }}>Unnamed movement</span>}
+                          {mv.name || <span style={{ color: "#6b6557" }}>Unnamed movement</span>}
                         </div>
-                        <div style={{ fontSize: 12, color: "#6b7280", marginTop: 3 }}>
+                        <div style={{ fontSize: 12, color: "#a89f8c", marginTop: 3 }}>
                           {mv.repsTarget ? `${mv.setsTarget} sets · ${mv.repsTarget} reps` : `${mv.sets.length} sets logged`}
-                          {mv.doneAt && <span style={{ color: "#4ade8077", marginLeft: 6 }}>· done {new Date(mv.doneAt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}</span>}
+                          {mv.doneAt && <span style={{ color: "#d4af3777", marginLeft: 6 }}>· done {new Date(mv.doneAt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}</span>}
                         </div>
                         <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginTop: 6 }}>
                           {mv.sets.map((s, si) => (
                             <span key={si} style={{
-                              fontSize: 11, fontFamily: "monospace",
+                              fontSize: 11, fontFamily: SANS,
                               padding: "3px 7px", borderRadius: 6,
-                              background: s.r ? `${color}22` : "#1f2937",
-                              border: `1px solid ${s.r ? color + "44" : "#374151"}`,
-                              color: s.r ? color : "#4b5563", fontWeight: 600,
+                              background: s.r ? `${color}22` : "#2a2823",
+                              border: `1px solid ${s.r ? color + "44" : "#6b6557"}`,
+                              color: s.r ? color : "#6b6557", fontWeight: 600,
                             }}>
                               {s.w ? `${s.w}×` : ""}{s.r || "–"}
                             </span>
@@ -965,12 +1011,12 @@ export default function App() {
                       <div style={{ display: "flex", flexDirection: "column", gap: 4, flexShrink: 0 }} onClick={e => e.stopPropagation()}>
                         <button
                           onClick={() => canMoveUp && reorderMovements(activeEntry.id, i, i - 1)}
-                          style={{ width: 32, height: 32, borderRadius: 8, border: "1px solid #1f2937", background: canMoveUp ? "#111827" : "transparent", color: canMoveUp ? "#9ca3af" : "#374151", fontSize: 14, cursor: canMoveUp ? "pointer" : "default", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "monospace" }}>
+                          style={{ width: 32, height: 32, borderRadius: 8, border: "1px solid #2a2823", background: canMoveUp ? "#1a1916" : "transparent", color: canMoveUp ? "#a89f8c" : "#6b6557", fontSize: 14, cursor: canMoveUp ? "pointer" : "default", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: SANS }}>
                           ↑
                         </button>
                         <button
                           onClick={() => canMoveDown && reorderMovements(activeEntry.id, i, i + 1)}
-                          style={{ width: 32, height: 32, borderRadius: 8, border: "1px solid #1f2937", background: canMoveDown ? "#111827" : "transparent", color: canMoveDown ? "#9ca3af" : "#374151", fontSize: 14, cursor: canMoveDown ? "pointer" : "default", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "monospace" }}>
+                          style={{ width: 32, height: 32, borderRadius: 8, border: "1px solid #2a2823", background: canMoveDown ? "#1a1916" : "transparent", color: canMoveDown ? "#a89f8c" : "#6b6557", fontSize: 14, cursor: canMoveDown ? "pointer" : "default", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: SANS }}>
                           ↓
                         </button>
                       </div>
@@ -986,16 +1032,16 @@ export default function App() {
         {!isRest && (
           <div style={{ padding: "16px 18px 48px" }}>
             {activeEntry.completedAt ? (
-              <div style={{ padding: "18px", borderRadius: 16, background: "#0a1f0a", border: "2px solid #4ade8066", textAlign: "center" }}>
-                <div style={{ fontSize: 28, marginBottom: 6 }}>🏆</div>
-                <div style={{ fontSize: 16, fontWeight: 800, color: "#4ade80", fontFamily: "monospace" }}>WORKOUT COMPLETE</div>
-                <div style={{ fontSize: 12, color: "#4b5563", marginTop: 4, fontFamily: "monospace" }}>
+              <div style={{ padding: "18px", borderRadius: 16, background: "#1a1607", border: "2px solid #d4af3766", textAlign: "center" }}>
+                <div style={{ display: "flex", justifyContent: "center", marginBottom: 8 }}><Trophy size={30} color={C.accent} strokeWidth={2} /></div>
+                <div style={{ fontSize: 16, fontWeight: 800, color: "#d4af37", fontFamily: SANS }}>WORKOUT COMPLETE</div>
+                <div style={{ fontSize: 12, color: "#6b6557", marginTop: 4, fontFamily: SANS }}>
                   {new Date(activeEntry.completedAt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}
                   {" · "}
                   {activeEntry.movements.filter(m => m.doneAt).length}/{activeEntry.movements.length} movements done
                 </div>
                 <button onClick={() => updateEntry(activeEntry.id, { completedAt: null })}
-                  style={{ marginTop: 10, padding: "6px 16px", borderRadius: 8, background: "transparent", border: "1px solid #1f2937", color: "#4b5563", fontSize: 12, fontFamily: "monospace", cursor: "pointer" }}>
+                  style={{ marginTop: 10, padding: "6px 16px", borderRadius: 8, background: "transparent", border: "1px solid #2a2823", color: "#6b6557", fontSize: 12, fontFamily: SANS, cursor: "pointer" }}>
                   Undo
                 </button>
               </div>
@@ -1007,11 +1053,11 @@ export default function App() {
                   : e));
               }} style={{
                 width: "100%", padding: "18px", borderRadius: 16,
-                background: "linear-gradient(135deg, #4ade80, #22c55e)",
-                border: "none", color: "#0e1116",
+                background: "linear-gradient(135deg, #d4af37, #c4a030)",
+                border: "none", color: "#111110",
                 fontSize: 16, fontWeight: 900, cursor: "pointer",
-                fontFamily: "monospace", letterSpacing: 1,
-                boxShadow: "0 4px 24px #4ade8033",
+                fontFamily: SANS, letterSpacing: 1,
+                boxShadow: "0 4px 24px #d4af3733",
               }}>
                 ✓ COMPLETE WORKOUT
               </button>
@@ -1030,10 +1076,10 @@ export default function App() {
     const weekLabel = new Date(thisWeek + "T12:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" });
     return (
       <Shell>
-        <div style={{ padding: "52px 18px 20px", background: "linear-gradient(160deg,#0e1116 0%,#0f1a12 100%)" }}>
-          <div style={{ fontSize: 11, letterSpacing: 3, color: "#374151", textTransform: "uppercase", fontFamily: "monospace", marginBottom: 4 }}>Weekly Sets Per Muscle</div>
-          <div style={{ fontSize: 30, fontWeight: 900, color: "#f9fafb", lineHeight: 1, fontFamily: "'DM Sans', -apple-system, sans-serif", letterSpacing: -0.5 }}>Volume</div>
-          <div style={{ fontSize: 13, color: "#4b5563", marginTop: 6, fontFamily: "monospace" }}>Week of {weekLabel} · resets Monday</div>
+        <div style={{ padding: "52px 18px 20px", background: "linear-gradient(160deg,#111110 0%,#141210 100%)" }}>
+          <div style={{ fontSize: 11, letterSpacing: 3, color: "#6b6557", textTransform: "uppercase", fontFamily: SANS, marginBottom: 4 }}>Weekly Sets Per Muscle</div>
+          <div style={{ fontSize: 30, fontWeight: 900, color: "#f5f1e8", lineHeight: 1, fontFamily: SANS, letterSpacing: -0.5 }}>Volume</div>
+          <div style={{ fontSize: 13, color: "#6b6557", marginTop: 6, fontFamily: SANS }}>Week of {weekLabel} · resets Monday</div>
         </div>
         <div style={{ padding: "12px 18px 100px" }}>
           {allMuscles.map(muscle => {
@@ -1044,21 +1090,21 @@ export default function App() {
             const mevPct = (lm.mev / lm.mrv) * 100;
             const mavPct = (lm.mav / lm.mrv) * 100;
             return (
-              <div key={muscle} style={{ marginBottom: 14, padding: "14px 16px", borderRadius: 14, background: "#0d1117", border: "1.5px solid #1f2937" }}>
-                <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 10 }}>
-                  <div style={{ fontSize: 15, fontWeight: 800, color: "#f9fafb" }}>{muscle}</div>
+              <div key={muscle} style={{ marginBottom: 12, padding: "16px 18px", borderRadius: 18, background: C.surface, border: `1px solid ${C.line}`, boxShadow: shadow }}>
+                <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 12 }}>
+                  <div style={{ fontSize: 15, fontWeight: 700, color: C.text, letterSpacing: -0.2 }}>{muscle}</div>
                   <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
-                    <span style={{ fontSize: 22, fontWeight: 900, color: status.color, fontFamily: "monospace" }}>{sets}</span>
-                    <span style={{ fontSize: 11, color: "#4b5563", fontFamily: "monospace" }}>sets · {status.label}</span>
+                    <span style={{ fontSize: 24, fontWeight: 800, color: status.color, fontFamily: MONO }}>{sets}</span>
+                    <span style={{ fontSize: 11, color: C.textDim, fontFamily: SANS, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>{status.label}</span>
                   </div>
                 </div>
                 {/* Volume bar with MEV/MAV/MRV markers */}
-                <div style={{ position: "relative", height: 10, borderRadius: 5, background: "#1f2937", overflow: "hidden" }}>
-                  <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: `${pct}%`, background: status.color, borderRadius: 5, transition: "width 0.3s" }} />
-                  <div style={{ position: "absolute", left: `${mevPct}%`, top: 0, bottom: 0, width: 1.5, background: "#6b7280" }} />
-                  <div style={{ position: "absolute", left: `${mavPct}%`, top: 0, bottom: 0, width: 1.5, background: "#6b7280" }} />
+                <div style={{ position: "relative", height: 12, borderRadius: 6, background: C.surface2, overflow: "hidden" }}>
+                  <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: `${pct}%`, background: `linear-gradient(90deg, ${status.color}aa, ${status.color})`, borderRadius: 6, transition: "width 0.4s ease" }} />
+                  <div style={{ position: "absolute", left: `${mevPct}%`, top: 0, bottom: 0, width: 1.5, background: "rgba(255,255,255,0.25)" }} />
+                  <div style={{ position: "absolute", left: `${mavPct}%`, top: 0, bottom: 0, width: 1.5, background: "rgba(255,255,255,0.25)" }} />
                 </div>
-                <div style={{ display: "flex", justifyContent: "space-between", marginTop: 4, fontSize: 9, color: "#374151", fontFamily: "monospace" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", marginTop: 5, fontSize: 9, color: C.textDim, fontFamily: MONO, fontWeight: 600 }}>
                   <span>MEV {lm.mev}</span>
                   <span>MAV {lm.mav}</span>
                   <span>MRV {lm.mrv}</span>
@@ -1066,7 +1112,7 @@ export default function App() {
               </div>
             );
           })}
-          <div style={{ padding: "8px 4px", fontSize: 11, color: "#4b5563", fontFamily: "monospace", lineHeight: 1.6 }}>
+          <div style={{ padding: "8px 4px", fontSize: 11, color: "#6b6557", fontFamily: SANS, lineHeight: 1.6 }}>
             MEV = minimum effective volume · MAV = max adaptive (the productive zone) · MRV = max recoverable. Stay in the green band for growth; back off if you're over MRV repeatedly.
           </div>
         </div>
@@ -1106,35 +1152,35 @@ export default function App() {
 
     return (
       <Shell>
-        <div style={{ padding: "52px 18px 20px", background: "linear-gradient(160deg,#0e1116 0%,#0f1a12 100%)" }}>
-          <div style={{ fontSize: 11, letterSpacing: 3, color: "#374151", textTransform: "uppercase", fontFamily: "monospace", marginBottom: 4 }}>Backup & History</div>
-          <div style={{ fontSize: 30, fontWeight: 900, color: "#f9fafb", lineHeight: 1, fontFamily: "'DM Sans', -apple-system, sans-serif", letterSpacing: -0.5 }}>Data</div>
+        <div style={{ padding: "52px 18px 20px", background: "linear-gradient(160deg,#111110 0%,#141210 100%)" }}>
+          <div style={{ fontSize: 11, letterSpacing: 3, color: "#6b6557", textTransform: "uppercase", fontFamily: SANS, marginBottom: 4 }}>Backup & History</div>
+          <div style={{ fontSize: 30, fontWeight: 900, color: "#f5f1e8", lineHeight: 1, fontFamily: SANS, letterSpacing: -0.5 }}>Data</div>
           <div style={{ display: "flex", gap: 20, marginTop: 10 }}>
-            <div><div style={{ fontSize: 22, fontWeight: 900, color: "#4ade80", fontFamily: "monospace" }}>{totalSessions}</div><div style={{ fontSize: 10, color: "#4b5563", letterSpacing: 1, textTransform: "uppercase", fontFamily: "monospace" }}>Sessions</div></div>
-            <div><div style={{ fontSize: 22, fontWeight: 900, color: "#60a5fa", fontFamily: "monospace" }}>{totalSets}</div><div style={{ fontSize: 10, color: "#4b5563", letterSpacing: 1, textTransform: "uppercase", fontFamily: "monospace" }}>Sets Logged</div></div>
-            <div><div style={{ fontSize: 22, fontWeight: 900, color: "#f97316", fontFamily: "monospace" }}>{weightLog.length}</div><div style={{ fontSize: 10, color: "#4b5563", letterSpacing: 1, textTransform: "uppercase", fontFamily: "monospace" }}>Weigh-ins</div></div>
+            <div><div style={{ fontSize: 22, fontWeight: 900, color: "#d4af37", fontFamily: SANS }}>{totalSessions}</div><div style={{ fontSize: 10, color: "#6b6557", letterSpacing: 1, textTransform: "uppercase", fontFamily: SANS }}>Sessions</div></div>
+            <div><div style={{ fontSize: 22, fontWeight: 900, color: "#d4af37", fontFamily: SANS }}>{totalSets}</div><div style={{ fontSize: 10, color: "#6b6557", letterSpacing: 1, textTransform: "uppercase", fontFamily: SANS }}>Sets Logged</div></div>
+            <div><div style={{ fontSize: 22, fontWeight: 900, color: "#e05a4d", fontFamily: SANS }}>{weightLog.length}</div><div style={{ fontSize: 10, color: "#6b6557", letterSpacing: 1, textTransform: "uppercase", fontFamily: SANS }}>Weigh-ins</div></div>
           </div>
         </div>
 
         {/* Export / Import */}
         <div style={{ padding: "16px 18px 8px" }}>
-          <div style={{ fontSize: 11, letterSpacing: 2, color: "#374151", textTransform: "uppercase", fontFamily: "monospace", fontWeight: 700, marginBottom: 10 }}>Backup</div>
+          <div style={{ fontSize: 11, letterSpacing: 2, color: "#6b6557", textTransform: "uppercase", fontFamily: SANS, fontWeight: 700, marginBottom: 10 }}>Backup</div>
           <div style={{ display: "flex", gap: 10, marginBottom: 10 }}>
-            <button onClick={() => downloadJSON(entries, weightLog)} style={{ flex: 1, padding: "13px", borderRadius: 14, background: "#0a1f0a", border: "1.5px solid #4ade8044", color: "#4ade80", fontSize: 13, fontWeight: 800, cursor: "pointer", fontFamily: "monospace" }}>
-              ↓ Export JSON
+            <button onClick={() => downloadJSON(entries, weightLog)} style={{ flex: 1, padding: "13px", borderRadius: 14, background: "#1a1607", border: "1.5px solid #d4af3744", color: "#d4af37", fontSize: 13, fontWeight: 800, cursor: "pointer", fontFamily: SANS }}>
+              Export JSON
             </button>
-            <button onClick={() => downloadCSV(entries, weightLog)} style={{ flex: 1, padding: "13px", borderRadius: 14, background: "#0a0f1a", border: "1.5px solid #60a5fa44", color: "#60a5fa", fontSize: 13, fontWeight: 800, cursor: "pointer", fontFamily: "monospace" }}>
-              ↓ Export CSV
+            <button onClick={() => downloadCSV(entries, weightLog)} style={{ flex: 1, padding: "13px", borderRadius: 14, background: "#1a1607", border: "1.5px solid #d4af3744", color: "#d4af37", fontSize: 13, fontWeight: 800, cursor: "pointer", fontFamily: SANS }}>
+              Export CSV
             </button>
           </div>
           <input ref={fileInputRef} type="file" accept=".json" style={{ display: "none" }}
             onChange={e => { if (e.target.files[0]) handleImport(e.target.files[0]); e.target.value = ""; }} />
           <button onClick={() => { setImportStatus(null); fileInputRef.current?.click(); }}
-            style={{ width: "100%", padding: "13px", borderRadius: 14, background: "#1a1200", border: "1.5px solid #fbbf2444", color: "#fbbf24", fontSize: 13, fontWeight: 800, cursor: "pointer", fontFamily: "monospace" }}>
-            ↑ Import JSON Backup
+            style={{ width: "100%", padding: "13px", borderRadius: 14, background: "#1a1607", border: "1.5px solid #d4af3744", color: "#d4af37", fontSize: 13, fontWeight: 800, cursor: "pointer", fontFamily: SANS }}>
+            Import JSON Backup
           </button>
           {importStatus && (
-            <div style={{ marginTop: 10, padding: "10px 14px", borderRadius: 10, background: importStatus === "success" ? "#0a1f0a" : "#1a0a0a", border: `1px solid ${importStatus === "success" ? "#4ade8044" : "#f8717144"}`, color: importStatus === "success" ? "#4ade80" : "#f87171", fontSize: 13, fontFamily: "monospace" }}>
+            <div style={{ marginTop: 10, padding: "10px 14px", borderRadius: 10, background: importStatus === "success" ? "#1a1607" : "#1f1310", border: `1px solid ${importStatus === "success" ? "#d4af3744" : "#e05a4d44"}`, color: importStatus === "success" ? "#d4af37" : "#e05a4d", fontSize: 13, fontFamily: SANS }}>
               {importStatus === "success" ? "✓ " : "✕ "}{importMsg}
             </div>
           )}
@@ -1142,12 +1188,12 @@ export default function App() {
 
         {/* Filter by day */}
         <div style={{ padding: "8px 18px 4px" }}>
-          <div style={{ fontSize: 11, letterSpacing: 2, color: "#374151", textTransform: "uppercase", fontFamily: "monospace", fontWeight: 700, marginBottom: 8 }}>Session History · {filtered.length} shown</div>
+          <div style={{ fontSize: 11, letterSpacing: 2, color: "#6b6557", textTransform: "uppercase", fontFamily: SANS, fontWeight: 700, marginBottom: 8 }}>Session History · {filtered.length} shown</div>
           <div style={{ display: "flex", gap: 6, overflowX: "auto", paddingBottom: 4, scrollbarWidth: "none" }}>
-            <button onClick={() => setFilterDay(null)} style={{ flexShrink: 0, padding: "5px 12px", borderRadius: 8, border: "none", cursor: "pointer", fontFamily: "monospace", fontSize: 11, fontWeight: 700, background: filterDay === null ? "#4ade80" : "#1f2937", color: filterDay === null ? "#0e1116" : "#6b7280" }}>All</button>
+            <button onClick={() => setFilterDay(null)} style={{ flexShrink: 0, padding: "5px 12px", borderRadius: 8, border: "none", cursor: "pointer", fontFamily: SANS, fontSize: 11, fontWeight: 700, background: filterDay === null ? "#d4af37" : "#2a2823", color: filterDay === null ? "#111110" : "#a89f8c" }}>All</button>
             {Object.entries(PROGRAM).filter(([,d]) => d.exercises.length > 0).map(([dn, d]) => (
               <button key={dn} onClick={() => setFilterDay(filterDay === Number(dn) ? null : Number(dn))}
-                style={{ flexShrink: 0, padding: "5px 12px", borderRadius: 8, border: "none", cursor: "pointer", fontFamily: "monospace", fontSize: 11, fontWeight: 700, background: filterDay === Number(dn) ? d.color : "#1f2937", color: filterDay === Number(dn) ? "#0e1116" : d.color }}>
+                style={{ flexShrink: 0, padding: "5px 12px", borderRadius: 8, border: "none", cursor: "pointer", fontFamily: SANS, fontSize: 11, fontWeight: 700, background: filterDay === Number(dn) ? d.color : "#2a2823", color: filterDay === Number(dn) ? "#111110" : d.color }}>
                 Day {dn}
               </button>
             ))}
@@ -1157,48 +1203,48 @@ export default function App() {
         {/* History list */}
         <div style={{ padding: "4px 18px 100px" }}>
           {filtered.length === 0 ? (
-            <div style={{ padding: "40px 0", textAlign: "center", color: "#374151", fontSize: 13, fontFamily: "monospace" }}>No sessions found</div>
+            <div style={{ padding: "40px 0", textAlign: "center", color: "#6b6557", fontSize: 13, fontFamily: SANS }}>No sessions found</div>
           ) : filtered.map(entry => {
             const prog = entry.programDay ? PROGRAM[entry.programDay] : null;
-            const color = prog?.color ?? "#4b5563";
+            const color = prog?.color ?? "#6b6557";
             const expanded = expandedId === entry.id;
             const entryProg = entry.programDay ? PROGRAM[entry.programDay] : null;
-            const entryColor = entryProg?.color ?? "#4ade80";
+            const entryColor = entryProg?.color ?? "#d4af37";
             const totalVol = entry.movements.reduce((n, mv) =>
               n + mv.sets.reduce((s, set) => s + (parseFloat(set.w)||0) * (parseFloat(set.r)||0), 0), 0);
             return (
-              <div key={entry.id} style={{ marginBottom: 8, borderRadius: 14, overflow: "hidden", background: "#0d1117", border: `1.5px solid ${expanded ? color + "66" : "#1f2937"}` }}>
-                <div style={{ height: 3, background: prog ? color : "#1f2937" }} />
+              <div key={entry.id} style={{ marginBottom: 8, borderRadius: 14, overflow: "hidden", background: "#111110", border: `1.5px solid ${expanded ? color + "66" : "#2a2823"}` }}>
+                <div style={{ height: 3, background: prog ? color : "#2a2823" }} />
                 <div onClick={() => setExpandedId(expanded ? null : entry.id)}
                   style={{ padding: "12px 14px", cursor: "pointer", display: "flex", alignItems: "center", gap: 12 }}>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 10, color: "#4b5563", fontFamily: "monospace", letterSpacing: 1, marginBottom: 2 }}>
+                    <div style={{ fontSize: 10, color: "#6b6557", fontFamily: SANS, letterSpacing: 1, marginBottom: 2 }}>
                       {fmtDate(entry.date)}{entry.programDay ? ` · DAY ${entry.programDay}` : ""}
-                      {entry.completedAt && <span style={{ color: "#4ade80", marginLeft: 6 }}>✓</span>}
+                      {entry.completedAt && <span style={{ color: "#d4af37", marginLeft: 6 }}>✓</span>}
                     </div>
-                    <div style={{ fontSize: 15, fontWeight: 700, color: "#f9fafb" }}>{entry.customTitle || "Custom Session"}</div>
-                    <div style={{ fontSize: 11, color: "#4b5563", fontFamily: "monospace", marginTop: 2 }}>
+                    <div style={{ fontSize: 15, fontWeight: 700, color: "#f5f1e8" }}>{entry.customTitle || "Custom Session"}</div>
+                    <div style={{ fontSize: 11, color: "#6b6557", fontFamily: SANS, marginTop: 2 }}>
                       {entry.movements.length} movements
-                      {totalVol > 0 && <span style={{ color: "#6b7280", marginLeft: 8 }}>{Math.round(totalVol).toLocaleString()} lbs total vol</span>}
+                      {totalVol > 0 && <span style={{ color: "#a89f8c", marginLeft: 8 }}>{Math.round(totalVol).toLocaleString()} lbs total vol</span>}
                     </div>
                   </div>
-                  <div style={{ color: "#374151", fontSize: 14, fontFamily: "monospace", transition: "transform 0.2s", transform: expanded ? "rotate(90deg)" : "none" }}>›</div>
+                  <div style={{ color: "#6b6557", fontSize: 14, fontFamily: SANS, transition: "transform 0.2s", transform: expanded ? "rotate(90deg)" : "none" }}>›</div>
                 </div>
                 {expanded && (
-                  <div style={{ borderTop: "1px solid #1f2937", padding: "10px 14px 14px" }}>
-                    {entry.note && <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 10, fontStyle: "italic" }}>{entry.note}</div>}
+                  <div style={{ borderTop: "1px solid #2a2823", padding: "10px 14px 14px" }}>
+                    {entry.note && <div style={{ fontSize: 12, color: "#a89f8c", marginBottom: 10, fontStyle: "italic" }}>{entry.note}</div>}
                     {entry.movements.map(mv => (
                       <div key={mv.id} style={{ marginBottom: 10 }}>
-                        <div style={{ fontSize: 12, fontWeight: 700, color: "#9ca3af", marginBottom: 4, fontFamily: "monospace" }}>
+                        <div style={{ fontSize: 12, fontWeight: 700, color: "#a89f8c", marginBottom: 4, fontFamily: SANS }}>
                           {mv.programRef ? `${mv.programRef}. ` : ""}{mv.name}
                         </div>
                         <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
                           {mv.sets.map((s, si) => (
-                            <span key={si} style={{ fontSize: 11, fontFamily: "monospace", padding: "3px 8px", borderRadius: 6, background: s.r ? entryColor + "22" : "#1f2937", border: `1px solid ${s.r ? entryColor + "44" : "#374151"}`, color: s.r ? entryColor : "#4b5563" }}>
+                            <span key={si} style={{ fontSize: 11, fontFamily: SANS, padding: "3px 8px", borderRadius: 6, background: s.r ? entryColor + "22" : "#2a2823", border: `1px solid ${s.r ? entryColor + "44" : "#6b6557"}`, color: s.r ? entryColor : "#6b6557" }}>
                               {s.w ? `${s.w}×` : "BW×"}{s.r || "–"}
                             </span>
                           ))}
-                          {mv.note && <span style={{ fontSize: 10, color: "#4b5563", fontStyle: "italic", alignSelf: "center", marginLeft: 4 }}>{mv.note}</span>}
+                          {mv.note && <span style={{ fontSize: 10, color: "#6b6557", fontStyle: "italic", alignSelf: "center", marginLeft: 4 }}>{mv.note}</span>}
                         </div>
                       </div>
                     ))}
@@ -1241,37 +1287,37 @@ export default function App() {
     const CHART_H = 140, CHART_W = 340;
     return (
       <Shell>
-        <div style={{ padding: "52px 18px 16px", background: "linear-gradient(160deg,#0e1116 0%,#0f1a12 100%)" }}>
-          <div style={{ fontSize: 11, letterSpacing: 3, color: "#374151", textTransform: "uppercase", fontFamily: "monospace", marginBottom: 4 }}>Body Weight</div>
-          <div style={{ fontSize: 30, fontWeight: 900, color: "#f9fafb", lineHeight: 1, fontFamily: "'DM Sans', -apple-system, sans-serif", letterSpacing: -0.5 }}>Weight Tracker</div>
+        <div style={{ padding: "52px 18px 16px", background: "linear-gradient(160deg,#111110 0%,#141210 100%)" }}>
+          <div style={{ fontSize: 11, letterSpacing: 3, color: "#6b6557", textTransform: "uppercase", fontFamily: SANS, marginBottom: 4 }}>Body Weight</div>
+          <div style={{ fontSize: 30, fontWeight: 900, color: "#f5f1e8", lineHeight: 1, fontFamily: SANS, letterSpacing: -0.5 }}>Weight Tracker</div>
           {latest && (
             <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginTop: 8 }}>
-              <span style={{ fontSize: 36, fontWeight: 900, color: "#4ade80", fontFamily: "monospace" }}>{latest.weight}</span>
-              <span style={{ fontSize: 16, color: "#4b5563", fontFamily: "monospace" }}>{latest.unit}</span>
+              <span style={{ fontSize: 36, fontWeight: 900, color: "#d4af37", fontFamily: SANS }}>{latest.weight}</span>
+              <span style={{ fontSize: 16, color: "#6b6557", fontFamily: SANS }}>{latest.unit}</span>
               {diff !== null && (
-                <span style={{ fontSize: 14, fontFamily: "monospace", fontWeight: 700, color: parseFloat(diff) < 0 ? "#4ade80" : parseFloat(diff) > 0 ? "#f87171" : "#6b7280" }}>
+                <span style={{ fontSize: 14, fontFamily: SANS, fontWeight: 700, color: parseFloat(diff) < 0 ? "#d4af37" : parseFloat(diff) > 0 ? "#e05a4d" : "#a89f8c" }}>
                   {parseFloat(diff) > 0 ? "+" : ""}{diff} vs last
                 </span>
               )}
             </div>
           )}
           {totalDiff !== null && (
-            <div style={{ fontSize: 12, color: "#4b5563", fontFamily: "monospace", marginTop: 4 }}>
+            <div style={{ fontSize: 12, color: "#6b6557", fontFamily: SANS, marginTop: 4 }}>
               Total change: {parseFloat(totalDiff) > 0 ? "+" : ""}{totalDiff} {sorted_w[0]?.unit} over {weightLog.length} entries
             </div>
           )}
         </div>
         {chartData.length >= 2 && (
-          <div style={{ margin: "16px 18px 0", padding: "16px", borderRadius: 16, background: "#0d1117", border: "1px solid #1f2937", overflowX: "auto" }}>
-            <div style={{ fontSize: 11, letterSpacing: 2, color: "#374151", textTransform: "uppercase", fontFamily: "monospace", marginBottom: 10 }}>Progress</div>
+          <div style={{ margin: "16px 18px 0", padding: "16px", borderRadius: 16, background: "#111110", border: "1px solid #2a2823", overflowX: "auto" }}>
+            <div style={{ fontSize: 11, letterSpacing: 2, color: "#6b6557", textTransform: "uppercase", fontFamily: SANS, marginBottom: 10 }}>Progress</div>
             <svg width="100%" viewBox={`0 0 ${CHART_W} ${CHART_H + 20}`} style={{ display: "block", overflow: "visible" }}>
               {[0, 0.25, 0.5, 0.75, 1].map(p => {
                 const y = CHART_H - p * CHART_H;
                 const val = (minV + p * range).toFixed(1);
                 return (
                   <g key={p}>
-                    <line x1="30" y1={y} x2={CHART_W} y2={y} stroke="#1f2937" strokeWidth="1" strokeDasharray="3,4" />
-                    <text x="26" y={y + 4} fontSize="9" fill="#374151" textAnchor="end" fontFamily="monospace">{val}</text>
+                    <line x1="30" y1={y} x2={CHART_W} y2={y} stroke="#2a2823" strokeWidth="1" strokeDasharray="3,4" />
+                    <text x="26" y={y + 4} fontSize="9" fill="#6b6557" textAnchor="end" fontFamily="monospace">{val}</text>
                   </g>
                 );
               })}
@@ -1282,30 +1328,30 @@ export default function App() {
                     const y = CHART_H - ((v - minV) / range) * CHART_H;
                     return `${x},${y}`;
                   }).join(" ")}
-                  fill="none" stroke="#4ade80" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round"
+                  fill="none" stroke="#d4af37" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round"
                 />
               )}
               {vals.map((v, i) => {
                 const x = 30 + (i / Math.max(vals.length - 1, 1)) * (CHART_W - 30);
                 const y = CHART_H - ((v - minV) / range) * CHART_H;
-                return <circle key={i} cx={x} cy={y} r="3.5" fill="#4ade80" stroke="#0d1117" strokeWidth="1.5" />;
+                return <circle key={i} cx={x} cy={y} r="3.5" fill="#d4af37" stroke="#111110" strokeWidth="1.5" />;
               })}
             </svg>
           </div>
         )}
         <div style={{ padding: "14px 18px 4px" }}>
           <button onClick={() => { setWeightDate(todayStr()); setWeightInput(""); setShowWeightForm(true); }}
-            style={{ width: "100%", padding: "14px", borderRadius: 14, background: "#4ade80", border: "none", color: "#0e1116", fontSize: 15, fontWeight: 800, cursor: "pointer", fontFamily: "monospace" }}>
+            style={{ width: "100%", padding: "14px", borderRadius: 14, background: "#d4af37", border: "none", color: "#111110", fontSize: 15, fontWeight: 800, cursor: "pointer", fontFamily: SANS }}>
             + LOG WEIGHT
           </button>
         </div>
         <div style={{ padding: "8px 18px 4px" }}>
-          <div style={{ fontSize: 11, letterSpacing: 2, color: "#374151", textTransform: "uppercase", fontFamily: "monospace", fontWeight: 700 }}>History · {weightLog.length} entries</div>
+          <div style={{ fontSize: 11, letterSpacing: 2, color: "#6b6557", textTransform: "uppercase", fontFamily: SANS, fontWeight: 700 }}>History · {weightLog.length} entries</div>
         </div>
         {sorted_w.length === 0 ? (
-          <div style={{ margin: "20px 18px", padding: "32px 20px", borderRadius: 16, background: "#0d1117", border: "1px solid #1f2937", textAlign: "center" }}>
-            <div style={{ fontSize: 32, marginBottom: 8 }}>⚖️</div>
-            <div style={{ color: "#6b7280", fontSize: 14 }}>No weight entries yet</div>
+          <div style={{ margin: "20px 18px", padding: "32px 20px", borderRadius: 16, background: "#111110", border: "1px solid #2a2823", textAlign: "center" }}>
+            <div style={{ display: "flex", justifyContent: "center", marginBottom: 10 }}><Scale size={30} color={C.textDim} strokeWidth={1.8} /></div>
+            <div style={{ color: "#a89f8c", fontSize: 14 }}>No weight entries yet</div>
           </div>
         ) : (
           <div style={{ padding: "4px 18px 100px" }}>
@@ -1313,21 +1359,21 @@ export default function App() {
               const prevW = sorted_w[i + 1];
               const d = prevW ? (parseFloat(w.weight) - parseFloat(prevW.weight)).toFixed(1) : null;
               return (
-                <div key={w.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", borderRadius: 14, background: "#0d1117", border: "1px solid #1f2937", marginBottom: 8 }}>
+                <div key={w.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", borderRadius: 14, background: "#111110", border: "1px solid #2a2823", marginBottom: 8 }}>
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 11, color: "#4b5563", fontFamily: "monospace" }}>{fmtDate(w.date)}</div>
+                    <div style={{ fontSize: 11, color: "#6b6557", fontFamily: SANS }}>{fmtDate(w.date)}</div>
                     <div style={{ display: "flex", alignItems: "baseline", gap: 6, marginTop: 2 }}>
-                      <span style={{ fontSize: 22, fontWeight: 900, color: "#f9fafb", fontFamily: "monospace" }}>{w.weight}</span>
-                      <span style={{ fontSize: 12, color: "#4b5563", fontFamily: "monospace" }}>{w.unit}</span>
+                      <span style={{ fontSize: 22, fontWeight: 900, color: "#f5f1e8", fontFamily: SANS }}>{w.weight}</span>
+                      <span style={{ fontSize: 12, color: "#6b6557", fontFamily: SANS }}>{w.unit}</span>
                       {d !== null && (
-                        <span style={{ fontSize: 12, fontFamily: "monospace", fontWeight: 700, color: parseFloat(d) < 0 ? "#4ade80" : parseFloat(d) > 0 ? "#f87171" : "#6b7280" }}>
+                        <span style={{ fontSize: 12, fontFamily: SANS, fontWeight: 700, color: parseFloat(d) < 0 ? "#d4af37" : parseFloat(d) > 0 ? "#e05a4d" : "#a89f8c" }}>
                           {parseFloat(d) > 0 ? "+" : ""}{d}
                         </span>
                       )}
                     </div>
                   </div>
                   <button onClick={() => setWeightLog(prev => { const updated = prev.filter(x => x.id !== w.id); saveWeights(updated); return updated; })}
-                    style={{ width: 30, height: 30, borderRadius: 8, background: "#1a0a0a", border: "1px solid #3b1515", color: "#dc2626", fontSize: 16, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>×</button>
+                    style={{ width: 30, height: 30, borderRadius: 8, background: "#1f1310", border: "1px solid #4a2820", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><X size={16} strokeWidth={2.5} color={C.red} /></button>
                 </div>
               );
             })}
@@ -1336,10 +1382,10 @@ export default function App() {
         {showWeightForm && (
           <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.75)", display: "flex", alignItems: "flex-end", zIndex: 100 }}
             onClick={() => setShowWeightForm(false)}>
-            <div style={{ background: "#0d1117", width: "100%", borderRadius: "24px 24px 0 0", padding: "24px 18px 48px", border: "1.5px solid #1f2937", borderBottom: "none" }}
+            <div style={{ background: "#111110", width: "100%", borderRadius: "24px 24px 0 0", padding: "24px 18px 48px", border: "1.5px solid #2a2823", borderBottom: "none" }}
               onClick={e => e.stopPropagation()}>
-              <div style={{ width: 36, height: 4, borderRadius: 2, background: "#374151", margin: "0 auto 20px" }} />
-              <div style={{ fontSize: 18, fontWeight: 800, color: "#f9fafb", marginBottom: 16, fontFamily: "monospace" }}>Log Weight</div>
+              <div style={{ width: 36, height: 4, borderRadius: 2, background: "#6b6557", margin: "0 auto 20px" }} />
+              <div style={{ fontSize: 18, fontWeight: 800, color: "#f5f1e8", marginBottom: 16, fontFamily: SANS }}>Log Weight</div>
               <div style={{ marginBottom: 14 }}>
                 <label style={labelStyle}>Date</label>
                 <input type="date" style={modalInput} value={weightDate} onChange={e => setWeightDate(e.target.value)} />
@@ -1349,14 +1395,14 @@ export default function App() {
                   <label style={labelStyle}>Weight</label>
                   <div style={{ display: "flex", gap: 6 }}>
                     {["lbs", "kg"].map(u => (
-                      <button key={u} onClick={() => setWeightUnit(u)} style={{ padding: "4px 12px", borderRadius: 8, border: "none", cursor: "pointer", fontFamily: "monospace", fontSize: 12, fontWeight: 700, background: weightUnit === u ? "#4ade80" : "#1f2937", color: weightUnit === u ? "#0e1116" : "#6b7280" }}>{u}</button>
+                      <button key={u} onClick={() => setWeightUnit(u)} style={{ padding: "4px 12px", borderRadius: 8, border: "none", cursor: "pointer", fontFamily: SANS, fontSize: 12, fontWeight: 700, background: weightUnit === u ? "#d4af37" : "#2a2823", color: weightUnit === u ? "#111110" : "#a89f8c" }}>{u}</button>
                     ))}
                   </div>
                 </div>
                 <input type="number" inputMode="decimal" style={{ ...modalInput, fontSize: 28, fontWeight: 900, textAlign: "center", padding: "14px" }}
                   value={weightInput} onChange={e => setWeightInput(e.target.value)} placeholder="0.0" autoFocus />
               </div>
-              <button onClick={addWeight} style={{ width: "100%", padding: "15px", borderRadius: 14, background: "#4ade80", border: "none", color: "#0e1116", fontSize: 15, fontWeight: 800, cursor: "pointer", fontFamily: "monospace" }}>
+              <button onClick={addWeight} style={{ width: "100%", padding: "15px", borderRadius: 14, background: "#d4af37", border: "none", color: "#111110", fontSize: 15, fontWeight: 800, cursor: "pointer", fontFamily: SANS }}>
                 SAVE →
               </button>
             </div>
@@ -1370,47 +1416,49 @@ export default function App() {
   // ── JOURNAL HOME ──────────────────────────────────────────────────────────
   return (
     <Shell>
-      <div style={{ padding: "52px 18px 20px", background: "linear-gradient(160deg,#0e1116 0%,#0f1a12 100%)" }}>
-        <div style={{ fontSize: 11, letterSpacing: 3, color: "#374151", textTransform: "uppercase", fontFamily: "monospace", marginBottom: 4 }}>Training Journal</div>
-        <div style={{ fontSize: 30, fontWeight: 900, color: "#f9fafb", lineHeight: 1, fontFamily: "'DM Sans', -apple-system, sans-serif", letterSpacing: -0.5 }}>My Workouts</div>
+      <div style={{ padding: "52px 18px 20px", background: "linear-gradient(160deg,#111110 0%,#141210 100%)" }}>
+        <div style={{ fontSize: 11, letterSpacing: 3, color: "#6b6557", textTransform: "uppercase", fontFamily: SANS, marginBottom: 4 }}>Training Journal</div>
+        <div style={{ fontSize: 30, fontWeight: 900, color: "#f5f1e8", lineHeight: 1, fontFamily: SANS, letterSpacing: -0.5 }}>My Workouts</div>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 6 }}>
-          <div style={{ fontSize: 13, color: "#4b5563" }}>{entries.length} session{entries.length !== 1 ? "s" : ""} logged</div>
+          <div style={{ fontSize: 13, color: "#6b6557" }}>{entries.length} session{entries.length !== 1 ? "s" : ""} logged</div>
           <button onClick={() => setTab("data")}
-            style={{ padding: "4px 12px", borderRadius: 8, background: "transparent", border: "1px solid #1f2937", color: "#4b5563", fontSize: 11, fontFamily: "monospace", fontWeight: 700, cursor: "pointer" }}>
-            🗄️ Data
+            style={{ padding: "5px 12px", borderRadius: 8, background: "transparent", border: `1px solid ${C.line}`, color: C.textMid, fontSize: 12, fontFamily: SANS, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 5 }}>
+            <Database size={13} strokeWidth={2} /> Data
           </button>
         </div>
       </div>
 
       {/* Mesocycle banner */}
       {(() => {
-        const meso = mesocycleWeek(entries);
-        const dimColor = meso.isDeload ? "#fbbf24" : "#4ade80";
+        const meso = mesocycleWeek(entries, mesoOverride);
+        const dimColor = "#d4af37";
         return (
-          <div style={{ margin: "12px 18px 4px", padding: "14px 16px", borderRadius: 14, background: meso.isDeload ? "#1a1200" : "#0d1117", border: `1.5px solid ${meso.isDeload ? "#fbbf2444" : "#1f2937"}` }}>
+          <div onClick={() => setShowMesoEdit(true)} style={{ margin: "12px 18px 4px", padding: "14px 16px", borderRadius: 14, background: meso.isDeload ? "#1a1607" : "#111110", border: `1.5px solid ${meso.isDeload ? "#d4af3744" : "#2a2823"}`, cursor: "pointer" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
-              <div style={{ fontSize: 11, letterSpacing: 2, color: dimColor, textTransform: "uppercase", fontFamily: "monospace", fontWeight: 700 }}>
-                Mesocycle {meso.cycle} · Week {meso.week} of {meso.total}
+              <div style={{ fontSize: 11, letterSpacing: 2, color: dimColor, textTransform: "uppercase", fontFamily: SANS, fontWeight: 700 }}>
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}><Flame size={13} strokeWidth={2.2} /> Mesocycle {meso.cycle} · Week {meso.week} of {meso.total}</span>
               </div>
-              <div style={{ fontSize: 11, color: "#4b5563", fontFamily: "monospace" }}>{meso.isDeload ? "DELOAD" : "ACCUMULATION"}</div>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <span style={{ fontSize: 11, color: "#6b6557", fontFamily: SANS }}>{meso.isDeload ? "DELOAD" : "ACCUMULATION"}</span>
+                <Pencil size={12} color="#6b6557" strokeWidth={2} />
+              </div>
             </div>
             <div style={{ display: "flex", gap: 5 }}>
               {Array.from({ length: meso.total }, (_, i) => {
                 const wk = i + 1;
                 const isCurrent = wk === meso.week;
-                const isDeloadWk = wk === meso.total;
                 return (
-                  <div key={i} style={{ flex: 1, height: 6, borderRadius: 3, background: isCurrent ? (isDeloadWk ? "#fbbf24" : "#4ade80") : wk < meso.week ? "#1f3a28" : "#1f2937" }} />
+                  <div key={i} style={{ flex: 1, height: 6, borderRadius: 3, background: isCurrent ? "#d4af37" : wk < meso.week ? "#3a3318" : "#2a2823" }} />
                 );
               })}
             </div>
             {meso.isDeload && (
-              <div style={{ fontSize: 12, color: "#fbbf24", fontFamily: "monospace", marginTop: 8 }}>
-                ⚠ Deload week — drop volume ~50%, keep weights, leave 3–4 RIR
+              <div style={{ fontSize: 12, color: "#d4af37", fontFamily: SANS, marginTop: 8 }}>
+                Deload week — drop volume ~50%, keep weights, leave 3–4 RIR
               </div>
             )}
             {!meso.isDeload && meso.week >= 3 && (
-              <div style={{ fontSize: 12, color: "#6b7280", fontFamily: "monospace", marginTop: 8 }}>
+              <div style={{ fontSize: 12, color: "#a89f8c", fontFamily: SANS, marginTop: 8 }}>
                 Add a set to lagging muscles this week · deload in {meso.total - meso.week} wk{meso.total - meso.week !== 1 ? "s" : ""}
               </div>
             )}
@@ -1418,12 +1466,14 @@ export default function App() {
         );
       })()}
 
+      <div style={{ padding: "12px 0 4px" }}>
+        <div style={{ fontSize: 11, letterSpacing: 2, color: "#6b6557", textTransform: "uppercase", fontFamily: SANS, padding: "0 18px", marginBottom: 8 }}>Program Days</div>
         <div style={{ display: "flex", gap: 8, overflowX: "auto", padding: "2px 18px 8px", scrollbarWidth: "none" }}>
           {Object.entries(PROGRAM).map(([dn, d]) => (
-            <div key={dn} style={{ flexShrink: 0, padding: "8px 12px", borderRadius: 12, background: "#111827", border: `1.5px solid ${d.color}33`, cursor: "pointer", minWidth: 60, textAlign: "center" }}
+            <div key={dn} style={{ flexShrink: 0, padding: "8px 12px", borderRadius: 12, background: "#1a1916", border: `1.5px solid ${d.color}33`, cursor: "pointer", minWidth: 60, textAlign: "center" }}
               onClick={() => { setNewProgramDay(Number(dn)); setNewDate(todayStr()); setShowNewModal(true); }}>
-              <div style={{ fontSize: 18, fontWeight: 900, color: d.color, fontFamily: "monospace" }}>{dn}</div>
-              <div style={{ fontSize: 9, letterSpacing: 1.5, color: "#4b5563", textTransform: "uppercase", marginTop: 2 }}>{d.tag}</div>
+              <div style={{ fontSize: 18, fontWeight: 900, color: d.color, fontFamily: SANS }}>{dn}</div>
+              <div style={{ fontSize: 9, letterSpacing: 1.5, color: "#6b6557", textTransform: "uppercase", marginTop: 2 }}>{d.tag}</div>
             </div>
           ))}
         </div>
@@ -1431,59 +1481,59 @@ export default function App() {
 
       <div style={{ padding: "4px 18px 8px" }}>
         <button onClick={() => { setNewProgramDay(null); setNewDate(todayStr()); setShowNewModal(true); }}
-          style={{ width: "100%", padding: "14px", borderRadius: 14, background: "#4ade80", border: "none", color: "#0e1116", fontSize: 15, fontWeight: 800, cursor: "pointer", fontFamily: "monospace", letterSpacing: 1 }}>
-          + LOG TODAY'S SESSION
+          style={{ width: "100%", padding: "15px", borderRadius: 14, background: C.accent, border: "none", color: C.bg, fontSize: 15, fontWeight: 700, cursor: "pointer", fontFamily: SANS, letterSpacing: 0.2, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, boxShadow: "0 4px 20px rgba(74,222,128,0.25)" }}>
+          <Dumbbell size={18} strokeWidth={2.2} /> Log Today's Session
         </button>
       </div>
 
       {sorted.length === 0 ? (
-        <div style={{ margin: "40px 18px", textAlign: "center", color: "#374151" }}>
-          <div style={{ fontSize: 32, marginBottom: 8 }}>📋</div>
-          <div style={{ fontSize: 15, fontWeight: 600, color: "#6b7280" }}>No sessions yet</div>
+        <div style={{ margin: "40px 18px", textAlign: "center", color: "#6b6557" }}>
+          <div style={{ display: "flex", justifyContent: "center", marginBottom: 10 }}><ClipboardList size={30} color={C.textDim} strokeWidth={1.8} /></div>
+          <div style={{ fontSize: 15, fontWeight: 600, color: "#a89f8c" }}>No sessions yet</div>
           <div style={{ fontSize: 13, marginTop: 4 }}>Tap a program day above or log a new session</div>
         </div>
       ) : (
         <div style={{ padding: "4px 18px 100px" }}>
           {sorted.map(entry => {
             const prog = entry.programDay ? PROGRAM[entry.programDay] : null;
-            const color = prog?.color ?? "#4b5563";
+            const color = prog?.color ?? "#6b6557";
             const isRest = prog?.exercises?.length === 0;
             const mvDone = entry.movements.filter(m => m.sets.some(s => s.r)).length;
             return (
               <div key={entry.id}
                 onClick={() => { setActiveId(entry.id); setView("entry"); }}
-                style={{ marginBottom: 12, borderRadius: 18, overflow: "hidden", background: "#0d1117", border: `1.5px solid #1f2937`, cursor: "pointer" }}>
-                <div style={{ height: 4, background: isRest ? "#1f2937" : color }} />
+                style={{ marginBottom: 12, borderRadius: 18, overflow: "hidden", background: "#111110", border: `1.5px solid #2a2823`, cursor: "pointer" }}>
+                <div style={{ height: 4, background: isRest ? "#2a2823" : color }} />
                 <div style={{ padding: "14px 16px" }}>
                   <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 11, color: "#4b5563", fontFamily: "monospace", letterSpacing: 1, marginBottom: 3, display: "flex", alignItems: "center", gap: 6 }}>
+                      <div style={{ fontSize: 11, color: "#6b6557", fontFamily: SANS, letterSpacing: 1, marginBottom: 3, display: "flex", alignItems: "center", gap: 6 }}>
                         {fmtDate(entry.date)}{prog ? ` · DAY ${entry.programDay}` : ""}
-                        {entry.completedAt && <span style={{ color: "#4ade80", fontWeight: 800 }}>✓</span>}
+                        {entry.completedAt && <span style={{ color: "#d4af37", fontWeight: 800 }}>✓</span>}
                       </div>
-                      <div style={{ fontSize: 17, fontWeight: 800, color: "#f9fafb", lineHeight: 1.2 }}>{entry.customTitle || "Untitled Session"}</div>
+                      <div style={{ fontSize: 17, fontWeight: 800, color: "#f5f1e8", lineHeight: 1.2 }}>{entry.customTitle || "Untitled Session"}</div>
                       {entry.note ? (
-                        <div style={{ fontSize: 13, color: "#6b7280", marginTop: 5, lineHeight: 1.4, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>{entry.note}</div>
+                        <div style={{ fontSize: 13, color: "#a89f8c", marginTop: 5, lineHeight: 1.4, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>{entry.note}</div>
                       ) : null}
                     </div>
-                    <div style={{ fontSize: 20, color: "#1f2937" }}>›</div>
+                    <div style={{ fontSize: 20, color: "#2a2823" }}>›</div>
                   </div>
                   {!isRest && entry.movements.length > 0 && (
                     <div style={{ marginTop: 10, display: "flex", flexWrap: "wrap", gap: 6 }}>
                       {entry.movements.slice(0, 5).map(mv => (
-                        <span key={mv.id} style={{ fontSize: 11, padding: "3px 9px", borderRadius: 7, background: "#111827", border: "1px solid #1f2937", color: "#6b7280", fontFamily: "monospace" }}>
+                        <span key={mv.id} style={{ fontSize: 11, padding: "3px 9px", borderRadius: 7, background: "#1a1916", border: "1px solid #2a2823", color: "#a89f8c", fontFamily: SANS }}>
                           {mv.programRef ? `${mv.programRef}. ` : ""}{mv.name || "–"}
                         </span>
                       ))}
                       {entry.movements.length > 5 && (
-                        <span style={{ fontSize: 11, padding: "3px 9px", borderRadius: 7, background: "#111827", border: "1px solid #1f2937", color: "#4b5563" }}>
+                        <span style={{ fontSize: 11, padding: "3px 9px", borderRadius: 7, background: "#1a1916", border: "1px solid #2a2823", color: "#6b6557" }}>
                           +{entry.movements.length - 5} more
                         </span>
                       )}
                     </div>
                   )}
                   {!isRest && (
-                    <div style={{ marginTop: 8, fontSize: 11, color: "#4b5563", fontFamily: "monospace" }}>
+                    <div style={{ marginTop: 8, fontSize: 11, color: "#6b6557", fontFamily: SANS }}>
                       {entry.movements.length} movement{entry.movements.length !== 1 ? "s" : ""}
                       {mvDone > 0 && ` · ${mvDone} logged`}
                     </div>
@@ -1495,19 +1545,51 @@ export default function App() {
         </div>
       )}
 
+      {showMesoEdit && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)", display: "flex", alignItems: "flex-end", zIndex: 100 }}
+          onClick={() => setShowMesoEdit(false)}>
+          <div style={{ background: "#111110", width: "100%", borderRadius: "24px 24px 0 0", padding: "24px 18px 44px", border: "1.5px solid #2a2823", borderBottom: "none", boxSizing: "border-box" }}
+            onClick={e => e.stopPropagation()}>
+            <div style={{ width: 36, height: 4, borderRadius: 2, background: "#2a2823", margin: "0 auto 20px" }} />
+            <div style={{ fontSize: 18, fontWeight: 700, color: "#f5f1e8", marginBottom: 6, fontFamily: SANS }}>Set Mesocycle Week</div>
+            <div style={{ fontSize: 13, color: "#a89f8c", marginBottom: 18, fontFamily: SANS, lineHeight: 1.5 }}>
+              Which week of the {MESO_LENGTH}-week block are you in right now? It'll count forward from today.
+            </div>
+            <div style={{ display: "flex", gap: 8, marginBottom: 20 }}>
+              {Array.from({ length: MESO_LENGTH }, (_, i) => {
+                const wk = i + 1;
+                const isDeloadWk = wk === MESO_LENGTH;
+                const current = mesocycleWeek(entries, mesoOverride).week === wk;
+                return (
+                  <button key={wk} onClick={() => { saveMesoOverride({ anchorDate: todayStr(), weekAtAnchor: wk }); setShowMesoEdit(false); }}
+                    style={{ flex: 1, padding: "16px 0", borderRadius: 12, border: `1.5px solid ${current ? "#d4af37" : "#2a2823"}`, background: current ? "#d4af37" : "#1a1916", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+                    <span style={{ fontSize: 20, fontWeight: 800, fontFamily: MONO, color: current ? "#0a0a0a" : "#f5f1e8" }}>{wk}</span>
+                    <span style={{ fontSize: 9, fontFamily: SANS, fontWeight: 700, letterSpacing: 0.5, color: current ? "#0a0a0a" : "#6b6557" }}>{isDeloadWk ? "DELOAD" : "WK"}</span>
+                  </button>
+                );
+              })}
+            </div>
+            <button onClick={() => { saveMesoOverride(null); setShowMesoEdit(false); }}
+              style={{ width: "100%", padding: "12px", borderRadius: 12, background: "transparent", border: "1.5px solid #2a2823", color: "#a89f8c", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: SANS }}>
+              Reset to automatic
+            </button>
+          </div>
+        </div>
+      )}
+
       {showNewModal && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.75)", display: "flex", alignItems: "flex-end", zIndex: 100 }}
           onClick={() => setShowNewModal(false)}>
-          <div style={{ background: "#0d1117", width: "100%", borderRadius: "24px 24px 0 0", padding: "24px 18px 44px", border: "1.5px solid #1f2937", borderBottom: "none", boxSizing: "border-box", overflow: "hidden" }}
+          <div style={{ background: "#111110", width: "100%", borderRadius: "24px 24px 0 0", padding: "24px 18px 44px", border: "1.5px solid #2a2823", borderBottom: "none", boxSizing: "border-box", overflow: "hidden" }}
             onClick={e => e.stopPropagation()}>
-            <div style={{ width: 36, height: 4, borderRadius: 2, background: "#374151", margin: "0 auto 20px" }} />
-            <div style={{ fontSize: 18, fontWeight: 800, color: "#f9fafb", marginBottom: 16, fontFamily: "monospace" }}>Log Session</div>
+            <div style={{ width: 36, height: 4, borderRadius: 2, background: "#6b6557", margin: "0 auto 20px" }} />
+            <div style={{ fontSize: 18, fontWeight: 800, color: "#f5f1e8", marginBottom: 16, fontFamily: SANS }}>Log Session</div>
             <div style={{ marginBottom: 14 }}>
               <label style={labelStyle}>Date</label>
               <div style={{ position: "relative" }}>
                 <div style={{ ...modalInput, display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer" }}>
                   <span>{newDate ? new Date(newDate + "T12:00:00").toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", year: "numeric" }) : "Select date"}</span>
-                  <span style={{ fontSize: 11, color: "#6b7280" }}>tap to change</span>
+                  <span style={{ fontSize: 11, color: "#a89f8c" }}>tap to change</span>
                 </div>
                 <input type="date" value={newDate} onChange={e => setNewDate(e.target.value)}
                   style={{ position: "absolute", inset: 0, opacity: 0, width: "100%", height: "100%", cursor: "pointer" }} />
@@ -1516,26 +1598,26 @@ export default function App() {
             <div style={{ marginBottom: 18 }}>
               <label style={labelStyle}>Program Day (optional)</label>
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 6 }}>
-                <div onClick={() => setNewProgramDay(null)} style={{ padding: "7px 14px", borderRadius: 10, cursor: "pointer", fontSize: 13, fontWeight: 700, fontFamily: "monospace", background: newProgramDay === null ? "#4ade80" : "#111827", color: newProgramDay === null ? "#0e1116" : "#6b7280", border: `1.5px solid ${newProgramDay === null ? "#4ade80" : "#1f2937"}` }}>Custom</div>
+                <div onClick={() => setNewProgramDay(null)} style={{ padding: "7px 14px", borderRadius: 10, cursor: "pointer", fontSize: 13, fontWeight: 700, fontFamily: SANS, background: newProgramDay === null ? "#d4af37" : "#1a1916", color: newProgramDay === null ? "#111110" : "#a89f8c", border: `1.5px solid ${newProgramDay === null ? "#d4af37" : "#2a2823"}` }}>Custom</div>
                 {Object.entries(PROGRAM).map(([dn, d]) => (
-                  <div key={dn} onClick={() => setNewProgramDay(Number(dn))} style={{ padding: "7px 14px", borderRadius: 10, cursor: "pointer", fontSize: 13, fontWeight: 700, fontFamily: "monospace", background: newProgramDay === Number(dn) ? d.color : "#111827", color: newProgramDay === Number(dn) ? "#0e1116" : d.color, border: `1.5px solid ${newProgramDay === Number(dn) ? d.color : d.color + "33"}` }}>Day {dn}</div>
+                  <div key={dn} onClick={() => setNewProgramDay(Number(dn))} style={{ padding: "7px 14px", borderRadius: 10, cursor: "pointer", fontSize: 13, fontWeight: 700, fontFamily: SANS, background: newProgramDay === Number(dn) ? d.color : "#1a1916", color: newProgramDay === Number(dn) ? "#111110" : d.color, border: `1.5px solid ${newProgramDay === Number(dn) ? d.color : d.color + "33"}` }}>Day {dn}</div>
                 ))}
               </div>
               {newProgramDay && (() => {
                 const last = getLastSession(entries, newProgramDay);
                 return (
                   <div style={{ marginTop: 10 }}>
-                    <div style={{ fontSize: 12, color: "#4b5563", fontFamily: "monospace" }}>→ {PROGRAM[newProgramDay].title} · {PROGRAM[newProgramDay].exercises.length} exercises pre-loaded</div>
+                    <div style={{ fontSize: 12, color: "#6b6557", fontFamily: SANS }}>→ {PROGRAM[newProgramDay].title} · {PROGRAM[newProgramDay].exercises.length} exercises pre-loaded</div>
                     {last ? (
-                      <div style={{ fontSize: 12, color: "#4ade8077", fontFamily: "monospace", marginTop: 4 }}>✓ Last session {fmtDate(last.date)} · weights carried forward</div>
+                      <div style={{ fontSize: 12, color: "#d4af3777", fontFamily: SANS, marginTop: 4 }}>✓ Last session {fmtDate(last.date)} · weights carried forward</div>
                     ) : (
-                      <div style={{ fontSize: 12, color: "#374151", fontFamily: "monospace", marginTop: 4 }}>No previous session found · sets will start blank</div>
+                      <div style={{ fontSize: 12, color: "#6b6557", fontFamily: SANS, marginTop: 4 }}>No previous session found · sets will start blank</div>
                     )}
                   </div>
                 );
               })()}
             </div>
-            <button onClick={createEntry} style={{ width: "100%", padding: "15px", borderRadius: 14, background: "#4ade80", border: "none", color: "#0e1116", fontSize: 15, fontWeight: 800, cursor: "pointer", fontFamily: "monospace" }}>
+            <button onClick={createEntry} style={{ width: "100%", padding: "15px", borderRadius: 14, background: "#d4af37", border: "none", color: "#111110", fontSize: 15, fontWeight: 800, cursor: "pointer", fontFamily: SANS }}>
               CREATE SESSION →
             </button>
           </div>
@@ -1559,25 +1641,25 @@ function RestTimer({ restSecs, restLabel, color, timerState, onStart, onPause, o
   const mins = Math.floor(remaining / 60), secs = remaining % 60;
   const timeStr = mins > 0 ? `${mins}:${String(secs).padStart(2, "0")}` : `${secs}s`;
   return (
-    <div style={{ margin: "2px 18px 8px", padding: "10px 14px", borderRadius: 14, background: done ? "#0a1f0a" : "#0e1116", border: `1px solid ${done ? color + "66" : "#1f2937"}`, display: "flex", alignItems: "center", gap: 12, transition: "background 0.3s, border-color 0.3s" }}>
+    <div style={{ margin: "2px 18px 8px", padding: "10px 14px", borderRadius: 14, background: done ? "#1a1607" : "#111110", border: `1px solid ${done ? color + "66" : "#2a2823"}`, display: "flex", alignItems: "center", gap: 12, transition: "background 0.3s, border-color 0.3s" }}>
       <div style={{ position: "relative", width: 52, height: 52, flexShrink: 0 }}>
         <svg width="52" height="52" style={{ transform: "rotate(-90deg)" }}>
-          <circle cx="26" cy="26" r={R} fill="none" stroke="#1f2937" strokeWidth="3" />
-          <circle cx="26" cy="26" r={R} fill="none" stroke={done ? color : running ? color : "#374151"} strokeWidth="3" strokeDasharray={`${dash} ${circ}`} strokeLinecap="round" style={{ transition: "stroke-dasharray 0.9s linear, stroke 0.3s" }} />
+          <circle cx="26" cy="26" r={R} fill="none" stroke="#2a2823" strokeWidth="3" />
+          <circle cx="26" cy="26" r={R} fill="none" stroke={done ? color : running ? color : "#6b6557"} strokeWidth="3" strokeDasharray={`${dash} ${circ}`} strokeLinecap="round" style={{ transition: "stroke-dasharray 0.9s linear, stroke 0.3s" }} />
         </svg>
-        <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: remaining >= 60 ? 11 : 13, fontWeight: 800, fontFamily: "monospace", color: done ? color : running ? "#f9fafb" : "#4b5563" }}>
+        <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: remaining >= 60 ? 11 : 13, fontWeight: 800, fontFamily: SANS, color: done ? color : running ? "#f5f1e8" : "#6b6557" }}>
           {done ? "✓" : timeStr}
         </div>
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 11, letterSpacing: 1.5, textTransform: "uppercase", fontFamily: "monospace", color: done ? color : "#4b5563", fontWeight: 700, marginBottom: 6 }}>
+        <div style={{ fontSize: 11, letterSpacing: 1.5, textTransform: "uppercase", fontFamily: SANS, color: done ? color : "#6b6557", fontWeight: 700, marginBottom: 6 }}>
           {done ? "Rest complete" : `Rest · ${restLabel}`}
         </div>
         <div style={{ display: "flex", gap: 6 }}>
           {!active && !done && <button onClick={onStart} style={timerBtn(color, true)}>▶ Start</button>}
-          {active && running && <button onClick={onPause} style={timerBtn("#374151", false)}>⏸ Pause</button>}
+          {active && running && <button onClick={onPause} style={timerBtn("#6b6557", false)}>⏸ Pause</button>}
           {active && !running && !done && <button onClick={onResume} style={timerBtn(color, true)}>▶ Resume</button>}
-          {active && <button onClick={onReset} style={timerBtn("#1f2937", false)}>↺</button>}
+          {active && <button onClick={onReset} style={timerBtn("#2a2823", false)}>↺</button>}
           {done && <button onClick={onDismiss} style={timerBtn(color, true)}>Next set →</button>}
         </div>
       </div>
@@ -1585,42 +1667,49 @@ function RestTimer({ restSecs, restLabel, color, timerState, onStart, onPause, o
   );
 }
 function timerBtn(bg, bright) {
-  return { padding: "5px 12px", borderRadius: 8, border: "none", cursor: "pointer", background: bg, color: bright ? "#0e1116" : "#9ca3af", fontSize: 12, fontWeight: 700, fontFamily: "monospace" };
+  return { padding: "5px 12px", borderRadius: 8, border: "none", cursor: "pointer", background: bg, color: bright ? "#111110" : "#a89f8c", fontSize: 12, fontWeight: 700, fontFamily: SANS };
 }
 function BottomNav({ tab, setTab }) {
-  const tabs = [{ id: "journal", label: "Journal", icon: "📋" }, { id: "volume", label: "Volume", icon: "📊" }, { id: "weight", label: "Weight", icon: "⚖️" }, { id: "data", label: "Data", icon: "🗄️" }];
+  const tabs = [
+    { id: "journal", label: "Journal", Icon: ClipboardList },
+    { id: "volume", label: "Volume", Icon: BarChart3 },
+    { id: "weight", label: "Weight", Icon: Scale },
+    { id: "data", label: "Data", Icon: Database },
+  ];
   return (
-    <div style={{ position: "fixed", bottom: 0, left: "50%", transform: "translateX(-50%)", width: "100%", maxWidth: 430, background: "#0d1117", borderTop: "1px solid #1f2937", display: "flex", padding: "8px 0 24px", zIndex: 50 }}>
-      {tabs.map(t => (
-        <button key={t.id} onClick={() => setTab(t.id)} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 3, background: "none", border: "none", cursor: "pointer", padding: "6px 0" }}>
-          <span style={{ fontSize: 20 }}>{t.icon}</span>
-          <span style={{ fontSize: 10, letterSpacing: 1.5, fontFamily: "monospace", textTransform: "uppercase", color: tab === t.id ? "#4ade80" : "#374151", fontWeight: tab === t.id ? 800 : 500 }}>{t.label}</span>
-          {tab === t.id && <div style={{ width: 18, height: 2, borderRadius: 1, background: "#4ade80" }} />}
-        </button>
-      ))}
+    <div style={{ position: "fixed", bottom: 0, left: "50%", transform: "translateX(-50%)", width: "100%", maxWidth: 430, background: "rgba(14,17,22,0.92)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", borderTop: `1px solid ${C.line}`, display: "flex", padding: "8px 0 24px", zIndex: 50 }}>
+      {tabs.map(t => {
+        const active = tab === t.id;
+        return (
+          <button key={t.id} onClick={() => setTab(t.id)} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4, background: "none", border: "none", cursor: "pointer", padding: "6px 0", transition: "transform 0.15s", transform: active ? "translateY(-1px)" : "none" }}>
+            <t.Icon size={20} strokeWidth={active ? 2.4 : 1.8} color={active ? C.accent : C.textDim} />
+            <span style={{ fontSize: 10, letterSpacing: 0.5, fontFamily: SANS, color: active ? C.accent : C.textDim, fontWeight: active ? 700 : 500 }}>{t.label}</span>
+          </button>
+        );
+      })}
     </div>
   );
 }
 function Shell({ children }) {
-  return <div style={{ background: "#0a0c10", minHeight: "100vh", color: "#f9fafb", fontFamily: "'DM Sans', 'Helvetica Neue', sans-serif", maxWidth: 430, margin: "0 auto", overflowX: "hidden" }}>{children}</div>;
+  return <div style={{ background: C.bg, minHeight: "100vh", color: C.text, fontFamily: SANS, maxWidth: 430, margin: "0 auto", overflowX: "hidden" }}>{children}</div>;
 }
 function TopBar({ left, right }) {
   return <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "52px 18px 8px" }}>{left}{right}</div>;
 }
 function BackBtn({ onClick, label }) {
-  return <button onClick={onClick} style={{ background: "none", border: "none", cursor: "pointer", color: "#4ade80", fontSize: 15, fontWeight: 700, padding: 0, fontFamily: "monospace", display: "flex", alignItems: "center", gap: 4 }}>← {label}</button>;
+  return <button onClick={onClick} style={{ background: "none", border: "none", cursor: "pointer", color: C.accent, fontSize: 15, fontWeight: 600, padding: 0, fontFamily: SANS, display: "flex", alignItems: "center", gap: 4 }}><ChevronLeft size={18} strokeWidth={2.4} /> {label}</button>;
 }
 function SectionLabel({ children }) {
-  return <div style={{ padding: "16px 18px 6px", fontSize: 11, letterSpacing: 2, color: "#374151", textTransform: "uppercase", fontFamily: "monospace", fontWeight: 700 }}>{children}</div>;
+  return <div style={{ padding: "16px 18px 6px", fontSize: 11, letterSpacing: 2, color: "#6b6557", textTransform: "uppercase", fontFamily: SANS, fontWeight: 700 }}>{children}</div>;
 }
 function Pill({ color, children }) {
-  return <span style={{ padding: "4px 12px", borderRadius: 20, background: color + "22", border: `1px solid ${color}44`, fontSize: 12, fontWeight: 700, color, fontFamily: "monospace" }}>{children}</span>;
+  return <span style={{ padding: "5px 13px", borderRadius: 20, background: color + "1a", border: `1px solid ${color}33`, fontSize: 12, fontWeight: 600, color, fontFamily: SANS, letterSpacing: 0.2 }}>{children}</span>;
 }
 function MvCard({ children, color, onClick }) {
-  return <div onClick={onClick} style={{ margin: "0 18px 10px", padding: "14px 16px", borderRadius: 16, background: "#0d1117", border: `1.5px solid #1f2937`, cursor: "pointer" }}>{children}</div>;
+  return <div onClick={onClick} style={{ margin: "0 18px 10px", padding: "16px 18px", borderRadius: 18, background: C.surface, border: `1px solid ${C.line}`, boxShadow: shadow, cursor: "pointer", transition: "transform 0.12s, border-color 0.2s" }}>{children}</div>;
 }
 function GhostBtn({ onClick, children }) {
-  return <button onClick={onClick} style={{ display: "block", width: "calc(100% - 36px)", margin: "4px 18px", padding: "13px", borderRadius: 14, background: "transparent", border: "1.5px dashed #1f2937", color: "#374151", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "monospace" }}>{children}</button>;
+  return <button onClick={onClick} style={{ display: "block", width: "calc(100% - 36px)", margin: "4px 18px", padding: "13px", borderRadius: 14, background: "transparent", border: `1.5px dashed ${C.line}`, color: C.textDim, fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: SANS }}>{children}</button>;
 }
 
 // SetRow with weight, reps, RIR selector, and movement-type-aware feedback
@@ -1640,50 +1729,50 @@ function SetRow({ num, weight, reps, rir, repsTarget, type, isLastSet, done, col
   const rirFb = rirFeedback(rir, type, isLastSet);
 
   return (
-    <div style={{ margin: "0 18px 4px", padding: "12px 14px", borderRadius: 14, background: done ? "#0a1a10" : "#0d1117", border: `1px solid ${done ? color + "44" : "#1f2937"}`, transition: "background 0.2s, border-color 0.2s", opacity: done ? 0.75 : 1 }}>
+    <div style={{ margin: "0 18px 4px", padding: "12px 14px", borderRadius: 14, background: done ? "#161410" : "#111110", border: `1px solid ${done ? color + "44" : "#2a2823"}`, transition: "background 0.2s, border-color 0.2s", opacity: done ? 0.75 : 1 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-        <div style={{ width: 26, height: 26, borderRadius: 7, background: "#111827", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 800, color: "#4b5563", fontFamily: "monospace", flexShrink: 0 }}>{num}</div>
+        <div style={{ width: 26, height: 26, borderRadius: 7, background: "#1a1916", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 800, color: "#6b6557", fontFamily: SANS, flexShrink: 0 }}>{num}</div>
         <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <div style={{ fontSize: 10, letterSpacing: 1.5, color: "#374151", textTransform: "uppercase", fontFamily: "monospace" }}>Weight</div>
+          <div style={{ fontSize: 10, letterSpacing: 1.5, color: "#6b6557", textTransform: "uppercase", fontFamily: SANS }}>Weight</div>
           <input type="number" inputMode="decimal" value={weight} onChange={e => onW(e.target.value)} placeholder="0" style={setInput(color)} />
-          <div style={{ fontSize: 10, color: "#374151", fontFamily: "monospace" }}>kg</div>
+          <div style={{ fontSize: 10, color: "#6b6557", fontFamily: SANS }}>kg</div>
         </div>
-        <div style={{ color: "#1f2937", fontSize: 16, fontWeight: 300 }}>×</div>
+        <div style={{ color: "#2a2823", fontSize: 16, fontWeight: 300 }}>×</div>
         <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <div style={{ fontSize: 10, letterSpacing: 1.5, color: "#374151", textTransform: "uppercase", fontFamily: "monospace" }}>
+          <div style={{ fontSize: 10, letterSpacing: 1.5, color: "#6b6557", textTransform: "uppercase", fontFamily: SANS }}>
             Reps{repRange ? ` ${repRange.min}–${repRange.max}` : ""}
           </div>
           <input type="number" inputMode="numeric" value={reps} onChange={e => onR(e.target.value)}
             placeholder={repRange ? `${repRange.min}–${repRange.max}` : "0"}
-            style={{ ...setInput(color), borderColor: inRange ? color : belowRange ? "#f97316" : aboveRange ? "#60a5fa" : undefined }} />
-          <div style={{ fontSize: 10, fontFamily: "monospace", fontWeight: 700, color: inRange ? color : belowRange ? "#f97316" : aboveRange ? "#60a5fa" : "#374151" }}>
+            style={{ ...setInput(color), borderColor: inRange ? color : belowRange ? "#e05a4d" : aboveRange ? "#d4af37" : undefined }} />
+          <div style={{ fontSize: 10, fontFamily: SANS, fontWeight: 700, color: inRange ? color : belowRange ? "#e05a4d" : aboveRange ? "#d4af37" : "#6b6557" }}>
             {inRange ? "✓ in range" : belowRange ? "↓ go lighter" : aboveRange ? "↑ go heavier" : "reps"}
           </div>
         </div>
-        <button onClick={onDone} style={{ width: 44, height: 44, borderRadius: 12, flexShrink: 0, background: done ? color : "#111827", border: `2px solid ${done ? color : "#1f2937"}`, color: done ? "#0e1116" : "#374151", fontSize: done ? 18 : 16, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.15s", fontWeight: 900 }}>✓</button>
+        <button onClick={onDone} style={{ width: 44, height: 44, borderRadius: 12, flexShrink: 0, background: done ? color : C.surface2, border: `2px solid ${done ? color : C.line}`, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "transform 0.12s, background 0.15s, border-color 0.15s", transform: done ? "scale(1.05)" : "scale(1)" }}><Check size={20} strokeWidth={3} color={done ? C.bg : C.textDim} /></button>
         {onDelete && (
-          <button onClick={onDelete} style={{ width: 28, height: 28, borderRadius: 8, background: "#1a0a0a", border: "1px solid #3b1515", color: "#dc2626", fontSize: 16, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>×</button>
+          <button onClick={onDelete} style={{ width: 28, height: 28, borderRadius: 8, background: "#1f1310", border: "1px solid #4a2820", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><X size={15} strokeWidth={2.5} color={C.red} /></button>
         )}
       </div>
       {/* RIR row */}
-      <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 10, paddingTop: 10, borderTop: "1px solid #161d27" }}>
-        <div style={{ fontSize: 10, letterSpacing: 1.5, color: "#4b5563", textTransform: "uppercase", fontFamily: "monospace", flexShrink: 0 }}>RIR</div>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 10, paddingTop: 10, borderTop: "1px solid #1c1b18" }}>
+        <div style={{ fontSize: 10, letterSpacing: 1.5, color: "#6b6557", textTransform: "uppercase", fontFamily: SANS, flexShrink: 0 }}>RIR</div>
         <div style={{ display: "flex", gap: 5 }}>
           {["0", "1", "2", "3", "4"].map(v => {
             const sel = String(rir) === v;
             return (
               <button key={v} onClick={() => onRIR(sel ? "" : v)} style={{
                 width: 30, height: 30, borderRadius: 8, cursor: "pointer",
-                background: sel ? color : "#111827",
-                border: `1.5px solid ${sel ? color : "#1f2937"}`,
-                color: sel ? "#0e1116" : "#6b7280",
-                fontSize: 13, fontWeight: 800, fontFamily: "monospace",
+                background: sel ? color : "#1a1916",
+                border: `1.5px solid ${sel ? color : "#2a2823"}`,
+                color: sel ? "#111110" : "#a89f8c",
+                fontSize: 13, fontWeight: 800, fontFamily: SANS,
               }}>{v}</button>
             );
           })}
         </div>
         {rirFb && (
-          <div style={{ fontSize: 10, fontFamily: "monospace", fontWeight: 700, color: rirFb.color, marginLeft: "auto", textAlign: "right", lineHeight: 1.2 }}>
+          <div style={{ fontSize: 10, fontFamily: SANS, fontWeight: 700, color: rirFb.color, marginLeft: "auto", textAlign: "right", lineHeight: 1.2 }}>
             {rirFb.msg}
           </div>
         )}
@@ -1693,13 +1782,13 @@ function SetRow({ num, weight, reps, rir, repsTarget, type, isLastSet, done, col
 }
 
 function setInput(color) {
-  return { width: "100%", background: "#111827", border: `1.5px solid #1f2937`, borderRadius: 10, padding: "8px 6px", fontSize: 20, fontWeight: 800, color: "#f9fafb", textAlign: "center", outline: "none", WebkitAppearance: "none", fontFamily: "monospace" };
+  return { width: "100%", background: "#1a1916", border: `1.5px solid #2a2823`, borderRadius: 10, padding: "8px 6px", fontSize: 20, fontWeight: 800, color: "#f5f1e8", textAlign: "center", outline: "none", WebkitAppearance: "none", fontFamily: MONO };
 }
-const bigInput = { width: "100%", background: "transparent", border: "none", borderBottom: "1.5px solid #1f2937", padding: "6px 0", fontSize: 22, fontWeight: 800, color: "#f9fafb", outline: "none", fontFamily: "'DM Sans', -apple-system, sans-serif", letterSpacing: -0.5, boxSizing: "border-box" };
-const ghostInput = { width: "100%", background: "transparent", border: "none", padding: "4px 0", outline: "none", fontFamily: "monospace", boxSizing: "border-box", color: "#6b7280" };
-const noteArea = { width: "calc(100% - 36px)", margin: "0 18px", background: "#0d1117", border: "1.5px solid #1f2937", borderRadius: 14, padding: "12px 14px", fontSize: 14, color: "#d1d5db", outline: "none", resize: "none", fontFamily: "'DM Sans', sans-serif", lineHeight: 1.6, boxSizing: "border-box" };
-const modalInput = { width: "100%", background: "#111827", border: "1.5px solid #1f2937", borderRadius: 10, padding: "11px 14px", fontSize: 15, color: "#f9fafb", outline: "none", fontFamily: "monospace", boxSizing: "border-box" };
-const labelStyle = { fontSize: 11, letterSpacing: 2, color: "#4b5563", textTransform: "uppercase", fontFamily: "monospace", fontWeight: 700 };
+const bigInput = { width: "100%", background: "transparent", border: "none", borderBottom: "1.5px solid #2a2823", padding: "6px 0", fontSize: 22, fontWeight: 800, color: "#f5f1e8", outline: "none", fontFamily: SANS, letterSpacing: -0.5, boxSizing: "border-box" };
+const ghostInput = { width: "100%", background: "transparent", border: "none", padding: "4px 0", outline: "none", fontFamily: SANS, boxSizing: "border-box", color: "#a89f8c" };
+const noteArea = { width: "calc(100% - 36px)", margin: "0 18px", background: "#111110", border: "1.5px solid #2a2823", borderRadius: 14, padding: "12px 14px", fontSize: 14, color: "#a89f8c", outline: "none", resize: "none", fontFamily: "'DM Sans', sans-serif", lineHeight: 1.6, boxSizing: "border-box" };
+const modalInput = { width: "100%", background: "#1a1916", border: "1.5px solid #2a2823", borderRadius: 10, padding: "11px 14px", fontSize: 15, color: "#f5f1e8", outline: "none", fontFamily: SANS, boxSizing: "border-box" };
+const labelStyle = { fontSize: 11, letterSpacing: 2, color: "#6b6557", textTransform: "uppercase", fontFamily: SANS, fontWeight: 700 };
 function btnStyle(bg, text) {
-  return { padding: "7px 14px", borderRadius: 10, background: bg, border: "none", color: text, fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "monospace" };
+  return { padding: "7px 14px", borderRadius: 10, background: bg, border: "none", color: text, fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: SANS };
 }
