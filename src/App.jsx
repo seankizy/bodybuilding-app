@@ -1,9 +1,39 @@
 import { useState, useEffect, useRef } from "react";
-import {
-  ClipboardList, BarChart3, Scale, Database, Dumbbell, Timer,
-  Check, X, Plus, ChevronRight, ChevronLeft, RotateCcw, Pause, Play,
-  TrendingUp, Trophy, Moon, Flame, ArrowDown, ArrowUp, Download, Upload, Pencil
-} from "lucide-react";
+
+// ── INLINE ICONS (no external dependency) ─────────────────────────────────────
+// Minimal SVG icons matching the lucide API (size, color, strokeWidth props).
+function Icon({ size = 20, color = "currentColor", strokeWidth = 2, children }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color}
+      strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round"
+      style={{ display: "block", flexShrink: 0 }}>
+      {children}
+    </svg>
+  );
+}
+const ClipboardList = (p) => <Icon {...p}><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4M12 16h4M8 11h.01M8 16h.01"/></Icon>;
+const BarChart3 = (p) => <Icon {...p}><path d="M3 3v18h18"/><rect x="7" y="10" width="3" height="8"/><rect x="12" y="6" width="3" height="12"/><rect x="17" y="13" width="3" height="5"/></Icon>;
+const Scale = (p) => <Icon {...p}><path d="M12 3v18M7 7h10M5 21h14"/><path d="M7 7l-3 7h6zM17 7l-3 7h6z"/></Icon>;
+const Database = (p) => <Icon {...p}><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14a9 3 0 0 0 18 0V5"/><path d="M3 12a9 3 0 0 0 18 0"/></Icon>;
+const Dumbbell = (p) => <Icon {...p}><path d="M6.5 6.5l11 11M21 21l-1-1M3 3l1 1M18 22l4-4M2 6l4-4M7 17l-5 5M17 7l5-5"/></Icon>;
+const Timer = (p) => <Icon {...p}><path d="M10 2h4M12 14l3-3"/><circle cx="12" cy="14" r="8"/></Icon>;
+const Check = (p) => <Icon {...p}><path d="M20 6L9 17l-5-5"/></Icon>;
+const X = (p) => <Icon {...p}><path d="M18 6L6 18M6 6l12 12"/></Icon>;
+const Plus = (p) => <Icon {...p}><path d="M12 5v14M5 12h14"/></Icon>;
+const ChevronRight = (p) => <Icon {...p}><path d="M9 18l6-6-6-6"/></Icon>;
+const ChevronLeft = (p) => <Icon {...p}><path d="M15 18l-6-6 6-6"/></Icon>;
+const RotateCcw = (p) => <Icon {...p}><path d="M3 2v6h6"/><path d="M3 8a9 9 0 1 0 3-6.7L3 8"/></Icon>;
+const Pause = (p) => <Icon {...p}><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></Icon>;
+const Play = (p) => <Icon {...p}><path d="M6 4l14 8-14 8z"/></Icon>;
+const TrendingUp = (p) => <Icon {...p}><path d="M22 7l-8.5 8.5-5-5L2 17"/><path d="M16 7h6v6"/></Icon>;
+const Trophy = (p) => <Icon {...p}><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6M18 9h1.5a2.5 2.5 0 0 0 0-5H18M4 22h16M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22M18 2H6v7a6 6 0 0 0 12 0V2z"/></Icon>;
+const Moon = (p) => <Icon {...p}><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9z"/></Icon>;
+const Flame = (p) => <Icon {...p}><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></Icon>;
+const ArrowDown = (p) => <Icon {...p}><path d="M12 5v14M19 12l-7 7-7-7"/></Icon>;
+const ArrowUp = (p) => <Icon {...p}><path d="M12 19V5M5 12l7-7 7 7"/></Icon>;
+const Download = (p) => <Icon {...p}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></Icon>;
+const Upload = (p) => <Icon {...p}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></Icon>;
+const Pencil = (p) => <Icon {...p}><path d="M17 3a2.83 2.83 0 0 1 4 4L7.5 20.5 2 22l1.5-5.5z"/></Icon>;
 
 // ── DESIGN TOKENS ─────────────────────────────────────────────────────────────
 // Typography: clean sans for labels/body, monospace reserved for NUMBERS (data is the hero)
@@ -349,31 +379,29 @@ function rirFeedback(rir, type, isLastSet) {
 
 // ── WEEKLY VOLUME PER MUSCLE ──────────────────────────────────────────────────
 // RP-style volume landmarks (sets/muscle/week): MEV → MAV → MRV
+// 8-day training cycle — landmarks are the standard weekly values × (8/7)
+const CYCLE_DAYS = 8;
+const SCALE = CYCLE_DAYS / 7; // ~1.143 — scales weekly RP landmarks to an 8-day cycle
 const VOLUME_LANDMARKS = {
-  Chest:     { mev: 10, mav: 18, mrv: 22 },
-  Back:      { mev: 10, mav: 20, mrv: 25 },
-  Quads:     { mev: 8,  mav: 16, mrv: 20 },
-  Hamstrings:{ mev: 6,  mav: 14, mrv: 18 },
-  Glutes:    { mev: 6,  mav: 14, mrv: 18 },
-  Shoulders: { mev: 8,  mav: 18, mrv: 26 },
-  Biceps:    { mev: 8,  mav: 16, mrv: 20 },
-  Triceps:   { mev: 8,  mav: 16, mrv: 20 },
-  Calves:    { mev: 8,  mav: 16, mrv: 20 },
+  Chest:     { mev: Math.round(10 * SCALE), mav: Math.round(18 * SCALE), mrv: Math.round(22 * SCALE) },
+  Back:      { mev: Math.round(10 * SCALE), mav: Math.round(20 * SCALE), mrv: Math.round(25 * SCALE) },
+  Quads:     { mev: Math.round(8  * SCALE), mav: Math.round(16 * SCALE), mrv: Math.round(20 * SCALE) },
+  Hamstrings:{ mev: Math.round(6  * SCALE), mav: Math.round(14 * SCALE), mrv: Math.round(18 * SCALE) },
+  Glutes:    { mev: Math.round(6  * SCALE), mav: Math.round(14 * SCALE), mrv: Math.round(18 * SCALE) },
+  Shoulders: { mev: Math.round(8  * SCALE), mav: Math.round(18 * SCALE), mrv: Math.round(26 * SCALE) },
+  Biceps:    { mev: Math.round(8  * SCALE), mav: Math.round(16 * SCALE), mrv: Math.round(20 * SCALE) },
+  Triceps:   { mev: Math.round(8  * SCALE), mav: Math.round(16 * SCALE), mrv: Math.round(20 * SCALE) },
+  Calves:    { mev: Math.round(8  * SCALE), mav: Math.round(16 * SCALE), mrv: Math.round(20 * SCALE) },
 };
-function weekStart(dateStr) {
-  // Monday-start week key
-  const d = new Date(dateStr + "T12:00:00");
-  const day = (d.getDay() + 6) % 7; // 0 = Monday
-  d.setDate(d.getDate() - day);
-  return d.toISOString().slice(0, 10);
-}
-function weeklyVolume(entries, weekKey) {
-  // Counts working sets (reps logged) per muscle for the given week
+function rollingVolume(entries) {
+  // Count working sets per muscle over the last CYCLE_DAYS days (rolling 8-day window)
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - CYCLE_DAYS);
+  const cutoffStr = cutoff.toISOString().slice(0, 10);
   const vol = {};
   for (const e of entries) {
-    if (weekStart(e.date) !== weekKey) continue;
+    if (e.date < cutoffStr) continue;
     for (const mv of e.movements) {
-      // Use stored muscle, or look it up from PROGRAM via programDay + programRef
       let muscle = mv.muscle;
       if (!muscle && e.programDay && mv.programRef) {
         const progEx = PROGRAM[e.programDay]?.exercises.find(x => x.id === mv.programRef);
@@ -388,11 +416,11 @@ function weeklyVolume(entries, weekKey) {
 }
 function volumeStatus(sets, muscle) {
   const lm = VOLUME_LANDMARKS[muscle];
-  if (!lm) return { label: "—", color: "#a89f8c" };
-  if (sets < lm.mev) return { label: "below MEV", color: "#d4af37" };
-  if (sets <= lm.mav) return { label: "productive", color: "#d4af37" };
-  if (sets <= lm.mrv) return { label: "high", color: "#d4af37" };
-  return { label: "over MRV", color: "#e05a4d" };
+  if (!lm) return { label: "—", color: C.textMid };
+  if (sets < lm.mev) return { label: "below MEV", color: C.blue };
+  if (sets <= lm.mav) return { label: "productive", color: C.accent };
+  if (sets <= lm.mrv) return { label: "high", color: C.amber };
+  return { label: "over MRV", color: C.red };
 }
 
 // ── MESOCYCLE ─────────────────────────────────────────────────────────────────
@@ -1070,16 +1098,17 @@ export default function App() {
 
   // ── VOLUME TAB ───────────────────────────────────────────────────────────
   if (tab === "volume") {
-    const thisWeek = weekStart(todayStr());
-    const vol = weeklyVolume(entries, thisWeek);
+    const vol = rollingVolume(entries);
     const allMuscles = Object.keys(VOLUME_LANDMARKS);
-    const weekLabel = new Date(thisWeek + "T12:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" });
+    const cycleStart = new Date();
+    cycleStart.setDate(cycleStart.getDate() - CYCLE_DAYS);
+    const cycleLabel = cycleStart.toLocaleDateString("en-US", { month: "short", day: "numeric" });
     return (
       <Shell>
         <div style={{ padding: "52px 18px 20px", background: "linear-gradient(160deg,#111110 0%,#141210 100%)" }}>
-          <div style={{ fontSize: 11, letterSpacing: 3, color: "#6b6557", textTransform: "uppercase", fontFamily: SANS, marginBottom: 4 }}>Weekly Sets Per Muscle</div>
+          <div style={{ fontSize: 11, letterSpacing: 3, color: "#6b6557", textTransform: "uppercase", fontFamily: SANS, marginBottom: 4 }}>Sets Per Muscle · Rolling 8-Day Cycle</div>
           <div style={{ fontSize: 30, fontWeight: 900, color: "#f5f1e8", lineHeight: 1, fontFamily: SANS, letterSpacing: -0.5 }}>Volume</div>
-          <div style={{ fontSize: 13, color: "#6b6557", marginTop: 6, fontFamily: SANS }}>Week of {weekLabel} · resets Monday</div>
+          <div style={{ fontSize: 13, color: "#6b6557", marginTop: 6, fontFamily: SANS }}>Since {cycleLabel} · updates live as you log</div>
         </div>
         <div style={{ padding: "12px 18px 100px" }}>
           {allMuscles.map(muscle => {
