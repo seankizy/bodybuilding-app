@@ -337,8 +337,8 @@ function downloadCSV(entries, weights) {
   a.click();
   URL.revokeObjectURL(url);
 }
-function downloadJSON(entries, weights) {
-  const payload = { version: 2, exportedAt: new Date().toISOString(), entries, weights };
+function downloadJSON(entries, weights, mesoOverride, cycleAnchor) {
+  const payload = { version: 3, exportedAt: new Date().toISOString(), entries, weights, mesoOverride: mesoOverride ?? null, cycleAnchor: cycleAnchor ?? null };
   const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
@@ -353,10 +353,11 @@ function readJSONBackup(file) {
     reader.onload = e => {
       try {
         const parsed = JSON.parse(e.target.result);
-        // Support both raw array and versioned object
         const entries = Array.isArray(parsed) ? parsed : (parsed.entries ?? []);
         const weights = Array.isArray(parsed) ? [] : (parsed.weights ?? []);
-        resolve({ entries, weights });
+        const mesoOverride = parsed.mesoOverride ?? null;
+        const cycleAnchor = parsed.cycleAnchor ?? null;
+        resolve({ entries, weights, mesoOverride, cycleAnchor });
       } catch { reject(new Error("Invalid JSON file")); }
     };
     reader.onerror = () => reject(new Error("Could not read file"));
@@ -1565,9 +1566,8 @@ export default function App() {
 
     async function handleImport(file) {
       try {
-        const { entries: newEntries, weights: newWeights } = await readJSONBackup(file);
+        const { entries: newEntries, weights: newWeights, mesoOverride: newMeso, cycleAnchor: newAnchor } = await readJSONBackup(file);
         if (!Array.isArray(newEntries)) throw new Error("No entries found in file");
-        // Merge: keep existing entries not in backup, add all from backup
         const existingIds = new Set(entries.map(e => String(e.id)));
         const toAdd = newEntries.filter(e => !existingIds.has(String(e.id)));
         const merged = [...entries, ...toAdd].sort((a, b) => b.date.localeCompare(a.date));
@@ -1577,8 +1577,11 @@ export default function App() {
           const wToAdd = newWeights.filter(w => !existingWIds.has(String(w.id)));
           setWeightLog(prev => [...prev, ...wToAdd].sort((a, b) => b.date.localeCompare(a.date)));
         }
+        if (newMeso) saveMesoOverride(newMeso);
+        if (newAnchor) saveCycleAnchor(newAnchor);
+        const stateRestored = newMeso || newAnchor ? " · mesocycle & cycle state restored" : "";
         setImportStatus("success");
-        setImportMsg(`Imported ${toAdd.length} new session${toAdd.length !== 1 ? "s" : ""}${newWeights.length > 0 ? ` + ${newWeights.length} weight entries` : ""}`);
+        setImportMsg(`Imported ${toAdd.length} new session${toAdd.length !== 1 ? "s" : ""}${newWeights.length > 0 ? ` + ${newWeights.length} weight entries` : ""}${stateRestored}`);
       } catch (err) {
         setImportStatus("error");
         setImportMsg(err.message || "Import failed");
@@ -1601,7 +1604,7 @@ export default function App() {
         <div style={{ padding: "16px 18px 8px" }}>
           <div style={{ fontSize: 11, letterSpacing: 2, color: "#50566a", textTransform: "uppercase", fontFamily: SANS, fontWeight: 700, marginBottom: 10 }}>Backup</div>
           <div style={{ display: "flex", gap: 10, marginBottom: 10 }}>
-            <button onClick={() => downloadJSON(entries, weightLog)} style={{ flex: 1, padding: "13px", borderRadius: 14, background: "#1b1c23", border: "1.5px solid #b8d4e844", color: "#b8d4e8", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: SANS }}>
+            <button onClick={() => downloadJSON(entries, weightLog, mesoOverride, cycleAnchor)} style={{ flex: 1, padding: "13px", borderRadius: 14, background: "#1b1c23", border: "1.5px solid #b8d4e844", color: "#b8d4e8", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: SANS }}>
               Export JSON
             </button>
             <button onClick={() => downloadCSV(entries, weightLog)} style={{ flex: 1, padding: "13px", borderRadius: 14, background: "#1b1c23", border: "1.5px solid #b8d4e844", color: "#b8d4e8", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: SANS }}>
