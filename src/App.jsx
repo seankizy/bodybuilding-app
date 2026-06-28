@@ -1264,9 +1264,31 @@ export default function App() {
             ) : (
               <button onClick={() => {
                 const ts = new Date().toISOString();
-                mutate(prev => prev.map(e => e.id === activeEntry.id
-                  ? { ...e, completedAt: ts, movements: e.movements.map(m => m.doneAt ? m : { ...m, doneAt: ts }) }
-                  : e));
+                mutate(prev => {
+                  const updated = prev.map(e => e.id === activeEntry.id
+                    ? { ...e, completedAt: ts, movements: e.movements.map(m => m.doneAt ? m : { ...m, doneAt: ts }) }
+                    : e);
+                  // Check if this completion finishes all 5 training days in the current cycle
+                  const trainingDayNums = Object.entries(PROGRAM)
+                    .filter(([, d]) => d.exercises.length > 0)
+                    .map(([dn]) => Number(dn));
+                  const anchor = cycleAnchor;
+                  const completedInCycle = new Set(
+                    updated.filter(e => e.completedAt && e.programDay &&
+                      trainingDayNums.includes(e.programDay) &&
+                      (!anchor || e.date >= anchor))
+                      .map(e => e.programDay)
+                  );
+                  // If we just completed the last remaining day, auto-start a new cycle
+                  if (activeEntry.programDay && trainingDayNums.includes(activeEntry.programDay)) {
+                    completedInCycle.add(activeEntry.programDay);
+                    if (trainingDayNums.every(dn => completedInCycle.has(dn))) {
+                      // All 5 done — anchor new cycle to today
+                      saveCycleAnchor(new Date().toISOString().slice(0, 10));
+                    }
+                  }
+                  return updated;
+                });
               }} style={{
                 width: "100%", padding: "18px", borderRadius: 16,
                 background: "linear-gradient(135deg, #b8d4e8, #b8d4e8)",
