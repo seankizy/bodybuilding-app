@@ -1859,12 +1859,8 @@ export default function App() {
       <div style={{ padding: "52px 18px 20px", background: "linear-gradient(160deg,#13141a 0%,#13141a 100%)" }}>
         <div style={{ fontSize: 11, letterSpacing: 3, color: "#50566a", textTransform: "uppercase", fontFamily: SANS, marginBottom: 4 }}>Training Journal</div>
         <div style={{ fontSize: 30, fontWeight: 900, color: "#e4e8f0", lineHeight: 1, fontFamily: SANS, letterSpacing: -0.5 }}>My Workouts</div>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 6 }}>
+        <div style={{ marginTop: 6 }}>
           <div style={{ fontSize: 13, color: "#50566a" }}>{entries.filter(e => e.completedAt).length} session{entries.filter(e => e.completedAt).length !== 1 ? "s" : ""} logged</div>
-          <button onClick={() => setTab("data")}
-            style={{ padding: "5px 12px", borderRadius: 8, background: "transparent", border: `1px solid ${C.line}`, color: C.textMid, fontSize: 12, fontFamily: SANS, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 5 }}>
-            <Database size={13} strokeWidth={2} /> Data
-          </button>
         </div>
       </div>
 
@@ -1943,7 +1939,7 @@ export default function App() {
                 <div style={{ fontSize: 12, fontFamily: MONO, color: doneCount === trainingDays.length ? LAKE.forest : C.textMid }}>
                   {doneCount}/{trainingDays.length} done
                 </div>
-                <button onClick={() => saveCycleAnchor(todayStr())}
+                <button onClick={() => { if (window.confirm("Start a new cycle? This will reset the cycle tracker to today.")) saveCycleAnchor(todayStr()); }}
                   style={{ fontSize: 10, fontWeight: 700, color: LAKE.sky, background: "transparent", border: `1px solid ${LAKE.sky}44`, borderRadius: 6, padding: "3px 8px", cursor: "pointer", fontFamily: SANS, letterSpacing: 0.3 }}>
                   New Cycle
                 </button>
