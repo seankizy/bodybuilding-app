@@ -2099,7 +2099,12 @@ export default function App() {
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 6 }}>
                 <div onClick={() => setNewProgramDay(null)} style={{ padding: "7px 14px", borderRadius: 10, cursor: "pointer", fontSize: 13, fontWeight: 700, fontFamily: SANS, background: newProgramDay === null ? "#b8d4e8" : "#1b1c23", color: newProgramDay === null ? "#13141a" : "#8891a8", border: `1.5px solid ${newProgramDay === null ? "#b8d4e8" : "#272830"}` }}>Custom</div>
                 {Object.entries(PROGRAM).map(([dn, d]) => (
-                  <div key={dn} onClick={() => setNewProgramDay(Number(dn))} style={{ padding: "7px 14px", borderRadius: 10, cursor: "pointer", fontSize: 13, fontWeight: 700, fontFamily: SANS, background: newProgramDay === Number(dn) ? d.color : "#1b1c23", color: newProgramDay === Number(dn) ? "#13141a" : d.color, border: `1.5px solid ${newProgramDay === Number(dn) ? d.color : d.color + "33"}` }}>Day {dn}</div>
+                  <div key={dn} onClick={() => setNewProgramDay(Number(dn))} style={{ padding: "8px 12px", borderRadius: 10, cursor: "pointer", fontFamily: SANS, background: newProgramDay === Number(dn) ? d.color : "#1b1c23", color: newProgramDay === Number(dn) ? "#13141a" : d.color, border: `1.5px solid ${newProgramDay === Number(dn) ? d.color : d.color + "33"}`, textAlign: "center", minWidth: 56 }}>
+                    <div style={{ fontSize: 15, fontWeight: 800 }}>{dn}</div>
+                    <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: 0.5, marginTop: 2, opacity: 0.85 }}>
+                      {{"1":"LEGS","2":"PUSH","3":"REST","4":"PULL","5":"REST","6":"LEGS II","7":"PUSH II"}[dn]}
+                    </div>
+                  </div>
                 ))}
               </div>
               {newProgramDay && (() => {
