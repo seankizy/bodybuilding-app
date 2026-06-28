@@ -1612,36 +1612,6 @@ export default function App() {
             </button>
           </div>
           <button onClick={() => {
-            if (!window.confirm("Convert Italy-period weights (May 7 – Jun 28, 2026) from kg to lbs?\n\nSessions before May 7 were already in lbs and won't be touched.\n\nExport a JSON backup first — this cannot be undone.")) return;
-            const KG_START = "2026-05-07";
-            const KG_END = "2026-06-28";
-            mutate(prev => prev.map(e => {
-              // Only convert sessions logged during Italy
-              if (e.date < KG_START || e.date > KG_END) return e;
-              return {
-                ...e,
-                movements: e.movements.map(mv => ({
-                  ...mv,
-                  sets: mv.sets.map(s => ({
-                    ...s,
-                    w: s.w && !isNaN(parseFloat(s.w))
-                      ? String(Math.round(parseFloat(s.w) * 2.2046 * 2) / 2)
-                      : s.w,
-                  })),
-                  lastSets: mv.lastSets ? mv.lastSets.map(s => ({
-                    ...s,
-                    w: s.w && !isNaN(parseFloat(s.w))
-                      ? String(Math.round(parseFloat(s.w) * 2.2046 * 2) / 2)
-                      : s.w,
-                  })) : mv.lastSets,
-                })),
-              };
-            }));
-            alert("Done — Italy sessions (May 7 – Jun 28) converted to lbs. Earlier sessions untouched.");
-          }} style={{ width: "100%", padding: "13px", borderRadius: 14, background: "#1b1c23", border: `1.5px solid ${C.amber}44`, color: C.amber, fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: SANS, marginBottom: 10 }}>
-            Convert Stored Weights: kg to lbs
-          </button>
-          <button onClick={() => {
             const meso = mesocycleWeek(entries, mesoOverride);
             downloadText(buildCoachSummary(entries, weightLog, meso), `coach_summary_${todayStr()}.txt`);
           }} style={{ width: "100%", padding: "13px", borderRadius: 14, background: "#1b1c23", border: `1.5px solid ${C.line}`, color: C.text, fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: SANS, marginBottom: 10, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
