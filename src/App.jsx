@@ -406,14 +406,12 @@ const VOLUME_LANDMARKS = {
   Triceps:   { mev: Math.round(8  * SCALE), mav: Math.round(16 * SCALE), mrv: Math.round(20 * SCALE) },
   Calves:    { mev: Math.round(8  * SCALE), mav: Math.round(16 * SCALE), mrv: Math.round(20 * SCALE) },
 };
-function rollingVolume(entries) {
-  // Count working sets per muscle over the last CYCLE_DAYS days (rolling 8-day window)
-  const cutoff = new Date();
-  cutoff.setDate(cutoff.getDate() - CYCLE_DAYS);
-  const cutoffStr = cutoff.toISOString().slice(0, 10);
+function cycleVolume(entries, cycleAnchor) {
+  // Count working sets per muscle from the current cycle anchor onward
+  // Falls back to completion-based cycle detection if no manual anchor set
   const vol = {};
   for (const e of entries) {
-    if (e.date < cutoffStr) continue;
+    if (cycleAnchor && e.date < cycleAnchor) continue;
     for (const mv of e.movements) {
       let muscle = mv.muscle;
       if (!muscle && e.programDay && mv.programRef) {
@@ -1309,17 +1307,17 @@ export default function App() {
 
   // ── VOLUME TAB ───────────────────────────────────────────────────────────
   if (tab === "volume") {
-    const vol = rollingVolume(entries);
+    const vol = cycleVolume(entries, cycleAnchor);
     const allMuscles = Object.keys(VOLUME_LANDMARKS);
-    const cycleStart = new Date();
-    cycleStart.setDate(cycleStart.getDate() - CYCLE_DAYS);
-    const cycleLabel = cycleStart.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+    const cycleLabel = cycleAnchor
+      ? new Date(cycleAnchor + "T12:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })
+      : "cycle start";
     return (
       <Shell>
         <div style={{ padding: "52px 18px 20px", background: "linear-gradient(160deg,#13141a 0%,#13141a 100%)" }}>
-          <div style={{ fontSize: 11, letterSpacing: 3, color: "#50566a", textTransform: "uppercase", fontFamily: SANS, marginBottom: 4 }}>Sets Per Muscle · Rolling 8-Day Cycle</div>
+          <div style={{ fontSize: 11, letterSpacing: 3, color: "#50566a", textTransform: "uppercase", fontFamily: SANS, marginBottom: 4 }}>Sets Per Muscle · This Cycle</div>
           <div style={{ fontSize: 30, fontWeight: 900, color: "#e4e8f0", lineHeight: 1, fontFamily: SANS, letterSpacing: -0.5 }}>Volume</div>
-          <div style={{ fontSize: 13, color: "#50566a", marginTop: 6, fontFamily: SANS }}>Since {cycleLabel} · updates live as you log</div>
+          <div style={{ fontSize: 13, color: "#50566a", marginTop: 6, fontFamily: SANS }}>Since {cycleLabel} · resets with each new cycle</div>
         </div>
         {/* Deload guidance banner */}
         {(() => {
