@@ -1610,6 +1610,30 @@ export default function App() {
             </button>
           </div>
           <button onClick={() => {
+            if (!window.confirm("Convert all stored weights from kg to lbs? This multiplies every set weight by 2.2046. Only do this once — it cannot be undone (export a JSON backup first).")) return;
+            mutate(prev => prev.map(e => ({
+              ...e,
+              movements: e.movements.map(mv => ({
+                ...mv,
+                sets: mv.sets.map(s => ({
+                  ...s,
+                  w: s.w && !isNaN(parseFloat(s.w))
+                    ? String(Math.round(parseFloat(s.w) * 2.2046 * 2) / 2) // round to nearest 0.5
+                    : s.w,
+                })),
+                lastSets: mv.lastSets ? mv.lastSets.map(s => ({
+                  ...s,
+                  w: s.w && !isNaN(parseFloat(s.w))
+                    ? String(Math.round(parseFloat(s.w) * 2.2046 * 2) / 2)
+                    : s.w,
+                })) : mv.lastSets,
+              })),
+            })));
+            alert("Done — all weights converted to lbs.");
+          }} style={{ width: "100%", padding: "13px", borderRadius: 14, background: "#1b1c23", border: `1.5px solid ${C.amber}44`, color: C.amber, fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: SANS, marginBottom: 10 }}>
+            Convert Stored Weights: kg to lbs
+          </button>
+          <button onClick={() => {
             const meso = mesocycleWeek(entries, mesoOverride);
             downloadText(buildCoachSummary(entries, weightLog, meso), `coach_summary_${todayStr()}.txt`);
           }} style={{ width: "100%", padding: "13px", borderRadius: 14, background: "#1b1c23", border: `1.5px solid ${C.line}`, color: C.text, fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: SANS, marginBottom: 10, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
