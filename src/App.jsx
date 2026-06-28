@@ -622,6 +622,7 @@ export default function App() {
   const [showWeightForm, setShowWeightForm] = useState(false);
   const [loading, setLoading] = useState(true);
   const [mesoOverride, setMesoOverride] = useState(null); // { anchorDate, weekAtAnchor }
+  const [cycleAnchor, setCycleAnchor] = useState(null); // ISO date string — manual cycle reset
   const [showMesoEdit, setShowMesoEdit] = useState(false);
   const [timerState, setTimerState] = useState(null);
   // NEW: between-movement stopwatch
@@ -652,6 +653,10 @@ export default function App() {
       const raw = localStorage.getItem("wj_meso");
       if (raw) setMesoOverride(JSON.parse(raw));
     } catch {}
+    try {
+      const ca = localStorage.getItem("wj_cycle_anchor");
+      if (ca) setCycleAnchor(ca);
+    } catch {}
     if ("Notification" in window && Notification.permission === "default") {
       Notification.requestPermission();
     }
@@ -660,6 +665,13 @@ export default function App() {
   function saveMesoOverride(o) {
     setMesoOverride(o);
     try { localStorage.setItem("wj_meso", JSON.stringify(o)); } catch {}
+  }
+  function saveCycleAnchor(date) {
+    setCycleAnchor(date);
+    try {
+      if (date) localStorage.setItem("wj_cycle_anchor", date);
+      else localStorage.removeItem("wj_cycle_anchor");
+    } catch {}
   }
 
   useEffect(() => {
@@ -1896,25 +1908,45 @@ export default function App() {
 
       {/* ── THIS CYCLE tracker ──────────────────────────────────────────── */}
       {(() => {
-        const cutoff = new Date();
-        cutoff.setDate(cutoff.getDate() - 8);
-        const cutoffStr = cutoff.toISOString().slice(0, 10);
-        // Which program days have been completed in the last 8 days?
-        const completedDays = new Set(
-          entries
-            .filter(e => e.completedAt && e.date >= cutoffStr && e.programDay)
-            .map(e => e.programDay)
-        );
         const trainingDays = Object.entries(PROGRAM).filter(([, d]) => d.exercises.length > 0);
-        const restDays = Object.entries(PROGRAM).filter(([, d]) => d.exercises.length === 0);
-        const doneCount = trainingDays.filter(([dn]) => completedDays.has(Number(dn))).length;
+        const allDayNums = trainingDays.map(([dn]) => Number(dn));
+
+        // If a manual cycle anchor exists, only look at sessions from that date forward
+        // Otherwise use the completion-based cycle detection
+        let completedDays;
+        if (cycleAnchor) {
+          completedDays = new Set(
+            entries
+              .filter(e => e.completedAt && e.date >= cycleAnchor && e.programDay && allDayNums.includes(e.programDay))
+              .map(e => e.programDay)
+          );
+        } else {
+          // Walk backwards: collect sessions until we hit a repeated day
+          const completedSessions = [...entries]
+            .filter(e => e.completedAt && e.programDay && allDayNums.includes(e.programDay))
+            .sort((a, b) => b.date.localeCompare(a.date) || b.completedAt.localeCompare(a.completedAt));
+          completedDays = new Set();
+          for (const e of completedSessions) {
+            if (completedDays.has(e.programDay)) break;
+            completedDays.add(e.programDay);
+          }
+        }
+
+        const doneCount = completedDays.size;
         const remaining = trainingDays.filter(([dn]) => !completedDays.has(Number(dn)));
+
         return (
           <div style={{ margin: "0 18px 12px", padding: "14px 16px", borderRadius: 16, background: C.surface, border: `1px solid ${C.line}` }}>
             <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 12 }}>
               <div style={{ fontSize: 12, fontWeight: 700, color: C.textMid, letterSpacing: 0.5, textTransform: "uppercase", fontFamily: SANS }}>This Cycle</div>
-              <div style={{ fontSize: 12, fontFamily: MONO, color: doneCount === trainingDays.length ? LAKE.forest : C.textMid }}>
-                {doneCount}/{trainingDays.length} done
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <div style={{ fontSize: 12, fontFamily: MONO, color: doneCount === trainingDays.length ? LAKE.forest : C.textMid }}>
+                  {doneCount}/{trainingDays.length} done
+                </div>
+                <button onClick={() => saveCycleAnchor(todayStr())}
+                  style={{ fontSize: 10, fontWeight: 700, color: LAKE.sky, background: "transparent", border: `1px solid ${LAKE.sky}44`, borderRadius: 6, padding: "3px 8px", cursor: "pointer", fontFamily: SANS, letterSpacing: 0.3 }}>
+                  New Cycle
+                </button>
               </div>
             </div>
             <div style={{ display: "flex", gap: 6 }}>
@@ -1937,7 +1969,7 @@ export default function App() {
             </div>
             {remaining.length > 0 && (
               <div style={{ marginTop: 10, fontSize: 12, color: C.textDim, fontFamily: SANS }}>
-                Remaining: {remaining.map(([, d]) => d.title.split(" ").slice(-1)[0] === "Chain" ? "Posterior Chain" : d.title.split("&")[0].trim()).join(" · ")}
+                Remaining: {remaining.map(([, d]) => d.title.split("&")[0].trim()).join(" · ")}
               </div>
             )}
           </div>
