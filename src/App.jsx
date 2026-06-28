@@ -867,7 +867,18 @@ export default function App() {
     }));
   }
 
-  const sorted = [...entries].sort((a, b) => b.date.localeCompare(a.date));
+  const today = todayStr();
+  const inProgressSession = entries.find(e => !e.completedAt && e.date === today) ?? null;
+  const sorted = [...entries]
+    .sort((a, b) => b.date.localeCompare(a.date))
+    .filter(e => {
+      // Always show completed sessions
+      if (e.completedAt) return true;
+      // Show today's incomplete session (in-progress)
+      if (e.date === today) return true;
+      // Hide all older incomplete sessions
+      return false;
+    });
 
   if (loading) {
     return (
@@ -1331,6 +1342,7 @@ export default function App() {
             MEV = minimum effective volume · MAV = max adaptive (the productive zone) · MRV = max recoverable. Stay in the green band for growth; back off if you're over MRV repeatedly.
           </div>
         </div>
+        <ResumeBar session={inProgressSession && activeId !== inProgressSession?.id ? inProgressSession : null} onResume={() => { setActiveId(inProgressSession.id); setTab("journal"); setView("entry"); }} />
         <BottomNav tab={tab} setTab={setTab} />
       </Shell>
     );
@@ -1505,6 +1517,7 @@ export default function App() {
 
           <div style={{ height: 20 }} />
         </div>
+        <ResumeBar session={inProgressSession && activeId !== inProgressSession?.id ? inProgressSession : null} onResume={() => { setActiveId(inProgressSession.id); setTab("journal"); setView("entry"); }} />
         <BottomNav tab={tab} setTab={setTab} />
       </Shell>
     );
@@ -1667,6 +1680,7 @@ export default function App() {
             </div>
           );
         })()}
+        <ResumeBar session={inProgressSession && activeId !== inProgressSession?.id ? inProgressSession : null} onResume={() => { setActiveId(inProgressSession.id); setTab("journal"); setView("entry"); }} />
         <BottomNav tab={tab} setTab={setTab} />
       </Shell>
     );
@@ -1821,6 +1835,7 @@ export default function App() {
             </div>
           </div>
         )}
+        <ResumeBar session={inProgressSession && activeId !== inProgressSession?.id ? inProgressSession : null} onResume={() => { setActiveId(inProgressSession.id); setTab("journal"); setView("entry"); }} />
         <BottomNav tab={tab} setTab={setTab} />
       </Shell>
     );
@@ -1833,7 +1848,7 @@ export default function App() {
         <div style={{ fontSize: 11, letterSpacing: 3, color: "#50566a", textTransform: "uppercase", fontFamily: SANS, marginBottom: 4 }}>Training Journal</div>
         <div style={{ fontSize: 30, fontWeight: 900, color: "#e4e8f0", lineHeight: 1, fontFamily: SANS, letterSpacing: -0.5 }}>My Workouts</div>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 6 }}>
-          <div style={{ fontSize: 13, color: "#50566a" }}>{entries.length} session{entries.length !== 1 ? "s" : ""} logged</div>
+          <div style={{ fontSize: 13, color: "#50566a" }}>{entries.filter(e => e.completedAt).length} session{entries.filter(e => e.completedAt).length !== 1 ? "s" : ""} logged</div>
           <button onClick={() => setTab("data")}
             style={{ padding: "5px 12px", borderRadius: 8, background: "transparent", border: `1px solid ${C.line}`, color: C.textMid, fontSize: 12, fontFamily: SANS, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 5 }}>
             <Database size={13} strokeWidth={2} /> Data
@@ -1879,18 +1894,55 @@ export default function App() {
         );
       })()}
 
-      <div style={{ padding: "12px 0 4px" }}>
-        <div style={{ fontSize: 11, letterSpacing: 2, color: "#50566a", textTransform: "uppercase", fontFamily: SANS, padding: "0 18px", marginBottom: 8 }}>Program Days</div>
-        <div style={{ display: "flex", gap: 8, overflowX: "auto", padding: "2px 18px 8px", scrollbarWidth: "none" }}>
-          {Object.entries(PROGRAM).map(([dn, d]) => (
-            <div key={dn} style={{ flexShrink: 0, padding: "8px 12px", borderRadius: 12, background: "#1b1c23", border: `1.5px solid ${d.color}33`, cursor: "pointer", minWidth: 60, textAlign: "center" }}
-              onClick={() => { setNewProgramDay(Number(dn)); setNewDate(todayStr()); setShowNewModal(true); }}>
-              <div style={{ fontSize: 18, fontWeight: 900, color: d.color, fontFamily: SANS }}>{dn}</div>
-              <div style={{ fontSize: 9, letterSpacing: 1.5, color: "#50566a", textTransform: "uppercase", marginTop: 2 }}>{d.tag}</div>
+      {/* ── THIS CYCLE tracker ──────────────────────────────────────────── */}
+      {(() => {
+        const cutoff = new Date();
+        cutoff.setDate(cutoff.getDate() - 8);
+        const cutoffStr = cutoff.toISOString().slice(0, 10);
+        // Which program days have been completed in the last 8 days?
+        const completedDays = new Set(
+          entries
+            .filter(e => e.completedAt && e.date >= cutoffStr && e.programDay)
+            .map(e => e.programDay)
+        );
+        const trainingDays = Object.entries(PROGRAM).filter(([, d]) => d.exercises.length > 0);
+        const restDays = Object.entries(PROGRAM).filter(([, d]) => d.exercises.length === 0);
+        const doneCount = trainingDays.filter(([dn]) => completedDays.has(Number(dn))).length;
+        const remaining = trainingDays.filter(([dn]) => !completedDays.has(Number(dn)));
+        return (
+          <div style={{ margin: "0 18px 12px", padding: "14px 16px", borderRadius: 16, background: C.surface, border: `1px solid ${C.line}` }}>
+            <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 12 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: C.textMid, letterSpacing: 0.5, textTransform: "uppercase", fontFamily: SANS }}>This Cycle</div>
+              <div style={{ fontSize: 12, fontFamily: MONO, color: doneCount === trainingDays.length ? LAKE.forest : C.textMid }}>
+                {doneCount}/{trainingDays.length} done
+              </div>
             </div>
-          ))}
-        </div>
-      </div>
+            <div style={{ display: "flex", gap: 6 }}>
+              {trainingDays.map(([dn, d]) => {
+                const done = completedDays.has(Number(dn));
+                return (
+                  <div key={dn} onClick={() => { setNewProgramDay(Number(dn)); setNewDate(todayStr()); setShowNewModal(true); }}
+                    style={{ flex: 1, borderRadius: 10, padding: "8px 4px", textAlign: "center", cursor: "pointer",
+                      background: done ? d.color + "22" : C.surface2,
+                      border: `1.5px solid ${done ? d.color + "88" : C.line}`,
+                      opacity: done ? 0.7 : 1,
+                    }}>
+                    <div style={{ fontSize: 15, fontWeight: 800, fontFamily: MONO, color: done ? d.color : C.text }}>
+                      {done ? "✓" : dn}
+                    </div>
+                    <div style={{ fontSize: 8, letterSpacing: 1, color: done ? d.color + "aa" : C.textDim, textTransform: "uppercase", marginTop: 2, fontFamily: SANS }}>{d.tag}</div>
+                  </div>
+                );
+              })}
+            </div>
+            {remaining.length > 0 && (
+              <div style={{ marginTop: 10, fontSize: 12, color: C.textDim, fontFamily: SANS }}>
+                Remaining: {remaining.map(([, d]) => d.title.split(" ").slice(-1)[0] === "Chain" ? "Posterior Chain" : d.title.split("&")[0].trim()).join(" · ")}
+              </div>
+            )}
+          </div>
+        );
+      })()}
 
       <div style={{ padding: "4px 18px 8px" }}>
         <button onClick={() => { setNewProgramDay(null); setNewDate(todayStr()); setShowNewModal(true); }}
@@ -1912,17 +1964,23 @@ export default function App() {
             const color = prog?.color ?? "#50566a";
             const isRest = prog?.exercises?.length === 0;
             const mvDone = entry.movements.filter(m => m.sets.some(s => s.r)).length;
+            const inProgress = !entry.completedAt && entry.date === today;
             return (
               <div key={entry.id}
                 onClick={() => { setActiveId(entry.id); setView("entry"); }}
-                style={{ marginBottom: 12, borderRadius: 18, overflow: "hidden", background: "#13141a", border: `1.5px solid #272830`, cursor: "pointer" }}>
-                <div style={{ height: 4, background: isRest ? "#272830" : color }} />
+                style={{ marginBottom: 12, borderRadius: 18, overflow: "hidden", background: "#13141a", border: `1.5px solid ${inProgress ? LAKE.sky + "55" : "#272830"}`, cursor: "pointer", opacity: inProgress ? 0.85 : 1 }}>
+                <div style={{ height: 4, background: inProgress ? LAKE.sky + "66" : isRest ? "#272830" : color }} />
                 <div style={{ padding: "14px 16px" }}>
                   <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontSize: 11, color: "#50566a", fontFamily: SANS, letterSpacing: 1, marginBottom: 3, display: "flex", alignItems: "center", gap: 6 }}>
                         {fmtDate(entry.date)}{prog ? ` · DAY ${entry.programDay}` : ""}
                         {entry.completedAt && <span style={{ color: "#b8d4e8", fontWeight: 800 }}>✓</span>}
+                        {inProgress && (
+                          <span style={{ fontSize: 9, fontWeight: 700, color: "#0d0d0f", background: LAKE.sky, padding: "2px 7px", borderRadius: 4, letterSpacing: 0.5, textTransform: "uppercase" }}>
+                            In Progress
+                          </span>
+                        )}
                       </div>
                       <div style={{ fontSize: 17, fontWeight: 800, color: "#e4e8f0", lineHeight: 1.2 }}>{entry.customTitle || "Untitled Session"}</div>
                       {entry.note ? (
@@ -2036,6 +2094,7 @@ export default function App() {
           </div>
         </div>
       )}
+      <ResumeBar session={inProgressSession && activeId !== inProgressSession?.id ? inProgressSession : null} onResume={() => { setActiveId(inProgressSession.id); setTab("journal"); setView("entry"); }} />
       <BottomNav tab={tab} setTab={setTab} />
     </Shell>
   );
@@ -2082,6 +2141,39 @@ function RestTimer({ restSecs, restLabel, color, timerState, onStart, onPause, o
 function timerBtn(bg, bright) {
   return { padding: "5px 12px", borderRadius: 8, border: "none", cursor: "pointer", background: bg, color: bright ? "#13141a" : "#8891a8", fontSize: 12, fontWeight: 700, fontFamily: SANS };
 }
+function ResumeBar({ session, onResume }) {
+  if (!session) return null;
+  const mvTotal = session.movements.length;
+  const mvDone = session.movements.filter(m => m.doneAt).length;
+  return (
+    <div onClick={onResume} style={{
+      position: "fixed", bottom: 72, left: "50%", transform: "translateX(-50%)",
+      width: "calc(100% - 36px)", maxWidth: 394,
+      background: "linear-gradient(135deg, #1b2a38, #162430)",
+      border: `1.5px solid ${LAKE.sky}55`,
+      borderRadius: 16, padding: "11px 16px",
+      display: "flex", alignItems: "center", gap: 12,
+      cursor: "pointer", zIndex: 49,
+      boxShadow: `0 4px 24px rgba(0,0,0,0.5), 0 0 0 1px ${LAKE.sky}22`,
+    }}>
+      {/* Animated pulse dot */}
+      <div style={{ position: "relative", flexShrink: 0 }}>
+        <div style={{ width: 10, height: 10, borderRadius: "50%", background: LAKE.sky }} />
+        <div style={{ position: "absolute", inset: -3, borderRadius: "50%", border: `1.5px solid ${LAKE.sky}55`, animation: "pulse 2s infinite" }} />
+      </div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: 13, fontWeight: 700, color: LAKE.sky, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          {session.customTitle || "Session in progress"}
+        </div>
+        <div style={{ fontSize: 11, color: "#8891a8", fontFamily: SANS, marginTop: 1 }}>
+          {mvDone}/{mvTotal} movements done · tap to resume
+        </div>
+      </div>
+      <div style={{ fontSize: 18, color: LAKE.sky, flexShrink: 0 }}>›</div>
+    </div>
+  );
+}
+
 function BottomNav({ tab, setTab }) {
   const tabs = [
     { id: "journal", label: "Journal", Icon: ClipboardList },
@@ -2105,7 +2197,12 @@ function BottomNav({ tab, setTab }) {
   );
 }
 function Shell({ children }) {
-  return <div style={{ background: C.bg, minHeight: "100vh", color: C.text, fontFamily: SANS, maxWidth: 430, margin: "0 auto", overflowX: "hidden" }}>{children}</div>;
+  return (
+    <div style={{ background: C.bg, minHeight: "100vh", color: C.text, fontFamily: SANS, maxWidth: 430, margin: "0 auto", overflowX: "hidden" }}>
+      <style>{`@keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.4;transform:scale(1.5)} }`}</style>
+      {children}
+    </div>
+  );
 }
 function TopBar({ left, right }) {
   return <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "52px 18px 8px" }}>{left}{right}</div>;
