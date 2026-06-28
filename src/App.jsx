@@ -299,7 +299,7 @@ async function saveWeights(weights) {
 
 // ── CSV EXPORT ────────────────────────────────────────────────────────────────
 function buildCSV(entries, weights) {
-  const rows = [["TYPE","DATE","PROGRAM_DAY","WORKOUT_TITLE","EXERCISE","SET","WEIGHT_KG","REPS","RIR","SESSION_NOTE","MOVEMENT_NOTE"]];
+  const rows = [["TYPE","DATE","PROGRAM_DAY","WORKOUT_TITLE","EXERCISE","SET","WEIGHT_LBS","REPS","RIR","SESSION_NOTE","MOVEMENT_NOTE"]];
   for (const e of [...entries].sort((a,b) => a.date.localeCompare(b.date))) {
     if (!e.movements || e.movements.length === 0) {
       rows.push(["WORKOUT", e.date, e.programDay ?? "", e.customTitle, "", "", "", "", "", csvEsc(e.note), ""]);
@@ -563,14 +563,14 @@ function buildCoachSummary(entries, weightLog, mesoInfo) {
     e.movements.forEach(mv => {
       const sets = mv.sets.filter(s => s.w && s.r);
       if (!sets.length) return;
-      const setStr = sets.map(s => `${s.w}kg×${s.r}${s.rir !== undefined && s.rir !== "" ? ` @${s.rir}RIR` : ""}`).join(", ");
+      const setStr = sets.map(s => `${s.w}lbs×${s.r}${s.rir !== undefined && s.rir !== "" ? ` @${s.rir}RIR` : ""}`).join(", ");
       txt += `  ${mv.name}: ${setStr}\n`;
     });
   });
 
   txt += `\nPERSONAL RECORDS (estimated 1RM)\n`;
   Object.entries(prs).sort((a, b) => b[1].maxE1RM - a[1].maxE1RM).slice(0, 10).forEach(([name, pr]) => {
-    txt += `  ${name}: ${pr.maxWeight}kg × ${pr.reps} = ~${pr.maxE1RM}kg e1RM (${pr.date})\n`;
+    txt += `  ${name}: ${pr.maxWeight}lbs × ${pr.reps} = ~${pr.maxE1RM}lb e1RM (${pr.date})\n`;
   });
 
   return txt;
@@ -1005,7 +1005,7 @@ export default function App() {
             <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
               {activeMv.lastSets.map((s, i) => (
                 <span key={i} style={{ fontSize: 12, fontFamily: SANS, fontWeight: 700, padding: "4px 9px", borderRadius: 7, background: "#1b1c23", border: "1px solid #1b1c23", color: "#b8d4e888" }}>
-                  {s.w ? `${s.w}kg` : "BW"}×{s.r || "?"}
+                  {s.w ? `${s.w}lbs` : "BW"}×{s.r || "?"}
                 </span>
               ))}
             </div>
@@ -1507,7 +1507,7 @@ export default function App() {
                 <div style={{ display: "flex", justifyContent: "space-between", marginTop: 10 }}>
                   <div style={{ textAlign: "center" }}>
                     <div style={{ fontSize: 9, color: C.textDim, letterSpacing: 1, textTransform: "uppercase", fontFamily: SANS }}>First</div>
-                    <div style={{ fontSize: 16, fontWeight: 800, color: C.textMid, fontFamily: MONO }}>{history[0].e1rm}kg</div>
+                    <div style={{ fontSize: 16, fontWeight: 800, color: C.textMid, fontFamily: MONO }}>{history[0].e1rm}lbs</div>
                   </div>
                   <div style={{ textAlign: "center" }}>
                     <div style={{ fontSize: 9, color: C.textDim, letterSpacing: 1, textTransform: "uppercase", fontFamily: SANS }}>Best</div>
@@ -1520,7 +1520,7 @@ export default function App() {
                   <div style={{ textAlign: "center" }}>
                     <div style={{ fontSize: 9, color: C.textDim, letterSpacing: 1, textTransform: "uppercase", fontFamily: SANS }}>Change</div>
                     <div style={{ fontSize: 16, fontWeight: 800, color: history[history.length-1].e1rm >= history[0].e1rm ? C.accent : C.red, fontFamily: MONO }}>
-                      {history[history.length-1].e1rm >= history[0].e1rm ? "+" : ""}{history[history.length-1].e1rm - history[0].e1rm}kg
+                      {history[history.length-1].e1rm >= history[0].e1rm ? "+" : ""}{history[history.length-1].e1rm - history[0].e1rm}lbs
                     </div>
                   </div>
                 </div>
@@ -1539,10 +1539,10 @@ export default function App() {
                 <Trophy size={14} color={C.accent} strokeWidth={2} style={{ flexShrink: 0 }} />
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 13, fontWeight: 600, color: C.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{name}</div>
-                  <div style={{ fontSize: 11, color: C.textDim, fontFamily: SANS, marginTop: 2 }}>{pr.date} · {pr.maxWeight}kg × {pr.reps}</div>
+                  <div style={{ fontSize: 11, color: C.textDim, fontFamily: SANS, marginTop: 2 }}>{pr.date} · {pr.maxWeight}lbs × {pr.reps}</div>
                 </div>
                 <div style={{ textAlign: "right", flexShrink: 0 }}>
-                  <div style={{ fontSize: 16, fontWeight: 800, color: C.accent, fontFamily: MONO }}>~{pr.maxE1RM}kg</div>
+                  <div style={{ fontSize: 16, fontWeight: 800, color: C.accent, fontFamily: MONO }}>~{pr.maxE1RM}lbs</div>
                   <div style={{ fontSize: 9, color: C.textDim, fontFamily: SANS }}>e1RM</div>
                 </div>
               </div>
@@ -1683,7 +1683,7 @@ export default function App() {
                         <div style={{ fontSize: 15, fontWeight: 700, color: "#e4e8f0" }}>{entry.customTitle || "Custom Session"}</div>
                         <div style={{ fontSize: 11, color: "#50566a", fontFamily: SANS, marginTop: 2 }}>
                           {entry.movements.length} movements
-                          {totalVol > 0 && <span style={{ color: "#8891a8", marginLeft: 8 }}>{Math.round(totalVol).toLocaleString()} kg total vol</span>}
+                          {totalVol > 0 && <span style={{ color: "#8891a8", marginLeft: 8 }}>{Math.round(totalVol).toLocaleString()} lbs total vol</span>}
                         </div>
                       </div>
                       <div style={{ color: "#50566a", fontSize: 14, fontFamily: SANS, transition: "transform 0.2s", transform: expanded ? "rotate(90deg)" : "none" }}>›</div>
@@ -1855,7 +1855,7 @@ export default function App() {
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
                   <label style={labelStyle}>Weight</label>
                   <div style={{ display: "flex", gap: 6 }}>
-                    {["lbs", "kg"].map(u => (
+                    {["lbs"].map(u => (
                       <button key={u} onClick={() => setWeightUnit(u)} style={{ padding: "4px 12px", borderRadius: 8, border: "none", cursor: "pointer", fontFamily: SANS, fontSize: 12, fontWeight: 700, background: weightUnit === u ? "#b8d4e8" : "#272830", color: weightUnit === u ? "#13141a" : "#8891a8" }}>{u}</button>
                     ))}
                   </div>
@@ -2301,7 +2301,7 @@ function SetRow({ num, weight, reps, rir, repsTarget, type, isLastSet, done, col
         <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
           <div style={{ fontSize: 10, letterSpacing: 1.5, color: "#50566a", textTransform: "uppercase", fontFamily: SANS }}>Weight</div>
           <input type="number" inputMode="decimal" value={weight} onChange={e => onW(e.target.value)} placeholder="0" style={setInput(color)} />
-          <div style={{ fontSize: 10, color: "#50566a", fontFamily: SANS }}>kg</div>
+          <div style={{ fontSize: 10, color: "#50566a", fontFamily: SANS }}>lbs</div>
         </div>
         <div style={{ color: "#272830", fontSize: 16, fontWeight: 300 }}>×</div>
         <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
