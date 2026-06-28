@@ -1958,7 +1958,7 @@ export default function App() {
                     <div style={{ fontSize: 15, fontWeight: 800, fontFamily: MONO, color: done ? d.color : C.text }}>
                       {done ? "✓" : dn}
                     </div>
-                    <div style={{ fontSize: 8, letterSpacing: 1, color: done ? d.color + "aa" : C.textDim, textTransform: "uppercase", marginTop: 2, fontFamily: SANS }}>{d.tag}</div>
+                    <div style={{ fontSize: 8, letterSpacing: 1, color: done ? d.color + "aa" : C.textDim, textTransform: "uppercase", marginTop: 2, fontFamily: SANS }}>{{"1":"LEGS","2":"PUSH","4":"PULL","6":"LEGS II","7":"PUSH II"}[dn] ?? d.tag}</div>
                   </div>
                 );
               })}
