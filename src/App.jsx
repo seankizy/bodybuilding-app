@@ -1098,7 +1098,7 @@ export default function App() {
         />
 
         {!showStopwatch && (
-          <div style={{ padding: "16px 18px 48px" }}>
+          <div style={{ padding: "16px 18px 120px" }}>
             {alreadyDone ? (
               <div style={{ display: "flex", gap: 10 }}>
                 <button onClick={() => updateMovement(activeEntry.id, activeMv.id, { doneAt: null })}
@@ -1246,7 +1246,7 @@ export default function App() {
         )}
 
         {!isRest && (
-          <div style={{ padding: "16px 18px 48px" }}>
+          <div style={{ padding: "16px 18px 120px" }}>
             {activeEntry.completedAt ? (
               <div style={{ padding: "18px", borderRadius: 16, background: "#1b1c23", border: "2px solid #b8d4e866", textAlign: "center" }}>
                 <div style={{ display: "flex", justifyContent: "center", marginBottom: 8 }}><Trophy size={30} color={C.accent} strokeWidth={2} /></div>
@@ -1610,26 +1610,32 @@ export default function App() {
             </button>
           </div>
           <button onClick={() => {
-            if (!window.confirm("Convert all stored weights from kg to lbs? This multiplies every set weight by 2.2046. Only do this once — it cannot be undone (export a JSON backup first).")) return;
-            mutate(prev => prev.map(e => ({
-              ...e,
-              movements: e.movements.map(mv => ({
-                ...mv,
-                sets: mv.sets.map(s => ({
-                  ...s,
-                  w: s.w && !isNaN(parseFloat(s.w))
-                    ? String(Math.round(parseFloat(s.w) * 2.2046 * 2) / 2) // round to nearest 0.5
-                    : s.w,
+            if (!window.confirm("Convert Italy-period weights (May 7 – Jun 28, 2026) from kg to lbs?\n\nSessions before May 7 were already in lbs and won't be touched.\n\nExport a JSON backup first — this cannot be undone.")) return;
+            const KG_START = "2026-05-07";
+            const KG_END = "2026-06-28";
+            mutate(prev => prev.map(e => {
+              // Only convert sessions logged during Italy
+              if (e.date < KG_START || e.date > KG_END) return e;
+              return {
+                ...e,
+                movements: e.movements.map(mv => ({
+                  ...mv,
+                  sets: mv.sets.map(s => ({
+                    ...s,
+                    w: s.w && !isNaN(parseFloat(s.w))
+                      ? String(Math.round(parseFloat(s.w) * 2.2046 * 2) / 2)
+                      : s.w,
+                  })),
+                  lastSets: mv.lastSets ? mv.lastSets.map(s => ({
+                    ...s,
+                    w: s.w && !isNaN(parseFloat(s.w))
+                      ? String(Math.round(parseFloat(s.w) * 2.2046 * 2) / 2)
+                      : s.w,
+                  })) : mv.lastSets,
                 })),
-                lastSets: mv.lastSets ? mv.lastSets.map(s => ({
-                  ...s,
-                  w: s.w && !isNaN(parseFloat(s.w))
-                    ? String(Math.round(parseFloat(s.w) * 2.2046 * 2) / 2)
-                    : s.w,
-                })) : mv.lastSets,
-              })),
-            })));
-            alert("Done — all weights converted to lbs.");
+              };
+            }));
+            alert("Done — Italy sessions (May 7 – Jun 28) converted to lbs. Earlier sessions untouched.");
           }} style={{ width: "100%", padding: "13px", borderRadius: 14, background: "#1b1c23", border: `1.5px solid ${C.amber}44`, color: C.amber, fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: SANS, marginBottom: 10 }}>
             Convert Stored Weights: kg to lbs
           </button>
