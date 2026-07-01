@@ -914,6 +914,11 @@ export default function App() {
     const alreadyDone = !!activeMv.doneAt;
 
     function finishAndAdvance() {
+      const hasLoggedReps = activeMv.sets.some(s => s.r && String(s.r).trim() !== "");
+      if (!hasLoggedReps) {
+        alert("Log at least one set's reps before completing this movement.");
+        return;
+      }
       const ts = new Date().toISOString();
       updateMovement(activeEntry.id, activeMv.id, { doneAt: ts });
       dismissTimer();
@@ -1189,6 +1194,11 @@ export default function App() {
                     <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
                       <div onClick={e => {
                         e.stopPropagation();
+                        const hasLoggedReps = mv.sets.some(s => s.r && String(s.r).trim() !== "");
+                        if (!mv.doneAt && !hasLoggedReps) {
+                          alert("Log at least one set's reps before marking this movement done.");
+                          return;
+                        }
                         const ts = mv.doneAt ? null : new Date().toISOString();
                         updateMovement(activeEntry.id, mv.id, { doneAt: ts });
                       }} style={{
@@ -2284,6 +2294,21 @@ function GhostBtn({ onClick, children }) {
 function SetRow({ num, weight, reps, rir, repsTarget, type, isLastSet, done, color, onW, onR, onRIR, onDelete, onDone }) {
   const repRange = (() => {
     if (!repsTarget) return null;
+    // Handle split format: "2×10-12, 2×15-20" — pick the range for this set number
+    const splitMatch = repsTarget.match(/(\d+)×(\d+)[–\-](\d+)/g);
+    if (splitMatch) {
+      let setCounter = 0;
+      for (const chunk of splitMatch) {
+        const cm = chunk.match(/(\d+)×(\d+)[–\-](\d+)/);
+        if (!cm) continue;
+        const count = parseInt(cm[1]);
+        setCounter += count;
+        if (num <= setCounter) {
+          return { min: parseInt(cm[2]), max: parseInt(cm[3]) };
+        }
+      }
+    }
+    // Standard single range: "10–12"
     const m = repsTarget.match(/(\d+)\s*[–\-]\s*(\d+)/);
     if (m) return { min: parseInt(m[1]), max: parseInt(m[2]) };
     const single = repsTarget.match(/^(\d+)/);
