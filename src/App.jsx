@@ -878,6 +878,7 @@ export default function App() {
   const [aiError, setAiError] = useState("");
   const [dayTypeOverride, setDayTypeOverride] = useState(null); // per-date manual override stored in day data
   const [foodPhoto, setFoodPhoto] = useState(null); // { dataUrl, mediaType }
+  const [editingFoodId, setEditingFoodId] = useState(null);
   const [macroSearchQuery, setMacroSearchQuery] = useState("");
   const [showMacroSearch, setShowMacroSearch] = useState(false);
   const [showChef, setShowChef] = useState(false);
@@ -1622,22 +1623,46 @@ export default function App() {
     }
     function addFood() {
       if (!foodName.trim() && !foodP && !foodC && !foodF) return;
-      const entry = {
-        id: Date.now(),
-        name: foodName.trim() || "Food",
-        p: parseFloat(foodP) || 0,
-        c: parseFloat(foodC) || 0,
-        f: parseFloat(foodF) || 0,
-        cal: macroCals(foodP, foodC, foodF),
-        time: new Date().toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }),
-      };
-      mutateMacros(prev => {
-        const d = prev[macroDate] ?? { entries: [], dayType: dType };
-        prev[macroDate] = { ...d, entries: [...(d.entries ?? []), entry] };
-        return prev;
-      });
+      const p = parseFloat(foodP) || 0, c = parseFloat(foodC) || 0, f = parseFloat(foodF) || 0;
+      if (editingFoodId) {
+        // Update the existing entry in place, keep its original id/time
+        mutateMacros(prev => {
+          const d = prev[macroDate];
+          if (!d) return prev;
+          prev[macroDate] = {
+            ...d,
+            entries: d.entries.map(e => e.id === editingFoodId
+              ? { ...e, name: foodName.trim() || "Food", p, c, f, cal: macroCals(p, c, f) }
+              : e),
+          };
+          return prev;
+        });
+        setEditingFoodId(null);
+      } else {
+        const entry = {
+          id: Date.now(),
+          name: foodName.trim() || "Food",
+          p, c, f,
+          cal: macroCals(p, c, f),
+          time: new Date().toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }),
+        };
+        mutateMacros(prev => {
+          const d = prev[macroDate] ?? { entries: [], dayType: dType };
+          prev[macroDate] = { ...d, entries: [...(d.entries ?? []), entry] };
+          return prev;
+        });
+      }
       setFoodName(""); setFoodP(""); setFoodC(""); setFoodF("");
       setShowFoodModal(false);
+    }
+    function startEditFood(entry) {
+      setEditingFoodId(entry.id);
+      setFoodName(entry.name || "");
+      setFoodP(entry.p ? String(entry.p) : "");
+      setFoodC(entry.c ? String(entry.c) : "");
+      setFoodF(entry.f ? String(entry.f) : "");
+      setAiDescription(""); setFoodPhoto(null); setAiError("");
+      setShowFoodModal(true);
     }
     function deleteFood(id) {
       mutateMacros(prev => {
@@ -1671,7 +1696,9 @@ export default function App() {
               role: "user",
               content: [
                 { type: "image", source: { type: "base64", media_type: foodPhoto.mediaType, data: base64Data } },
-                { type: "text", text: `Estimate macros for the food shown in this photo${aiDescription.trim() ? ` (context: ${aiDescription.trim()})` : ""}. Respond with ONLY a JSON object, no markdown: {"name": "short food name", "p": grams protein, "c": grams carbs, "f": grams fat}` },
+                { type: "text", text: aiDescription.trim()
+                    ? `Estimate macros for the food shown in this photo. IMPORTANT: the person has given this note about what they actually ate — it overrides what you'd guess from the image alone (e.g. if they say "half of this" or "ate 2 of the 4 pieces", calculate macros for that actual portion, not the full plate shown): "${aiDescription.trim()}". Respond with ONLY a JSON object, no markdown: {"name": "short food name reflecting the actual portion eaten", "p": grams protein, "c": grams carbs, "f": grams fat}`
+                    : `Estimate macros for the food shown in this photo, for the full portion visible. Respond with ONLY a JSON object, no markdown: {"name": "short food name", "p": grams protein, "c": grams carbs, "f": grams fat}` },
               ],
             }],
           }),
@@ -1825,7 +1852,7 @@ export default function App() {
         </div>
 
         <div style={{ display: "flex", gap: 10, padding: "0 18px 8px" }}>
-          <button onClick={() => { setAiError(""); setShowFoodModal(true); }}
+          <button onClick={() => { setAiError(""); setEditingFoodId(null); setFoodName(""); setFoodP(""); setFoodC(""); setFoodF(""); setShowFoodModal(true); }}
             style={{ flex: 2, padding: "14px", borderRadius: 14, background: LAKE.sky, border: "none", color: "#0a0a0a", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: SANS, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
             <Plus size={16} strokeWidth={2.5} /> Log Food
           </button>
@@ -1888,18 +1915,24 @@ export default function App() {
           {(day.entries ?? []).length === 0 ? (
             <div style={{ padding: "32px 0", textAlign: "center", color: C.textDim, fontSize: 13, fontFamily: SANS }}>Nothing logged {isToday ? "yet today" : "this day"}</div>
           ) : [...day.entries].reverse().map(e => (
-            <div key={e.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", borderRadius: 14, background: C.surface, border: `1px solid ${C.line}`, marginBottom: 8 }}>
+            <div key={e.id} onClick={() => isToday && startEditFood(e)} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", borderRadius: 14, background: C.surface, border: `1px solid ${C.line}`, marginBottom: 8, cursor: isToday ? "pointer" : "default" }}>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 14, fontWeight: 600, color: C.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{e.name}</div>
                 <div style={{ fontSize: 11, color: C.textDim, fontFamily: MONO, marginTop: 2 }}>
                   {e.cal || 0} kcal · {Math.round(e.p) || 0}p / {Math.round(e.c) || 0}c / {Math.round(e.f) || 0}f{e.time ? ` · ${e.time}` : ""}
                 </div>
               </div>
-              <button onClick={() => logAgain(e)} title="Log again today"
+              {isToday && (
+                <button onClick={(ev) => { ev.stopPropagation(); startEditFood(e); }} title="Edit"
+                  style={{ width: 30, height: 30, borderRadius: 8, background: C.surface2, border: `1px solid ${C.line}`, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <Pencil size={13} color={C.textMid} strokeWidth={2} />
+                </button>
+              )}
+              <button onClick={(ev) => { ev.stopPropagation(); logAgain(e); }} title="Log again today"
                 style={{ width: 30, height: 30, borderRadius: 8, background: C.surface2, border: `1px solid ${C.line}`, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
                 <Plus size={14} color={LAKE.sky} strokeWidth={2.5} />
               </button>
-              <button onClick={() => deleteFood(e.id)}
+              <button onClick={(ev) => { ev.stopPropagation(); deleteFood(e.id); }}
                 style={{ width: 30, height: 30, borderRadius: 8, background: "#1c1c1c", border: "1px solid #4a2820", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
                 <X size={14} color={C.red} strokeWidth={2.5} />
               </button>
@@ -1910,12 +1943,14 @@ export default function App() {
         {/* Log Food modal */}
         {showFoodModal && (
           <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)", display: "flex", alignItems: "flex-end", zIndex: 100 }}
-            onClick={() => { setShowFoodModal(false); setFoodPhoto(null); setAiError(""); }}>
+            onClick={() => { setShowFoodModal(false); setFoodPhoto(null); setAiError(""); setEditingFoodId(null); setFoodName(""); setFoodP(""); setFoodC(""); setFoodF(""); }}>
             <div style={{ background: C.surface, width: "100%", borderRadius: "24px 24px 0 0", padding: "24px 18px 44px", border: `1.5px solid ${C.line}`, borderBottom: "none", boxSizing: "border-box", maxHeight: "85vh", overflowY: "auto" }}
               onClick={e => e.stopPropagation()}>
               <div style={{ width: 36, height: 4, borderRadius: 2, background: C.line, margin: "0 auto 20px" }} />
-              <div style={{ fontSize: 18, fontWeight: 700, color: C.text, marginBottom: 16, fontFamily: SANS }}>Log Food</div>
+              <div style={{ fontSize: 18, fontWeight: 700, color: C.text, marginBottom: 16, fontFamily: SANS }}>{editingFoodId ? "Edit Entry" : "Log Food"}</div>
 
+              {!editingFoodId && (
+              <>
               {/* Photo logging */}
               <div style={{ marginBottom: 14, padding: "14px", borderRadius: 14, background: C.surface2, border: `1px solid ${C.line}` }}>
                 <div style={{ fontSize: 11, letterSpacing: 1.5, color: LAKE.forest, textTransform: "uppercase", fontFamily: SANS, fontWeight: 700, marginBottom: 8 }}>Snap a Photo — AI estimates</div>
@@ -1935,17 +1970,23 @@ export default function App() {
                   </label>
                 )}
                 {foodPhoto && (
-                  <button onClick={aiLogFoodPhoto} disabled={aiLoading}
-                    style={{ width: "100%", marginTop: 8, padding: "11px", borderRadius: 10, background: aiLoading ? C.surface : LAKE.forest, border: "none", color: aiLoading ? C.textDim : "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: SANS }}>
-                    {aiLoading ? "Analyzing photo…" : "Estimate & Log from Photo"}
-                  </button>
+                  <>
+                    <textarea value={aiDescription} onChange={e => setAiDescription(e.target.value)} rows={2}
+                      placeholder="Optional: correct the portion — e.g. &quot;I only ate half of this&quot; or &quot;2 of the 4 pieces&quot;"
+                      style={{ width: "100%", marginTop: 10, background: C.bg, border: `1px solid ${C.line}`, borderRadius: 10, padding: "10px 12px", fontSize: 16, color: C.text, outline: "none", resize: "none", fontFamily: SANS, boxSizing: "border-box" }} />
+                    <button onClick={aiLogFoodPhoto} disabled={aiLoading}
+                      style={{ width: "100%", marginTop: 8, padding: "11px", borderRadius: 10, background: aiLoading ? C.surface : LAKE.forest, border: "none", color: aiLoading ? C.textDim : "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: SANS }}>
+                      {aiLoading ? "Analyzing photo…" : "Estimate & Log from Photo"}
+                    </button>
+                  </>
                 )}
               </div>
 
-              {/* AI describe */}
+              {/* AI describe (text only, no photo) */}
               <div style={{ marginBottom: 18, padding: "14px", borderRadius: 14, background: C.surface2, border: `1px solid ${C.line}` }}>
                 <div style={{ fontSize: 11, letterSpacing: 1.5, color: LAKE.sky, textTransform: "uppercase", fontFamily: SANS, fontWeight: 700, marginBottom: 8 }}>Describe It — AI estimates</div>
-                <textarea value={aiDescription} onChange={e => setAiDescription(e.target.value)} rows={2}
+                <div style={{ fontSize: 11, color: C.textDim, marginBottom: 8, fontFamily: SANS }}>No photo — just tell it what you ate.</div>
+                <textarea value={foodPhoto ? "" : aiDescription} onChange={e => setAiDescription(e.target.value)} rows={2}
                   placeholder="e.g. 1.5 scoops whey with oat milk and a banana"
                   style={{ width: "100%", background: C.bg, border: `1px solid ${C.line}`, borderRadius: 10, padding: "10px 12px", fontSize: 16, color: C.text, outline: "none", resize: "none", fontFamily: SANS, boxSizing: "border-box" }} />
                 <button onClick={aiLogFood} disabled={aiLoading}
@@ -1954,9 +1995,11 @@ export default function App() {
                 </button>
                 {aiError && <div style={{ marginTop: 8, fontSize: 12, color: C.red, fontFamily: SANS }}>{aiError}</div>}
               </div>
+              </>
+              )}
 
-              {/* Manual entry */}
-              <div style={{ fontSize: 11, letterSpacing: 1.5, color: C.textDim, textTransform: "uppercase", fontFamily: SANS, fontWeight: 700, marginBottom: 8 }}>Or Enter Manually</div>
+              {/* Manual entry (always shown — this is the edit form too) */}
+              <div style={{ fontSize: 11, letterSpacing: 1.5, color: C.textDim, textTransform: "uppercase", fontFamily: SANS, fontWeight: 700, marginBottom: 8 }}>{editingFoodId ? "Edit Details" : "Or Enter Manually"}</div>
               <input value={foodName} onChange={e => setFoodName(e.target.value)} placeholder="Food name"
                 style={{ width: "100%", background: C.surface2, border: `1px solid ${C.line}`, borderRadius: 10, padding: "11px 14px", fontSize: 16, color: C.text, outline: "none", fontFamily: SANS, boxSizing: "border-box", marginBottom: 10 }} />
               <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
@@ -1971,10 +2014,18 @@ export default function App() {
               <div style={{ fontSize: 13, color: C.textMid, fontFamily: MONO, textAlign: "center", marginBottom: 14 }}>
                 = {macroCals(foodP, foodC, foodF)} kcal
               </div>
-              <button onClick={addFood}
-                style={{ width: "100%", padding: "14px", borderRadius: 12, background: LAKE.forest, border: "none", color: "#fff", fontSize: 15, fontWeight: 700, cursor: "pointer", fontFamily: SANS }}>
-                Add Entry
-              </button>
+              <div style={{ display: "flex", gap: 8 }}>
+                {editingFoodId && (
+                  <button onClick={() => { setEditingFoodId(null); setFoodName(""); setFoodP(""); setFoodC(""); setFoodF(""); setShowFoodModal(false); }}
+                    style={{ flex: 1, padding: "14px", borderRadius: 12, background: "transparent", border: `1px solid ${C.line}`, color: C.textMid, fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: SANS }}>
+                    Cancel
+                  </button>
+                )}
+                <button onClick={addFood}
+                  style={{ flex: editingFoodId ? 2 : 1, padding: "14px", borderRadius: 12, background: LAKE.forest, border: "none", color: "#fff", fontSize: 15, fontWeight: 700, cursor: "pointer", fontFamily: SANS }}>
+                  {editingFoodId ? "Save Changes" : "Add Entry"}
+                </button>
+              </div>
             </div>
           </div>
         )}
