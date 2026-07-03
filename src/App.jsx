@@ -35,6 +35,8 @@ const Download = (p) => <Icon {...p}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1
 const Upload = (p) => <Icon {...p}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></Icon>;
 const Pencil = (p) => <Icon {...p}><path d="M17 3a2.83 2.83 0 0 1 4 4L7.5 20.5 2 22l1.5-5.5z"/></Icon>;
 const Utensils = (p) => <Icon {...p}><path d="M3 2v7c0 1.1.9 2 2 2h1v11M6 2v9M9 2v9M17 2c-2.2 0-4 2.7-4 6s1.8 6 4 6v10"/></Icon>;
+const Search = (p) => <Icon {...p}><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></Icon>;
+const Camera = (p) => <Icon {...p}><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></Icon>;
 
 // ── DESIGN TOKENS ─────────────────────────────────────────────────────────────
 // Typography: clean sans for labels/body, monospace reserved for NUMBERS (data is the hero)
@@ -706,6 +708,10 @@ export default function App() {
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState("");
   const [dayTypeOverride, setDayTypeOverride] = useState(null); // per-date manual override stored in day data
+  const [foodPhoto, setFoodPhoto] = useState(null); // { dataUrl, mediaType }
+  const [macroSearchQuery, setMacroSearchQuery] = useState("");
+  const [showMacroSearch, setShowMacroSearch] = useState(false);
+  const [showChef, setShowChef] = useState(false);
   const [showMesoEdit, setShowMesoEdit] = useState(false);
   const [timerState, setTimerState] = useState(null);
   // NEW: between-movement stopwatch
@@ -1478,6 +1484,60 @@ export default function App() {
         return prev;
       });
     }
+    async function aiLogFoodPhoto() {
+      if (!foodPhoto) return;
+      setAiLoading(true); setAiError("");
+      try {
+        const apiKey = import.meta.env?.VITE_ANTHROPIC_API_KEY;
+        if (!apiKey) throw new Error("AI logging needs VITE_ANTHROPIC_API_KEY set in Vercel env vars.");
+        const base64Data = foodPhoto.dataUrl.split(",")[1];
+        const resp = await fetch("https://api.anthropic.com/v1/messages", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "x-api-key": apiKey, "anthropic-version": "2023-06-01", "anthropic-dangerous-direct-browser-access": "true" },
+          body: JSON.stringify({
+            model: "claude-sonnet-4-5",
+            max_tokens: 500,
+            messages: [{
+              role: "user",
+              content: [
+                { type: "image", source: { type: "base64", media_type: foodPhoto.mediaType, data: base64Data } },
+                { type: "text", text: `Estimate macros for the food shown in this photo${aiDescription.trim() ? ` (context: ${aiDescription.trim()})` : ""}. Respond with ONLY a JSON object, no markdown: {"name": "short food name", "p": grams protein, "c": grams carbs, "f": grams fat}` },
+              ],
+            }],
+          }),
+        });
+        const data = await resp.json();
+        const text = data.content?.map(b => b.text || "").join("") ?? "";
+        const clean = text.replace(/```json|```/g, "").trim();
+        const parsed = JSON.parse(clean);
+        const entry = {
+          id: Date.now(),
+          name: parsed.name || "Food (photo)",
+          p: parseFloat(parsed.p) || 0,
+          c: parseFloat(parsed.c) || 0,
+          f: parseFloat(parsed.f) || 0,
+          cal: macroCals(parsed.p, parsed.c, parsed.f),
+          time: new Date().toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }),
+        };
+        mutateMacros(prev => {
+          const d = prev[macroDate] ?? { entries: [], dayType: dType };
+          prev[macroDate] = { ...d, entries: [...(d.entries ?? []), entry] };
+          return prev;
+        });
+        setAiDescription(""); setFoodPhoto(null);
+        setShowFoodModal(false);
+      } catch (err) {
+        setAiError(err.message || "AI photo estimate failed — use manual entry.");
+      } finally {
+        setAiLoading(false);
+      }
+    }
+    function handlePhotoSelect(file) {
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = e => setFoodPhoto({ dataUrl: e.target.result, mediaType: file.type || "image/jpeg" });
+      reader.readAsDataURL(file);
+    }
     async function aiLogFood() {
       if (!aiDescription.trim()) return;
       setAiLoading(true); setAiError("");
@@ -1592,11 +1652,54 @@ export default function App() {
             style={{ flex: 2, padding: "14px", borderRadius: 14, background: LAKE.sky, border: "none", color: "#0d0d0f", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: SANS, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
             <Plus size={16} strokeWidth={2.5} /> Log Food
           </button>
+          <button onClick={() => setShowChef(true)}
+            style={{ padding: "14px", borderRadius: 14, background: C.surface2, border: `1px solid ${C.line}`, color: LAKE.forest, fontSize: 13, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }} title="Macro Chef">
+            <Utensils size={16} strokeWidth={2} />
+          </button>
+          <button onClick={() => setShowMacroSearch(s => !s)}
+            style={{ padding: "14px", borderRadius: 14, background: showMacroSearch ? LAKE.sky + "22" : C.surface2, border: `1px solid ${showMacroSearch ? LAKE.sky + "66" : C.line}`, color: showMacroSearch ? LAKE.sky : C.textMid, fontSize: 13, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }} title="Search food history">
+            <Search size={16} strokeWidth={2} />
+          </button>
           <button onClick={() => setShowTargetsModal(true)}
-            style={{ flex: 1, padding: "14px", borderRadius: 14, background: C.surface2, border: `1px solid ${C.line}`, color: C.textMid, fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: SANS }}>
+            style={{ padding: "14px", borderRadius: 14, background: C.surface2, border: `1px solid ${C.line}`, color: C.textMid, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
             Targets
           </button>
         </div>
+
+        {/* Food search across all history */}
+        {showMacroSearch && (
+          <div style={{ padding: "0 18px 12px" }}>
+            <input value={macroSearchQuery} onChange={e => setMacroSearchQuery(e.target.value)} placeholder="Search food history…" autoFocus
+              style={{ width: "100%", padding: "11px 14px", borderRadius: 12, background: C.surface2, border: `1px solid ${C.line}`, color: C.text, fontSize: 14, fontFamily: SANS, outline: "none", boxSizing: "border-box", marginBottom: 10 }} />
+            {macroSearchQuery.trim().length > 0 && (() => {
+              const q = macroSearchQuery.toLowerCase();
+              const results = [];
+              Object.keys(macros).sort((a, b) => b.localeCompare(a)).forEach(dateKey => {
+                (macros[dateKey]?.entries ?? []).forEach(e => {
+                  if (e.name?.toLowerCase().includes(q)) results.push({ ...e, date: dateKey });
+                });
+              });
+              return results.length === 0 ? (
+                <div style={{ padding: "16px 0", textAlign: "center", color: C.textDim, fontSize: 13, fontFamily: SANS }}>No matches</div>
+              ) : (
+                <div>
+                  {results.slice(0, 30).map(r => (
+                    <div key={`${r.date}-${r.id}`} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 14px", borderRadius: 12, background: C.surface, border: `1px solid ${C.line}`, marginBottom: 6 }}>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 13, fontWeight: 600, color: C.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.name}</div>
+                        <div style={{ fontSize: 10, color: C.textDim, fontFamily: MONO, marginTop: 2 }}>{fmtDate(r.date)} · {r.cal} kcal · {Math.round(r.p)}p/{Math.round(r.c)}c/{Math.round(r.f)}f</div>
+                      </div>
+                      <button onClick={() => { logAgain(r); setShowMacroSearch(false); setMacroSearchQuery(""); }}
+                        style={{ width: 28, height: 28, borderRadius: 8, background: C.surface2, border: `1px solid ${C.line}`, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        <Plus size={13} color={LAKE.sky} strokeWidth={2.5} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              );
+            })()}
+          </div>
+        )}
 
         {/* Entries list */}
         <div style={{ padding: "8px 18px 4px" }}>
@@ -1630,11 +1733,37 @@ export default function App() {
         {/* Log Food modal */}
         {showFoodModal && (
           <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)", display: "flex", alignItems: "flex-end", zIndex: 100 }}
-            onClick={() => setShowFoodModal(false)}>
+            onClick={() => { setShowFoodModal(false); setFoodPhoto(null); setAiError(""); }}>
             <div style={{ background: C.surface, width: "100%", borderRadius: "24px 24px 0 0", padding: "24px 18px 44px", border: `1.5px solid ${C.line}`, borderBottom: "none", boxSizing: "border-box", maxHeight: "85vh", overflowY: "auto" }}
               onClick={e => e.stopPropagation()}>
               <div style={{ width: 36, height: 4, borderRadius: 2, background: C.line, margin: "0 auto 20px" }} />
               <div style={{ fontSize: 18, fontWeight: 700, color: C.text, marginBottom: 16, fontFamily: SANS }}>Log Food</div>
+
+              {/* Photo logging */}
+              <div style={{ marginBottom: 14, padding: "14px", borderRadius: 14, background: C.surface2, border: `1px solid ${C.line}` }}>
+                <div style={{ fontSize: 11, letterSpacing: 1.5, color: LAKE.forest, textTransform: "uppercase", fontFamily: SANS, fontWeight: 700, marginBottom: 8 }}>Snap a Photo — AI estimates</div>
+                {foodPhoto ? (
+                  <div style={{ position: "relative", marginBottom: 8 }}>
+                    <img src={foodPhoto.dataUrl} alt="Food" style={{ width: "100%", maxHeight: 180, objectFit: "cover", borderRadius: 10 }} />
+                    <button onClick={() => setFoodPhoto(null)}
+                      style={{ position: "absolute", top: 6, right: 6, width: 26, height: 26, borderRadius: 8, background: "rgba(0,0,0,0.7)", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <X size={14} color="#fff" strokeWidth={2.5} />
+                    </button>
+                  </div>
+                ) : (
+                  <label style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "18px", borderRadius: 10, border: `1.5px dashed ${C.line}`, cursor: "pointer", color: C.textMid, fontSize: 13, fontFamily: SANS }}>
+                    <input type="file" accept="image/*" capture="environment" style={{ display: "none" }}
+                      onChange={e => handlePhotoSelect(e.target.files[0])} />
+                    Take Photo or Choose Image
+                  </label>
+                )}
+                {foodPhoto && (
+                  <button onClick={aiLogFoodPhoto} disabled={aiLoading}
+                    style={{ width: "100%", marginTop: 8, padding: "11px", borderRadius: 10, background: aiLoading ? C.surface : LAKE.forest, border: "none", color: aiLoading ? C.textDim : "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: SANS }}>
+                    {aiLoading ? "Analyzing photo…" : "Estimate & Log from Photo"}
+                  </button>
+                )}
+              </div>
 
               {/* AI describe */}
               <div style={{ marginBottom: 18, padding: "14px", borderRadius: 14, background: C.surface2, border: `1px solid ${C.line}` }}>
@@ -1671,6 +1800,22 @@ export default function App() {
               </button>
             </div>
           </div>
+        )}
+
+        {/* Macro Chef modal */}
+        {showChef && (
+          <MacroChefModal
+            remaining={{ calories: Math.max(0, targetCals - totals.cal), protein: Math.max(0, targets.p - totals.p), carbs: Math.max(0, targets.c - totals.c), fat: Math.max(0, targets.f - totals.f) }}
+            onResult={(entry) => {
+              mutateMacros(prev => {
+                const d = prev[macroDate] ?? { entries: [], dayType: dType };
+                prev[macroDate] = { ...d, entries: [...(d.entries ?? []), { ...entry, id: Date.now(), time: new Date().toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }) }] };
+                return prev;
+              });
+              setShowChef(false);
+            }}
+            onClose={() => setShowChef(false)}
+          />
         )}
 
         {/* Targets modal */}
@@ -2642,6 +2787,110 @@ function RestTimer({ restSecs, restLabel, color, timerState, onStart, onPause, o
 function timerBtn(bg, bright) {
   return { padding: "5px 12px", borderRadius: 8, border: "none", cursor: "pointer", background: bg, color: bright ? "#13141a" : "#8891a8", fontSize: 12, fontWeight: 700, fontFamily: SANS };
 }
+function MacroChefModal({ remaining, onResult, onClose }) {
+  const [mode, setMode] = useState("home"); // home | kitchen | restaurant
+  const [input, setInput] = useState("");
+  const [restaurant, setRestaurant] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [response, setResponse] = useState(null);
+
+  async function askChef() {
+    if (!input.trim()) return;
+    setLoading(true); setError(""); setResponse(null);
+    try {
+      const apiKey = import.meta.env?.VITE_ANTHROPIC_API_KEY;
+      if (!apiKey) throw new Error("Macro Chef needs VITE_ANTHROPIC_API_KEY set in Vercel env vars.");
+      const macroTarget = `${Math.round(remaining.calories)} kcal, ${Math.round(remaining.protein)}g protein, ${Math.round(remaining.carbs)}g carbs, ${Math.round(remaining.fat)}g fat`;
+      const prompt = mode === "kitchen"
+        ? `I need to hit these remaining macros today: ${macroTarget}. I have these ingredients available: ${input}. Suggest a meal or meals I can make that gets me as close as possible to those targets. Be practical and specific with quantities.`
+        : `I'm at ${restaurant || "a restaurant"} and need to hit these remaining macros today: ${macroTarget}. ${input ? `Menu context or preferences: ${input}.` : ""} Suggest specific menu items or ordering strategies to hit my targets as closely as possible.`;
+
+      const res = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-api-key": apiKey, "anthropic-version": "2023-06-01", "anthropic-dangerous-direct-browser-access": "true" },
+        body: JSON.stringify({
+          model: "claude-sonnet-4-5", max_tokens: 1000,
+          system: "You are a nutrition-focused personal chef. Give practical, specific meal suggestions that hit macro targets. Format your response clearly with: 1) The meal/order recommendation, 2) Estimated macros, 3) Any prep tips. Keep it concise and actionable.",
+          messages: [{ role: "user", content: prompt }],
+        }),
+      });
+      const data = await res.json();
+      if (data.error) throw new Error(data.error.message);
+      setResponse(data.content?.find(b => b.type === "text")?.text || "");
+    } catch (e) {
+      setError(e.message || "Could not get suggestions. Try again.");
+    }
+    setLoading(false);
+  }
+
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)", display: "flex", alignItems: "flex-end", zIndex: 100 }} onClick={onClose}>
+      <div style={{ background: C.surface, width: "100%", borderRadius: "24px 24px 0 0", padding: "24px 18px 44px", border: `1.5px solid ${C.line}`, borderBottom: "none", boxSizing: "border-box", maxHeight: "85vh", overflowY: "auto" }}
+        onClick={e => e.stopPropagation()}>
+        <div style={{ width: 36, height: 4, borderRadius: 2, background: C.line, margin: "0 auto 20px" }} />
+        <div style={{ fontSize: 18, fontWeight: 700, color: C.text, marginBottom: 4, fontFamily: SANS, display: "flex", alignItems: "center", gap: 8 }}>
+          <Utensils size={18} color={LAKE.forest} strokeWidth={2} /> Macro Chef
+        </div>
+        <div style={{ fontSize: 12, color: C.textDim, fontFamily: SANS, marginBottom: 16 }}>
+          Remaining today: {Math.round(remaining.protein)}p · {Math.round(remaining.carbs)}c · {Math.round(remaining.fat)}f · {Math.round(remaining.calories)} kcal
+        </div>
+
+        {mode === "home" && (
+          <div style={{ display: "flex", gap: 10 }}>
+            <button onClick={() => setMode("kitchen")} style={{ flex: 1, padding: "20px 12px", borderRadius: 14, background: C.surface2, border: `1.5px solid ${C.line}`, color: C.text, cursor: "pointer", fontFamily: SANS, textAlign: "center" }}>
+              <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 4 }}>In My Kitchen</div>
+              <div style={{ fontSize: 11, color: C.textDim }}>Tell it what you have</div>
+            </button>
+            <button onClick={() => setMode("restaurant")} style={{ flex: 1, padding: "20px 12px", borderRadius: 14, background: C.surface2, border: `1.5px solid ${C.line}`, color: C.text, cursor: "pointer", fontFamily: SANS, textAlign: "center" }}>
+              <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 4 }}>Eating Out</div>
+              <div style={{ fontSize: 11, color: C.textDim }}>Get ordering advice</div>
+            </button>
+          </div>
+        )}
+
+        {mode !== "home" && !response && (
+          <>
+            {mode === "restaurant" && (
+              <input value={restaurant} onChange={e => setRestaurant(e.target.value)} placeholder="Restaurant name (optional)"
+                style={{ width: "100%", background: C.surface2, border: `1px solid ${C.line}`, borderRadius: 10, padding: "11px 14px", fontSize: 15, color: C.text, outline: "none", fontFamily: SANS, boxSizing: "border-box", marginBottom: 10 }} />
+            )}
+            <textarea value={input} onChange={e => setInput(e.target.value)} rows={3}
+              placeholder={mode === "kitchen" ? "e.g. chicken breast, rice, eggs, spinach, olive oil" : "e.g. menu has salads, bowls, grilled proteins"}
+              style={{ width: "100%", background: C.surface2, border: `1px solid ${C.line}`, borderRadius: 10, padding: "11px 14px", fontSize: 15, color: C.text, outline: "none", resize: "none", fontFamily: SANS, boxSizing: "border-box", marginBottom: 10 }} />
+            <div style={{ display: "flex", gap: 8 }}>
+              <button onClick={() => setMode("home")} style={{ padding: "12px 16px", borderRadius: 10, background: "transparent", border: `1px solid ${C.line}`, color: C.textMid, fontSize: 13, cursor: "pointer", fontFamily: SANS }}>Back</button>
+              <button onClick={askChef} disabled={loading || !input.trim()}
+                style={{ flex: 1, padding: "12px", borderRadius: 10, background: loading ? C.surface2 : LAKE.forest, border: "none", color: loading ? C.textDim : "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: SANS }}>
+                {loading ? "Thinking…" : "Ask Chef"}
+              </button>
+            </div>
+            {error && <div style={{ marginTop: 10, fontSize: 12, color: C.red, fontFamily: SANS }}>{error}</div>}
+          </>
+        )}
+
+        {response && (
+          <>
+            <div style={{ padding: "14px", borderRadius: 12, background: C.surface2, border: `1px solid ${C.line}`, fontSize: 14, color: C.text, fontFamily: SANS, lineHeight: 1.6, whiteSpace: "pre-wrap", marginBottom: 12 }}>
+              {response}
+            </div>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button onClick={() => { setResponse(null); setInput(""); }} style={{ flex: 1, padding: "12px", borderRadius: 10, background: "transparent", border: `1px solid ${C.line}`, color: C.textMid, fontSize: 13, cursor: "pointer", fontFamily: SANS }}>Ask Again</button>
+              <button onClick={() => onResult({ name: mode === "restaurant" ? (restaurant || "Restaurant meal") : "Kitchen meal", p: 0, c: 0, f: 0, cal: 0, note: "Logged from Macro Chef — edit macros manually" })}
+                style={{ flex: 1, padding: "12px", borderRadius: 10, background: LAKE.sky, border: "none", color: "#0d0d0f", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: SANS }}>
+                Log Placeholder
+              </button>
+            </div>
+            <div style={{ fontSize: 10, color: C.textDim, fontFamily: SANS, marginTop: 8, textAlign: "center" }}>
+              Chef gives suggestions, not exact macros — log the real meal manually once you know what you ate.
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function ResumeBar({ session, onResume }) {
   if (!session) return null;
   const mvTotal = session.movements.length;
