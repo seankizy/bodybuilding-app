@@ -655,15 +655,36 @@ function migrateMacroBackup(raw) {
     if (k.startsWith("__") || k === "exportedAt" || k === "version") return;
     if (!/^\d{4}-\d{2}-\d{2}$/.test(k)) return;
     const day = raw[k];
+    const normalizeEntry = (e) => ({
+      id: e.id ?? Date.now() + Math.random(),
+      name: e.name ?? "Food",
+      // Old MacroTracker app used calories/protein/carbs/fat; this app uses cal/p/c/f
+      cal: e.cal ?? e.calories ?? macroCals(e.p ?? e.protein, e.c ?? e.carbs, e.f ?? e.fat),
+      p: e.p ?? e.protein ?? 0,
+      c: e.c ?? e.carbs ?? 0,
+      f: e.f ?? e.fat ?? 0,
+      time: e.time ?? "",
+    });
     if (Array.isArray(day)) {
-      migrated[k] = { entries: day, dayType: "training" };
+      migrated[k] = { entries: day.map(normalizeEntry), dayType: "training" };
     } else if (day && typeof day === "object") {
-      const entries = Array.isArray(day.entries) ? day.entries : [];
+      const entries = Array.isArray(day.entries) ? day.entries.map(normalizeEntry) : [];
       const dt = day.dayType === "rest" ? "rest" : "training";
       migrated[k] = { entries, dayType: dt };
     }
   });
   return migrated;
+}
+// Extract training/rest targets from an old-format backup (__targetsWorkout / __targetsRest)
+function extractMacroTargets(raw) {
+  const tw = raw.__targetsWorkout;
+  const tr = raw.__targetsRest;
+  if (!tw && !tr) return null;
+  const norm = (t) => t ? { p: t.p ?? t.protein ?? 220, c: t.c ?? t.carbs ?? 150, f: t.f ?? t.fat ?? 60 } : null;
+  const training = norm(tw);
+  const rest = norm(tr);
+  if (!training && !rest) return null;
+  return { training: training ?? DEFAULT_MACRO_TARGETS.training, rest: rest ?? DEFAULT_MACRO_TARGETS.rest };
 }
 function dayTotals(day) {
   const t = { cal: 0, p: 0, c: 0, f: 0 };
@@ -1624,7 +1645,14 @@ export default function App() {
               {macros[macroDate]?.dayTypeManual ? "Manually set · tap to switch" : trainedToday ? "Auto — session logged today" : "Auto — no session yet · tap to override"}
             </div>
           </div>
-          <div style={{ fontSize: 12, fontFamily: MONO, color: C.textMid }}>{targetCals} kcal</div>
+          <div style={{ textAlign: "right" }}>
+            <div style={{ fontSize: 13, fontFamily: MONO, fontWeight: 700, color: totals.cal > targetCals ? C.red : C.text }}>
+              {totals.cal} <span style={{ color: C.textDim, fontWeight: 400 }}>/ {targetCals}</span>
+            </div>
+            <div style={{ fontSize: 10, fontFamily: MONO, color: C.textDim, marginTop: 1 }}>
+              {Math.max(0, targetCals - totals.cal)} left
+            </div>
+          </div>
         </div>
 
         {/* Calorie summary + macro bars */}
@@ -2121,6 +2149,7 @@ export default function App() {
         // Case 1: this is a standalone MacroTracker-app backup (date-keyed, no .entries)
         if (isMacroOnlyBackup(raw)) {
           const migrated = migrateMacroBackup(raw);
+          const importedTargets = extractMacroTargets(raw);
           let addedDays = 0, addedEntries = 0;
           mutateMacros(prev => {
             Object.keys(migrated).forEach(dateKey => {
@@ -2134,8 +2163,9 @@ export default function App() {
             });
             return prev;
           });
+          if (importedTargets) saveMacroTargets(importedTargets);
           setImportStatus("success");
-          setImportMsg(`Imported macro history: ${addedDays} days, ${addedEntries} food entries merged`);
+          setImportMsg(`Imported macro history: ${addedDays} days, ${addedEntries} food entries merged${importedTargets ? " · targets restored" : ""}`);
           return;
         }
 
