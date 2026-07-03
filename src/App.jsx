@@ -3153,6 +3153,8 @@ function MacroChefModal({ remaining, onResult, onClose }) {
 function MoreMenu({ open, onClose, onSelect }) {
   if (!open) return null;
   const items = [
+    { id: "volume", label: "Volume", Icon: BarChart3, desc: "Sets per muscle vs MEV/MAV/MRV" },
+    { id: "progress", label: "Progress", Icon: TrendingUp, desc: "Consistency, lifts, PRs, balance" },
     { id: "data", label: "Data & Backup", Icon: Database, desc: "Export, import, session history" },
   ];
   return (
@@ -3217,24 +3219,22 @@ function BottomNav({ tab, setTab, onOpenMenu }) {
   const tabs = [
     { id: "journal", label: "Journal", Icon: ClipboardList },
     { id: "macros", label: "Macros", Icon: Utensils },
-    { id: "volume", label: "Volume", Icon: BarChart3 },
-    { id: "progress", label: "Progress", Icon: TrendingUp },
     { id: "weight", label: "Weight", Icon: Scale },
   ];
   return (
-    <div style={{ position: "fixed", bottom: 0, left: "50%", transform: "translateX(-50%)", width: "100%", maxWidth: 430, background: "rgba(13,13,15,0.94)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", display: "flex", padding: "10px 0 26px", zIndex: 50 }}>
+    <div style={{ position: "fixed", bottom: 0, left: "50%", transform: "translateX(-50%)", width: "100%", maxWidth: 430, background: "rgba(13,13,15,0.94)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", display: "flex", padding: "12px 0 28px", zIndex: 50 }}>
       {tabs.map(t => {
         const active = tab === t.id;
         return (
-          <button key={t.id} onClick={() => setTab(t.id)} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4, background: "none", border: "none", cursor: "pointer", padding: "6px 0", transition: "transform 0.15s", transform: active ? "translateY(-1px)" : "none" }}>
-            <t.Icon size={23} strokeWidth={active ? 2.4 : 1.8} color={active ? C.accent : C.textDim} />
-            <span style={{ fontSize: 10, letterSpacing: 0.3, fontFamily: SANS, color: active ? C.accent : C.textDim, fontWeight: active ? 700 : 500 }}>{t.label}</span>
+          <button key={t.id} onClick={() => setTab(t.id)} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 5, background: "none", border: "none", cursor: "pointer", padding: "6px 0", transition: "transform 0.15s", transform: active ? "translateY(-1px)" : "none" }}>
+            <t.Icon size={26} strokeWidth={active ? 2.4 : 1.8} color={active ? C.accent : C.textDim} />
+            <span style={{ fontSize: 11, letterSpacing: 0.3, fontFamily: SANS, color: active ? C.accent : C.textDim, fontWeight: active ? 700 : 500 }}>{t.label}</span>
           </button>
         );
       })}
-      <button onClick={onOpenMenu} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4, background: "none", border: "none", cursor: "pointer", padding: "6px 0" }}>
-        <MoreHorizontal size={23} strokeWidth={1.8} color={C.textDim} />
-        <span style={{ fontSize: 10, letterSpacing: 0.3, fontFamily: SANS, color: C.textDim, fontWeight: 500 }}>More</span>
+      <button onClick={onOpenMenu} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 5, background: "none", border: "none", cursor: "pointer", padding: "6px 0" }}>
+        <MoreHorizontal size={26} strokeWidth={1.8} color={C.textDim} />
+        <span style={{ fontSize: 11, letterSpacing: 0.3, fontFamily: SANS, color: C.textDim, fontWeight: 500 }}>More</span>
       </button>
     </div>
   );
@@ -3300,7 +3300,7 @@ function SetRow({ num, weight, reps, rir, repsTarget, type, isLastSet, done, col
   return (
     <div style={{ margin: "0 18px 4px", padding: "12px 14px", borderRadius: 14, background: done ? color + "14" : "#1c1c1c", transition: "background 0.2s", opacity: done ? 0.75 : 1 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-        <div style={{ width: 26, height: 26, borderRadius: 7, background: "#1c1c1c", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 800, color: "#5c5c5c", fontFamily: SANS, flexShrink: 0 }}>{num}</div>
+        <div style={{ width: 34, height: 34, borderRadius: 9, background: "#1c1c1c", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 17, fontWeight: 800, color: "#9a9a9a", fontFamily: SANS, flexShrink: 0 }}>{num}</div>
         <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
           <div style={{ fontSize: 10, letterSpacing: 1.5, color: "#5c5c5c", textTransform: "uppercase", fontFamily: SANS }}>Weight</div>
           <input type="number" inputMode="decimal" value={weight} onChange={e => onW(e.target.value)} placeholder="0" style={setInput(color)} />
@@ -3323,25 +3323,26 @@ function SetRow({ num, weight, reps, rir, repsTarget, type, isLastSet, done, col
           <button onClick={onDelete} style={{ width: 28, height: 28, borderRadius: 8, background: "#2a1a18", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><X size={15} strokeWidth={2.5} color={C.red} /></button>
         )}
       </div>
-      {/* RIR row */}
-      <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 10, paddingTop: 10, borderTop: "1px solid #1c1c1c" }}>
-        <div style={{ fontSize: 10, letterSpacing: 1.5, color: "#5c5c5c", textTransform: "uppercase", fontFamily: SANS, flexShrink: 0 }}>RIR</div>
-        <div style={{ display: "flex", gap: 5 }}>
-          {["0", "1", "2", "3", "4"].map(v => {
-            const sel = String(rir) === v;
-            return (
-              <button key={v} onClick={() => onRIR(sel ? "" : v)} style={{
-                width: 30, height: 30, borderRadius: 8, cursor: "pointer",
-                background: sel ? color : "#1c1c1c",
-                
-                color: sel ? "#131313" : "#9a9a9a",
-                fontSize: 13, fontWeight: 800, fontFamily: SANS,
-              }}>{v}</button>
-            );
-          })}
+      {/* RIR row — centered under the Weight/Reps fields above, offset past the set-number circle */}
+      <div style={{ display: "flex", justifyContent: "center", marginTop: 10, paddingTop: 10, borderTop: "1px solid #1c1c1c", paddingLeft: 44, paddingRight: onDelete ? 38 : 0 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <div style={{ fontSize: 10, letterSpacing: 1.5, color: "#5c5c5c", textTransform: "uppercase", fontFamily: SANS, flexShrink: 0 }}>RIR</div>
+          <div style={{ display: "flex", gap: 5 }}>
+            {["0", "1", "2", "3", "4"].map(v => {
+              const sel = String(rir) === v;
+              return (
+                <button key={v} onClick={() => onRIR(sel ? "" : v)} style={{
+                  width: 30, height: 30, borderRadius: 8, cursor: "pointer",
+                  background: sel ? color : "#1c1c1c",
+                  color: sel ? "#131313" : "#9a9a9a",
+                  fontSize: 13, fontWeight: 800, fontFamily: SANS,
+                }}>{v}</button>
+              );
+            })}
+          </div>
         </div>
         {rirFb && (
-          <div style={{ fontSize: 10, fontFamily: SANS, fontWeight: 700, color: rirFb.color, marginLeft: "auto", textAlign: "right", lineHeight: 1.2 }}>
+          <div style={{ fontSize: 10, fontFamily: SANS, fontWeight: 700, color: rirFb.color, marginLeft: 10, textAlign: "right", lineHeight: 1.2, alignSelf: "center" }}>
             {rirFb.msg}
           </div>
         )}
