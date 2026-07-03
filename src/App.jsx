@@ -1892,7 +1892,7 @@ export default function App() {
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 14, fontWeight: 600, color: C.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{e.name}</div>
                 <div style={{ fontSize: 11, color: C.textDim, fontFamily: MONO, marginTop: 2 }}>
-                  {e.cal} kcal · {Math.round(e.p)}p / {Math.round(e.c)}c / {Math.round(e.f)}f{e.time ? ` · ${e.time}` : ""}
+                  {e.cal || 0} kcal · {Math.round(e.p) || 0}p / {Math.round(e.c) || 0}c / {Math.round(e.f) || 0}f{e.time ? ` · ${e.time}` : ""}
                 </div>
               </div>
               <button onClick={() => logAgain(e)} title="Log again today"
@@ -2299,22 +2299,31 @@ export default function App() {
         if (isMacroOnlyBackup(raw)) {
           const migrated = migrateMacroBackup(raw);
           const importedTargets = extractMacroTargets(raw);
-          let addedDays = 0, addedEntries = 0;
+          let addedDays = 0, addedEntries = 0, repairedEntries = 0;
           mutateMacros(prev => {
             Object.keys(migrated).forEach(dateKey => {
               const incoming = migrated[dateKey];
               const existing = prev[dateKey] ?? { entries: [], dayType: incoming.dayType };
-              const existingIds = new Set((existing.entries ?? []).map(e => String(e.id)));
-              const toAdd = (incoming.entries ?? []).filter(e => !existingIds.has(String(e.id)));
-              if (toAdd.length > 0 || !prev[dateKey]) addedDays++;
-              addedEntries += toAdd.length;
-              prev[dateKey] = { ...existing, entries: [...(existing.entries ?? []), ...toAdd] };
+              const existingById = new Map((existing.entries ?? []).map(e => [String(e.id), e]));
+              let dayChanged = false;
+              (incoming.entries ?? []).forEach(e => {
+                const key = String(e.id);
+                const already = existingById.get(key);
+                // Overwrite if new, or if the existing entry has broken/missing macro data (repairs old bad imports)
+                const isBroken = already && (already.p === undefined || already.c === undefined || already.f === undefined || isNaN(already.p) || isNaN(already.c) || isNaN(already.f));
+                if (!already) { addedEntries++; dayChanged = true; }
+                else if (isBroken) { repairedEntries++; dayChanged = true; }
+                if (!already || isBroken) existingById.set(key, e);
+              });
+              if (dayChanged || !prev[dateKey]) addedDays++;
+              prev[dateKey] = { ...existing, entries: [...existingById.values()] };
             });
             return prev;
           });
           if (importedTargets) saveMacroTargets(importedTargets);
           setImportStatus("success");
-          setImportMsg(`Imported macro history: ${addedDays} days, ${addedEntries} food entries merged${importedTargets ? " · targets restored" : ""}`);
+          const repairNote = repairedEntries > 0 ? ` · ${repairedEntries} repaired` : "";
+          setImportMsg(`Imported macro history: ${addedDays} days, ${addedEntries} new entries${repairNote}${importedTargets ? " · targets restored" : ""}`);
           return;
         }
 
