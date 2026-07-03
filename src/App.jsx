@@ -15,6 +15,7 @@ const ClipboardList = (p) => <Icon {...p}><rect x="8" y="2" width="8" height="4"
 const BarChart3 = (p) => <Icon {...p}><path d="M3 3v18h18"/><rect x="7" y="10" width="3" height="8"/><rect x="12" y="6" width="3" height="12"/><rect x="17" y="13" width="3" height="5"/></Icon>;
 const Scale = (p) => <Icon {...p}><path d="M12 3v18M7 7h10M5 21h14"/><path d="M7 7l-3 7h6zM17 7l-3 7h6z"/></Icon>;
 const Database = (p) => <Icon {...p}><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14a9 3 0 0 0 18 0V5"/><path d="M3 12a9 3 0 0 0 18 0"/></Icon>;
+const MoreHorizontal = (p) => <Icon {...p}><circle cx="5" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.5" fill="currentColor" stroke="none"/></Icon>;
 const Dumbbell = (p) => <Icon {...p}><path d="M6.5 6.5l11 11M21 21l-1-1M3 3l1 1M18 22l4-4M2 6l4-4M7 17l-5 5M17 7l5-5"/></Icon>;
 const Timer = (p) => <Icon {...p}><path d="M10 2h4M12 14l3-3"/><circle cx="12" cy="14" r="8"/></Icon>;
 const Check = (p) => <Icon {...p}><path d="M20 6L9 17l-5-5"/></Icon>;
@@ -37,6 +38,7 @@ const Pencil = (p) => <Icon {...p}><path d="M17 3a2.83 2.83 0 0 1 4 4L7.5 20.5 2
 const Utensils = (p) => <Icon {...p}><path d="M3 2v7c0 1.1.9 2 2 2h1v11M6 2v9M9 2v9M17 2c-2.2 0-4 2.7-4 6s1.8 6 4 6v10"/></Icon>;
 const Search = (p) => <Icon {...p}><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></Icon>;
 const Camera = (p) => <Icon {...p}><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></Icon>;
+const Mic = (p) => <Icon {...p}><path d="M12 2a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v1a7 7 0 0 1-14 0v-1M12 18v4M8 22h8"/></Icon>;
 
 // ── DESIGN TOKENS ─────────────────────────────────────────────────────────────
 // Typography: clean sans for labels/body, monospace reserved for NUMBERS (data is the hero)
@@ -883,6 +885,7 @@ export default function App() {
   const [showMacroSearch, setShowMacroSearch] = useState(false);
   const [showChef, setShowChef] = useState(false);
   const [showMesoEdit, setShowMesoEdit] = useState(false);
+  const [showMoreMenu, setShowMoreMenu] = useState(false);
   const [timerState, setTimerState] = useState(null);
   // NEW: between-movement stopwatch
   const [showStopwatch, setShowStopwatch] = useState(false);
@@ -1160,7 +1163,12 @@ export default function App() {
   }
 
   const today = todayStr();
-  const inProgressSession = entries.find(e => !e.completedAt && e.date === today) ?? null;
+  // Resumable session = the most recent incomplete session, whenever it was started.
+  // (Separate from the journal list filter below, which only *displays* today's incomplete
+  // session to avoid clutter — but a workout started days ago and never finished should
+  // still be resumable.)
+  const incompleteSessions = entries.filter(e => !e.completedAt).sort((a, b) => b.date.localeCompare(a.date));
+  const inProgressSession = incompleteSessions[0] ?? null;
   const sorted = [...entries]
     .sort((a, b) => b.date.localeCompare(a.date))
     .filter(e => {
@@ -1283,13 +1291,13 @@ export default function App() {
         </div>
 
         {activeMv.lastSets && activeMv.lastDate && (
-          <div style={{ margin: "0 18px 14px", padding: "10px 14px", borderRadius: 12, background: "#131313", border: "1px solid #1c1c1c" }}>
+          <div style={{ margin: "0 18px 14px", padding: "10px 14px", borderRadius: 12, background: "#131313" }}>
             <div style={{ fontSize: 10, letterSpacing: 2, color: "#5c5c5c", textTransform: "uppercase", fontFamily: SANS, marginBottom: 6 }}>
               Last session · {fmtDate(activeMv.lastDate)}
             </div>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
               {activeMv.lastSets.map((s, i) => (
-                <span key={i} style={{ fontSize: 12, fontFamily: SANS, fontWeight: 700, padding: "4px 9px", borderRadius: 7, background: "#1c1c1c", border: "1px solid #1c1c1c", color: "#e8e8e888" }}>
+                <span key={i} style={{ fontSize: 12, fontFamily: SANS, fontWeight: 700, padding: "4px 9px", borderRadius: 7, background: "#1c1c1c", color: "#e8e8e888" }}>
                   {s.w ? `${s.w}lbs` : "BW"}×{s.r || "?"}
                 </span>
               ))}
@@ -1301,7 +1309,7 @@ export default function App() {
 
         {/* CHANGE 1: Stopwatch between movements — shown after finishing a movement */}
         {showStopwatch && (
-          <div style={{ margin: "0 18px 14px", padding: "16px", borderRadius: 14, background: "#1c1c1c", border: "2px solid #e8e8e866" }}>
+          <div style={{ margin: "0 18px 14px", padding: "16px", borderRadius: 14, background: "#e8e8e822" }}>
             <div style={{ fontSize: 11, letterSpacing: 2, color: "#e8e8e8", textTransform: "uppercase", fontFamily: SANS, marginBottom: 8 }}>Rest Before Next Movement</div>
             <div style={{ fontSize: 42, fontWeight: 900, color: "#e8e8e8", fontFamily: SANS, letterSpacing: 4, textAlign: "center" }}>
               {`${Math.floor(stopwatchElapsed / 60)}:${String(stopwatchElapsed % 60).padStart(2, "0")}`}
@@ -1387,12 +1395,12 @@ export default function App() {
             {alreadyDone ? (
               <div style={{ display: "flex", gap: 10 }}>
                 <button onClick={() => updateMovement(activeEntry.id, activeMv.id, { doneAt: null })}
-                  style={{ flex: 1, padding: "13px", borderRadius: 14, background: "transparent", border: "1px solid #2e2e2e", color: "#5c5c5c", fontSize: 13, fontFamily: SANS, fontWeight: 700, cursor: "pointer" }}>
+                  style={{ flex: 1, padding: "13px", borderRadius: 14, background: "transparent", color: "#5c5c5c", fontSize: 13, fontFamily: SANS, fontWeight: 700, cursor: "pointer" }}>
                   ↩ Undo Done
                 </button>
                 {nextMv && (
                   <button onClick={() => { dismissTimer(); setActiveMvId(nextMv.id); }}
-                    style={{ flex: 2, padding: "13px", borderRadius: 14, background: "#1c1c1c", border: "1px solid #2e2e2e", color: "#f2f2f2", fontSize: 14, fontFamily: SANS, fontWeight: 800, cursor: "pointer" }}>
+                    style={{ flex: 2, padding: "13px", borderRadius: 14, background: "#1c1c1c", color: "#f2f2f2", fontSize: 14, fontFamily: SANS, fontWeight: 800, cursor: "pointer" }}>
                     Next: {nextMv.name || "Movement"} →
                   </button>
                 )}
@@ -1413,7 +1421,8 @@ export default function App() {
             )}
           </div>
         )}
-        <BottomNav tab={tab} setTab={t => { setTab(t); if (t !== "journal") setView("journal"); }} />
+        <BottomNav tab={tab} setTab={t => { setTab(t); if (t !== "journal") setView("journal"); }} onOpenMenu={() => setShowMoreMenu(true)} />
+        <MoreMenu open={showMoreMenu} onClose={() => setShowMoreMenu(false)} onSelect={(id) => { setShowMoreMenu(false); setTab(id); setView("journal"); }} />
       </Shell>
     );
   }
@@ -1454,7 +1463,7 @@ export default function App() {
           placeholder="How did today feel? Energy, sleep, PRs, anything…" rows={3} />
 
         {isRest ? (
-          <div style={{ margin: "20px 18px", padding: "28px 20px", borderRadius: 16, background: "#1c1c1c", border: "1px solid #2e2e2e", textAlign: "center" }}>
+          <div style={{ margin: "20px 18px", padding: "28px 20px", borderRadius: 16, background: "#1c1c1c", textAlign: "center" }}>
             <div style={{ display: "flex", justifyContent: "center", marginBottom: 10 }}><Moon size={34} color={C.textMid} strokeWidth={1.8} /></div>
             <div style={{ color: "#f2f2f2", fontWeight: 700, fontSize: 18 }}>Rest Day</div>
             <div style={{ color: "#9a9a9a", fontSize: 13, marginTop: 4 }}>Recovery is part of the program</div>
@@ -1483,12 +1492,11 @@ export default function App() {
                         updateMovement(activeEntry.id, mv.id, { doneAt: ts });
                       }} style={{
                         width: 34, height: 34, borderRadius: 10, flexShrink: 0,
-                        background: mvDone ? "#e8e8e822" : "#1c1c1c",
-                        border: `2px solid ${mvDone ? "#e8e8e8" : "#2e2e2e"}`,
+                        background: mvDone ? "#e8e8e8" : "#1c1c1c",
                         display: "flex", alignItems: "center", justifyContent: "center",
                         fontSize: 16, cursor: "pointer", transition: "all 0.15s",
                       }}>
-                        {mvDone ? "✓" : <span style={{ fontSize: 11, fontFamily: SANS, fontWeight: 800, color: "#5c5c5c" }}>{mv.programRef ?? String(i + 1)}</span>}
+                        {mvDone ? <span style={{ color: "#131313" }}>✓</span> : <span style={{ fontSize: 11, fontFamily: SANS, fontWeight: 800, color: "#5c5c5c" }}>{mv.programRef ?? String(i + 1)}</span>}
                       </div>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ fontWeight: 700, fontSize: 15, color: mvDone ? "#e8e8e8" : "#f2f2f2", lineHeight: 1.3, textDecoration: mvDone ? "line-through" : "none", opacity: mvDone ? 0.7 : 1, display: "flex", alignItems: "center", gap: 6 }}>
@@ -1504,8 +1512,7 @@ export default function App() {
                             <span key={si} style={{
                               fontSize: 11, fontFamily: SANS,
                               padding: "3px 7px", borderRadius: 6,
-                              background: s.r ? `${color}22` : "#2e2e2e",
-                              border: `1px solid ${s.r ? color + "44" : "#5c5c5c"}`,
+                              background: s.r ? `${color}2a` : "#2e2e2e",
                               color: s.r ? color : "#5c5c5c", fontWeight: 600,
                             }}>
                               {s.w ? `${s.w}×` : ""}{s.r || "–"}
@@ -1517,12 +1524,12 @@ export default function App() {
                       <div style={{ display: "flex", flexDirection: "column", gap: 4, flexShrink: 0 }} onClick={e => e.stopPropagation()}>
                         <button
                           onClick={() => canMoveUp && reorderMovements(activeEntry.id, i, i - 1)}
-                          style={{ width: 32, height: 32, borderRadius: 8, border: "1px solid #2e2e2e", background: canMoveUp ? "#1c1c1c" : "transparent", color: canMoveUp ? "#9a9a9a" : "#5c5c5c", fontSize: 14, cursor: canMoveUp ? "pointer" : "default", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: SANS }}>
+                          style={{ width: 32, height: 32, borderRadius: 8, background: canMoveUp ? "#1c1c1c" : "transparent", color: canMoveUp ? "#9a9a9a" : "#5c5c5c", fontSize: 14, cursor: canMoveUp ? "pointer" : "default", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: SANS }}>
                           ↑
                         </button>
                         <button
                           onClick={() => canMoveDown && reorderMovements(activeEntry.id, i, i + 1)}
-                          style={{ width: 32, height: 32, borderRadius: 8, border: "1px solid #2e2e2e", background: canMoveDown ? "#1c1c1c" : "transparent", color: canMoveDown ? "#9a9a9a" : "#5c5c5c", fontSize: 14, cursor: canMoveDown ? "pointer" : "default", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: SANS }}>
+                          style={{ width: 32, height: 32, borderRadius: 8, background: canMoveDown ? "#1c1c1c" : "transparent", color: canMoveDown ? "#9a9a9a" : "#5c5c5c", fontSize: 14, cursor: canMoveDown ? "pointer" : "default", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: SANS }}>
                           ↓
                         </button>
                       </div>
@@ -1538,7 +1545,7 @@ export default function App() {
         {!isRest && (
           <div style={{ padding: "16px 18px 120px" }}>
             {activeEntry.completedAt ? (
-              <div style={{ padding: "18px", borderRadius: 16, background: "#1c1c1c", border: "2px solid #e8e8e866", textAlign: "center" }}>
+              <div style={{ padding: "18px", borderRadius: 16, background: "#e8e8e822", textAlign: "center" }}>
                 <div style={{ display: "flex", justifyContent: "center", marginBottom: 8 }}><Trophy size={30} color={C.accent} strokeWidth={2} /></div>
                 <div style={{ fontSize: 16, fontWeight: 800, color: "#e8e8e8", fontFamily: SANS }}>WORKOUT COMPLETE</div>
                 <div style={{ fontSize: 12, color: "#5c5c5c", marginTop: 4, fontFamily: SANS }}>
@@ -1547,7 +1554,7 @@ export default function App() {
                   {activeEntry.movements.filter(m => m.doneAt).length}/{activeEntry.movements.length} movements done
                 </div>
                 <button onClick={() => updateEntry(activeEntry.id, { completedAt: null })}
-                  style={{ marginTop: 10, padding: "6px 16px", borderRadius: 8, background: "transparent", border: "1px solid #2e2e2e", color: "#5c5c5c", fontSize: 12, fontFamily: SANS, cursor: "pointer" }}>
+                  style={{ marginTop: 10, padding: "6px 16px", borderRadius: 8, background: "transparent", color: "#5c5c5c", fontSize: 12, fontFamily: SANS, cursor: "pointer" }}>
                   Undo
                 </button>
               </div>
@@ -1592,7 +1599,8 @@ export default function App() {
             )}
           </div>
         )}
-        <BottomNav tab={tab} setTab={t => { setTab(t); if (t !== "journal") setView("journal"); }} />
+        <BottomNav tab={tab} setTab={t => { setTab(t); if (t !== "journal") setView("journal"); }} onOpenMenu={() => setShowMoreMenu(true)} />
+        <MoreMenu open={showMoreMenu} onClose={() => setShowMoreMenu(false)} onSelect={(id) => { setShowMoreMenu(false); setTab(id); setView("journal"); }} />
       </Shell>
     );
   }
@@ -1800,18 +1808,18 @@ export default function App() {
           <div style={{ fontSize: 30, fontWeight: 900, color: C.text, lineHeight: 1, fontFamily: SANS, letterSpacing: -0.5 }}>Macros</div>
           {/* Date navigation */}
           <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 10 }}>
-            <button onClick={() => shiftDate(-1)} style={{ background: C.surface2, border: `1px solid ${C.line}`, borderRadius: 8, width: 30, height: 30, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}><ChevronLeft size={16} color={C.textMid} /></button>
+            <button onClick={() => shiftDate(-1)} style={{ background: C.surface2, borderRadius: 8, width: 30, height: 30, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}><ChevronLeft size={16} color={C.textMid} /></button>
             <div style={{ fontSize: 14, fontWeight: 700, color: C.text, fontFamily: SANS, flex: 1, textAlign: "center" }}>
               {isToday ? "Today" : fmtDate(macroDate)}
             </div>
-            <button onClick={() => shiftDate(1)} disabled={isToday} style={{ background: C.surface2, border: `1px solid ${C.line}`, borderRadius: 8, width: 30, height: 30, display: "flex", alignItems: "center", justifyContent: "center", cursor: isToday ? "default" : "pointer", opacity: isToday ? 0.3 : 1 }}><ChevronRight size={16} color={C.textMid} /></button>
+            <button onClick={() => shiftDate(1)} disabled={isToday} style={{ background: C.surface2, borderRadius: 8, width: 30, height: 30, display: "flex", alignItems: "center", justifyContent: "center", cursor: isToday ? "default" : "pointer", opacity: isToday ? 0.3 : 1 }}><ChevronRight size={16} color={C.textMid} /></button>
           </div>
         </div>
 
         {/* Day type banner — auto-detected from workout journal */}
         <div onClick={toggleDayType} style={{ margin: "12px 18px 4px", padding: "12px 16px", borderRadius: 14, cursor: "pointer",
           background: dType === "training" ? LAKE.forest + "22" : C.surface,
-          border: `1.5px solid ${dType === "training" ? LAKE.forest + "66" : C.line}`,
+          
           display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <div>
             <div style={{ fontSize: 13, fontWeight: 800, color: dType === "training" ? LAKE.forest : C.textMid, letterSpacing: 0.5, textTransform: "uppercase", fontFamily: SANS }}>
@@ -1832,7 +1840,7 @@ export default function App() {
         </div>
 
         {/* Calorie summary + macro bars */}
-        <div style={{ margin: "10px 18px", padding: "16px", borderRadius: 18, background: C.surface, border: `1px solid ${C.line}`, boxShadow: shadow }}>
+        <div style={{ margin: "10px 18px", padding: "16px", borderRadius: 18, background: C.surface, boxShadow: shadow }}>
           <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 14 }}>
             <span style={{ fontSize: 13, fontWeight: 700, color: C.text, fontFamily: SANS }}>Calories</span>
             <span style={{ fontFamily: MONO }}>
@@ -1857,15 +1865,15 @@ export default function App() {
             <Plus size={16} strokeWidth={2.5} /> Log Food
           </button>
           <button onClick={() => setShowChef(true)}
-            style={{ padding: "14px", borderRadius: 14, background: C.surface2, border: `1px solid ${C.line}`, color: LAKE.forest, fontSize: 13, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }} title="Macro Chef">
+            style={{ padding: "14px", borderRadius: 14, background: C.surface2, color: LAKE.forest, fontSize: 13, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }} title="Macro Chef">
             <Utensils size={16} strokeWidth={2} />
           </button>
           <button onClick={() => setShowMacroSearch(s => !s)}
-            style={{ padding: "14px", borderRadius: 14, background: showMacroSearch ? LAKE.sky + "22" : C.surface2, border: `1px solid ${showMacroSearch ? LAKE.sky + "66" : C.line}`, color: showMacroSearch ? LAKE.sky : C.textMid, fontSize: 13, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }} title="Search food history">
+            style={{ padding: "14px", borderRadius: 14, background: showMacroSearch ? LAKE.sky + "33" : C.surface2, color: showMacroSearch ? LAKE.sky : C.textMid, fontSize: 13, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }} title="Search food history">
             <Search size={16} strokeWidth={2} />
           </button>
           <button onClick={() => setShowTargetsModal(true)}
-            style={{ padding: "14px", borderRadius: 14, background: C.surface2, border: `1px solid ${C.line}`, color: C.textMid, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+            style={{ padding: "14px", borderRadius: 14, background: C.surface2, color: C.textMid, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
             Targets
           </button>
         </div>
@@ -1874,7 +1882,7 @@ export default function App() {
         {showMacroSearch && (
           <div style={{ padding: "0 18px 12px" }}>
             <input value={macroSearchQuery} onChange={e => setMacroSearchQuery(e.target.value)} placeholder="Search food history…" autoFocus
-              style={{ width: "100%", padding: "11px 14px", borderRadius: 12, background: C.surface2, border: `1px solid ${C.line}`, color: C.text, fontSize: 16, fontFamily: SANS, outline: "none", boxSizing: "border-box", marginBottom: 10 }} />
+              style={{ width: "100%", padding: "11px 14px", borderRadius: 12, background: C.surface2, color: C.text, fontSize: 16, fontFamily: SANS, outline: "none", boxSizing: "border-box", marginBottom: 10 }} />
             {macroSearchQuery.trim().length > 0 && (() => {
               const q = macroSearchQuery.toLowerCase();
               const results = [];
@@ -1888,13 +1896,13 @@ export default function App() {
               ) : (
                 <div>
                   {results.slice(0, 30).map(r => (
-                    <div key={`${r.date}-${r.id}`} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 14px", borderRadius: 12, background: C.surface, border: `1px solid ${C.line}`, marginBottom: 6 }}>
+                    <div key={`${r.date}-${r.id}`} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 14px", borderRadius: 12, background: C.surface, marginBottom: 6 }}>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ fontSize: 13, fontWeight: 600, color: C.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.name}</div>
                         <div style={{ fontSize: 10, color: C.textDim, fontFamily: MONO, marginTop: 2 }}>{fmtDate(r.date)} · {r.cal} kcal · {Math.round(r.p)}p/{Math.round(r.c)}c/{Math.round(r.f)}f</div>
                       </div>
                       <button onClick={() => { logAgain(r); setShowMacroSearch(false); setMacroSearchQuery(""); }}
-                        style={{ width: 28, height: 28, borderRadius: 8, background: C.surface2, border: `1px solid ${C.line}`, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        style={{ width: 28, height: 28, borderRadius: 8, background: C.surface2, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
                         <Plus size={13} color={LAKE.sky} strokeWidth={2.5} />
                       </button>
                     </div>
@@ -1915,7 +1923,7 @@ export default function App() {
           {(day.entries ?? []).length === 0 ? (
             <div style={{ padding: "32px 0", textAlign: "center", color: C.textDim, fontSize: 13, fontFamily: SANS }}>Nothing logged {isToday ? "yet today" : "this day"}</div>
           ) : [...day.entries].reverse().map(e => (
-            <div key={e.id} onClick={() => isToday && startEditFood(e)} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", borderRadius: 14, background: C.surface, border: `1px solid ${C.line}`, marginBottom: 8, cursor: isToday ? "pointer" : "default" }}>
+            <div key={e.id} onClick={() => isToday && startEditFood(e)} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", borderRadius: 14, background: C.surface, marginBottom: 8, cursor: isToday ? "pointer" : "default" }}>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 14, fontWeight: 600, color: C.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{e.name}</div>
                 <div style={{ fontSize: 11, color: C.textDim, fontFamily: MONO, marginTop: 2 }}>
@@ -1924,16 +1932,16 @@ export default function App() {
               </div>
               {isToday && (
                 <button onClick={(ev) => { ev.stopPropagation(); startEditFood(e); }} title="Edit"
-                  style={{ width: 30, height: 30, borderRadius: 8, background: C.surface2, border: `1px solid ${C.line}`, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  style={{ width: 30, height: 30, borderRadius: 8, background: C.surface2, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
                   <Pencil size={13} color={C.textMid} strokeWidth={2} />
                 </button>
               )}
               <button onClick={(ev) => { ev.stopPropagation(); logAgain(e); }} title="Log again today"
-                style={{ width: 30, height: 30, borderRadius: 8, background: C.surface2, border: `1px solid ${C.line}`, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                style={{ width: 30, height: 30, borderRadius: 8, background: C.surface2, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
                 <Plus size={14} color={LAKE.sky} strokeWidth={2.5} />
               </button>
               <button onClick={(ev) => { ev.stopPropagation(); deleteFood(e.id); }}
-                style={{ width: 30, height: 30, borderRadius: 8, background: "#1c1c1c", border: "1px solid #4a2820", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                style={{ width: 30, height: 30, borderRadius: 8, background: "#2a1a18", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
                 <X size={14} color={C.red} strokeWidth={2.5} />
               </button>
             </div>
@@ -1944,7 +1952,7 @@ export default function App() {
         {showFoodModal && (
           <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)", display: "flex", alignItems: "flex-end", zIndex: 100 }}
             onClick={() => { setShowFoodModal(false); setFoodPhoto(null); setAiError(""); setEditingFoodId(null); setFoodName(""); setFoodP(""); setFoodC(""); setFoodF(""); }}>
-            <div style={{ background: C.surface, width: "100%", borderRadius: "24px 24px 0 0", padding: "24px 18px 44px", border: `1.5px solid ${C.line}`, borderBottom: "none", boxSizing: "border-box", maxHeight: "85vh", overflowY: "auto" }}
+            <div style={{ background: C.surface, width: "100%", borderRadius: "24px 24px 0 0", padding: "24px 18px 44px", borderBottom: "none", boxSizing: "border-box", maxHeight: "85vh", overflowY: "auto" }}
               onClick={e => e.stopPropagation()}>
               <div style={{ width: 36, height: 4, borderRadius: 2, background: C.line, margin: "0 auto 20px" }} />
               <div style={{ fontSize: 18, fontWeight: 700, color: C.text, marginBottom: 16, fontFamily: SANS }}>{editingFoodId ? "Edit Entry" : "Log Food"}</div>
@@ -1952,7 +1960,7 @@ export default function App() {
               {!editingFoodId && (
               <>
               {/* Photo logging */}
-              <div style={{ marginBottom: 14, padding: "14px", borderRadius: 14, background: C.surface2, border: `1px solid ${C.line}` }}>
+              <div style={{ marginBottom: 14, padding: "14px", borderRadius: 14, background: C.surface2 }}>
                 <div style={{ fontSize: 11, letterSpacing: 1.5, color: LAKE.forest, textTransform: "uppercase", fontFamily: SANS, fontWeight: 700, marginBottom: 8 }}>Snap a Photo — AI estimates</div>
                 {foodPhoto ? (
                   <div style={{ position: "relative", marginBottom: 8 }}>
@@ -1964,7 +1972,7 @@ export default function App() {
                   </div>
                 ) : (
                   <label style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "18px", borderRadius: 10, border: `1.5px dashed ${C.line}`, cursor: "pointer", color: C.textMid, fontSize: 13, fontFamily: SANS }}>
-                    <input type="file" accept="image/*" capture="environment" style={{ display: "none" }}
+                    <input type="file" accept="image/*" style={{ display: "none" }}
                       onChange={e => handlePhotoSelect(e.target.files[0])} />
                     Take Photo or Choose Image
                   </label>
@@ -1972,8 +1980,8 @@ export default function App() {
                 {foodPhoto && (
                   <>
                     <textarea value={aiDescription} onChange={e => setAiDescription(e.target.value)} rows={2}
-                      placeholder="Optional: correct the portion — e.g. &quot;I only ate half of this&quot; or &quot;2 of the 4 pieces&quot;"
-                      style={{ width: "100%", marginTop: 10, background: C.bg, border: `1px solid ${C.line}`, borderRadius: 10, padding: "10px 12px", fontSize: 16, color: C.text, outline: "none", resize: "none", fontFamily: SANS, boxSizing: "border-box" }} />
+                      placeholder="Optional: correct the portion — e.g. &quot;I only ate half of this&quot; or &quot;2 of the 4 pieces&quot; — tap the mic on your keyboard to speak this"
+                      style={{ width: "100%", marginTop: 10, background: C.bg, borderRadius: 10, padding: "10px 12px", fontSize: 16, color: C.text, outline: "none", resize: "none", fontFamily: SANS, boxSizing: "border-box" }} />
                     <button onClick={aiLogFoodPhoto} disabled={aiLoading}
                       style={{ width: "100%", marginTop: 8, padding: "11px", borderRadius: 10, background: aiLoading ? C.surface : LAKE.forest, border: "none", color: aiLoading ? C.textDim : "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: SANS }}>
                       {aiLoading ? "Analyzing photo…" : "Estimate & Log from Photo"}
@@ -1983,12 +1991,12 @@ export default function App() {
               </div>
 
               {/* AI describe (text only, no photo) */}
-              <div style={{ marginBottom: 18, padding: "14px", borderRadius: 14, background: C.surface2, border: `1px solid ${C.line}` }}>
+              <div style={{ marginBottom: 18, padding: "14px", borderRadius: 14, background: C.surface2 }}>
                 <div style={{ fontSize: 11, letterSpacing: 1.5, color: LAKE.sky, textTransform: "uppercase", fontFamily: SANS, fontWeight: 700, marginBottom: 8 }}>Describe It — AI estimates</div>
-                <div style={{ fontSize: 11, color: C.textDim, marginBottom: 8, fontFamily: SANS }}>No photo — just tell it what you ate.</div>
+                <div style={{ fontSize: 11, color: C.textDim, marginBottom: 8, fontFamily: SANS }}>No photo — type it, or tap the mic on your keyboard to speak it.</div>
                 <textarea value={foodPhoto ? "" : aiDescription} onChange={e => setAiDescription(e.target.value)} rows={2}
                   placeholder="e.g. 1.5 scoops whey with oat milk and a banana"
-                  style={{ width: "100%", background: C.bg, border: `1px solid ${C.line}`, borderRadius: 10, padding: "10px 12px", fontSize: 16, color: C.text, outline: "none", resize: "none", fontFamily: SANS, boxSizing: "border-box" }} />
+                  style={{ width: "100%", background: C.bg, borderRadius: 10, padding: "10px 12px", fontSize: 16, color: C.text, outline: "none", resize: "none", fontFamily: SANS, boxSizing: "border-box" }} />
                 <button onClick={aiLogFood} disabled={aiLoading}
                   style={{ width: "100%", marginTop: 8, padding: "11px", borderRadius: 10, background: aiLoading ? C.surface : LAKE.sky, border: "none", color: aiLoading ? C.textDim : "#0a0a0a", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: SANS }}>
                   {aiLoading ? "Estimating…" : "Estimate & Log"}
@@ -2001,13 +2009,13 @@ export default function App() {
               {/* Manual entry (always shown — this is the edit form too) */}
               <div style={{ fontSize: 11, letterSpacing: 1.5, color: C.textDim, textTransform: "uppercase", fontFamily: SANS, fontWeight: 700, marginBottom: 8 }}>{editingFoodId ? "Edit Details" : "Or Enter Manually"}</div>
               <input value={foodName} onChange={e => setFoodName(e.target.value)} placeholder="Food name"
-                style={{ width: "100%", background: C.surface2, border: `1px solid ${C.line}`, borderRadius: 10, padding: "11px 14px", fontSize: 16, color: C.text, outline: "none", fontFamily: SANS, boxSizing: "border-box", marginBottom: 10 }} />
+                style={{ width: "100%", background: C.surface2, borderRadius: 10, padding: "11px 14px", fontSize: 16, color: C.text, outline: "none", fontFamily: SANS, boxSizing: "border-box", marginBottom: 10 }} />
               <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
                 {[["Protein", foodP, setFoodP], ["Carbs", foodC, setFoodC], ["Fat", foodF, setFoodF]].map(([lbl, val, setter]) => (
                   <div key={lbl} style={{ flex: 1 }}>
                     <div style={{ fontSize: 10, letterSpacing: 1, color: C.textDim, textTransform: "uppercase", fontFamily: SANS, marginBottom: 4, textAlign: "center" }}>{lbl} g</div>
                     <input type="number" inputMode="decimal" value={val} onChange={e => setter(e.target.value)} placeholder="0"
-                      style={{ width: "100%", background: C.surface2, border: `1px solid ${C.line}`, borderRadius: 10, padding: "11px 6px", fontSize: 18, fontWeight: 700, color: C.text, textAlign: "center", outline: "none", fontFamily: MONO, boxSizing: "border-box" }} />
+                      style={{ width: "100%", background: C.surface2, borderRadius: 10, padding: "11px 6px", fontSize: 18, fontWeight: 700, color: C.text, textAlign: "center", outline: "none", fontFamily: MONO, boxSizing: "border-box" }} />
                   </div>
                 ))}
               </div>
@@ -2017,7 +2025,7 @@ export default function App() {
               <div style={{ display: "flex", gap: 8 }}>
                 {editingFoodId && (
                   <button onClick={() => { setEditingFoodId(null); setFoodName(""); setFoodP(""); setFoodC(""); setFoodF(""); setShowFoodModal(false); }}
-                    style={{ flex: 1, padding: "14px", borderRadius: 12, background: "transparent", border: `1px solid ${C.line}`, color: C.textMid, fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: SANS }}>
+                    style={{ flex: 1, padding: "14px", borderRadius: 12, background: "transparent", color: C.textMid, fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: SANS }}>
                     Cancel
                   </button>
                 )}
@@ -2050,7 +2058,7 @@ export default function App() {
         {showTargetsModal && (
           <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)", display: "flex", alignItems: "flex-end", zIndex: 100 }}
             onClick={() => setShowTargetsModal(false)}>
-            <div style={{ background: C.surface, width: "100%", borderRadius: "24px 24px 0 0", padding: "24px 18px 44px", border: `1.5px solid ${C.line}`, borderBottom: "none", boxSizing: "border-box" }}
+            <div style={{ background: C.surface, width: "100%", borderRadius: "24px 24px 0 0", padding: "24px 18px 44px", borderBottom: "none", boxSizing: "border-box" }}
               onClick={e => e.stopPropagation()}>
               <div style={{ width: 36, height: 4, borderRadius: 2, background: C.line, margin: "0 auto 20px" }} />
               <div style={{ fontSize: 18, fontWeight: 700, color: C.text, marginBottom: 16, fontFamily: SANS }}>Macro Targets</div>
@@ -2065,7 +2073,7 @@ export default function App() {
                         <div style={{ fontSize: 10, letterSpacing: 1, color: C.textDim, textTransform: "uppercase", fontFamily: SANS, marginBottom: 4, textAlign: "center" }}>{lbl}</div>
                         <input type="number" inputMode="numeric" value={macroTargets[dt][key]}
                           onChange={e => saveMacroTargets({ ...macroTargets, [dt]: { ...macroTargets[dt], [key]: parseFloat(e.target.value) || 0 } })}
-                          style={{ width: "100%", background: C.surface2, border: `1px solid ${C.line}`, borderRadius: 10, padding: "10px 6px", fontSize: 17, fontWeight: 700, color: C.text, textAlign: "center", outline: "none", fontFamily: MONO, boxSizing: "border-box" }} />
+                          style={{ width: "100%", background: C.surface2, borderRadius: 10, padding: "10px 6px", fontSize: 17, fontWeight: 700, color: C.text, textAlign: "center", outline: "none", fontFamily: MONO, boxSizing: "border-box" }} />
                       </div>
                     ))}
                   </div>
@@ -2079,7 +2087,8 @@ export default function App() {
         )}
 
         <ResumeBar session={inProgressSession && activeId !== inProgressSession?.id ? inProgressSession : null} onResume={() => { setActiveId(inProgressSession.id); setTab("journal"); setView("entry"); }} />
-        <BottomNav tab={tab} setTab={setTab} />
+        <BottomNav tab={tab} setTab={setTab} onOpenMenu={() => setShowMoreMenu(true)} />
+        <MoreMenu open={showMoreMenu} onClose={() => setShowMoreMenu(false)} onSelect={(id) => { setShowMoreMenu(false); setTab(id); setView("journal"); }} />
       </Shell>
     );
   }
@@ -2103,7 +2112,7 @@ export default function App() {
           const meso = mesocycleWeek(entries, mesoOverride);
           if (!meso.isDeload) return null;
           return (
-            <div style={{ margin: "12px 18px 4px", padding: "14px 16px", borderRadius: 14, background: "#1c1c1c", border: "1.5px solid #e8e8e844" }}>
+            <div style={{ margin: "12px 18px 4px", padding: "14px 16px", borderRadius: 14, background: "#e8e8e81a" }}>
               <div style={{ fontSize: 13, fontWeight: 700, color: C.accent, marginBottom: 8, display: "flex", alignItems: "center", gap: 6 }}>
                 <Flame size={14} color={C.accent} strokeWidth={2} /> Deload Week — Volume Targets
               </div>
@@ -2127,7 +2136,7 @@ export default function App() {
             const mevPct = (lm.mev / lm.mrv) * 100;
             const mavPct = (lm.mav / lm.mrv) * 100;
             return (
-              <div key={muscle} style={{ marginBottom: 12, padding: "16px 18px", borderRadius: 18, background: C.surface, border: `1px solid ${C.line}`, boxShadow: shadow }}>
+              <div key={muscle} style={{ marginBottom: 12, padding: "16px 18px", borderRadius: 18, background: C.surface, boxShadow: shadow }}>
                 <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 12 }}>
                   <div style={{ fontSize: 15, fontWeight: 700, color: C.text, letterSpacing: -0.2 }}>{muscle}</div>
                   <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
@@ -2154,7 +2163,8 @@ export default function App() {
           </div>
         </div>
         <ResumeBar session={inProgressSession && activeId !== inProgressSession?.id ? inProgressSession : null} onResume={() => { setActiveId(inProgressSession.id); setTab("journal"); setView("entry"); }} />
-        <BottomNav tab={tab} setTab={setTab} />
+        <BottomNav tab={tab} setTab={setTab} onOpenMenu={() => setShowMoreMenu(true)} />
+        <MoreMenu open={showMoreMenu} onClose={() => setShowMoreMenu(false)} onSelect={(id) => { setShowMoreMenu(false); setTab(id); setView("journal"); }} />
       </Shell>
     );
   }
@@ -2225,7 +2235,7 @@ export default function App() {
         <div style={{ padding: "0 18px 16px" }}>
 
           {/* ── SESSION HEATMAP ── */}
-          <div style={{ marginBottom: 14, padding: "16px", borderRadius: 18, background: C.surface, border: `1px solid ${C.line}`, boxShadow: shadow }}>
+          <div style={{ marginBottom: 14, padding: "16px", borderRadius: 18, background: C.surface, boxShadow: shadow }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 12 }}>
               <div style={{ fontSize: 13, fontWeight: 700, color: C.text }}>Consistency</div>
               <div style={{ fontSize: 12, color: C.textDim, fontFamily: SANS }}>{completedSessions}/70 days trained</div>
@@ -2241,7 +2251,7 @@ export default function App() {
           </div>
 
           {/* ── PUSH/PULL BALANCE ── */}
-          <div style={{ marginBottom: 14, padding: "16px", borderRadius: 18, background: C.surface, border: `1px solid ${C.line}`, boxShadow: shadow }}>
+          <div style={{ marginBottom: 14, padding: "16px", borderRadius: 18, background: C.surface, boxShadow: shadow }}>
             <div style={{ fontSize: 13, fontWeight: 700, color: C.text, marginBottom: 12 }}>Push / Pull Balance <span style={{ fontSize: 11, color: C.textDim, fontWeight: 400 }}>last 8 days</span></div>
             {[
               { label: "Push", val: balance.push, color: C.accent },
@@ -2272,10 +2282,10 @@ export default function App() {
           </div>
 
           {/* ── PER-LIFT PROGRESSION ── */}
-          <div style={{ marginBottom: 14, padding: "16px", borderRadius: 18, background: C.surface, border: `1px solid ${C.line}`, boxShadow: shadow }}>
+          <div style={{ marginBottom: 14, padding: "16px", borderRadius: 18, background: C.surface, boxShadow: shadow }}>
             <div style={{ fontSize: 13, fontWeight: 700, color: C.text, marginBottom: 10 }}>Lift Progression</div>
             <select value={selMv || ""} onChange={e => setSelectedMovement(e.target.value)}
-              style={{ width: "100%", padding: "10px 12px", borderRadius: 10, background: C.surface2, border: `1px solid ${C.line}`, color: C.text, fontSize: 13, fontFamily: SANS, marginBottom: 12, outline: "none" }}>
+              style={{ width: "100%", padding: "10px 12px", borderRadius: 10, background: C.surface2, color: C.text, fontSize: 13, fontFamily: SANS, marginBottom: 12, outline: "none" }}>
               {mvNames.map(n => <option key={n} value={n}>{n}</option>)}
             </select>
             {history.length > 0 && (
@@ -2307,7 +2317,7 @@ export default function App() {
           </div>
 
           {/* ── PERSONAL RECORDS ── */}
-          <div style={{ marginBottom: 14, padding: "16px", borderRadius: 18, background: C.surface, border: `1px solid ${C.line}`, boxShadow: shadow }}>
+          <div style={{ marginBottom: 14, padding: "16px", borderRadius: 18, background: C.surface, boxShadow: shadow }}>
             <div style={{ fontSize: 13, fontWeight: 700, color: C.text, marginBottom: 12 }}>Personal Records</div>
             {Object.entries(prs).length === 0 ? (
               <div style={{ fontSize: 13, color: C.textDim, fontFamily: SANS }}>Log some sets to see PRs</div>
@@ -2329,7 +2339,8 @@ export default function App() {
           <div style={{ height: 20 }} />
         </div>
         <ResumeBar session={inProgressSession && activeId !== inProgressSession?.id ? inProgressSession : null} onResume={() => { setActiveId(inProgressSession.id); setTab("journal"); setView("entry"); }} />
-        <BottomNav tab={tab} setTab={setTab} />
+        <BottomNav tab={tab} setTab={setTab} onOpenMenu={() => setShowMoreMenu(true)} />
+        <MoreMenu open={showMoreMenu} onClose={() => setShowMoreMenu(false)} onSelect={(id) => { setShowMoreMenu(false); setTab(id); setView("journal"); }} />
       </Shell>
     );
   }
@@ -2432,10 +2443,10 @@ export default function App() {
         <div style={{ padding: "16px 18px 8px" }}>
           <div style={{ fontSize: 11, letterSpacing: 2, color: "#5c5c5c", textTransform: "uppercase", fontFamily: SANS, fontWeight: 700, marginBottom: 10 }}>Backup</div>
           <div style={{ display: "flex", gap: 10, marginBottom: 10 }}>
-            <button onClick={() => downloadJSON(entries, weightLog, mesoOverride, cycleAnchor, macros, macroTargets)} style={{ flex: 1, padding: "13px", borderRadius: 14, background: "#1c1c1c", border: "1.5px solid #e8e8e844", color: "#e8e8e8", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: SANS }}>
+            <button onClick={() => downloadJSON(entries, weightLog, mesoOverride, cycleAnchor, macros, macroTargets)} style={{ flex: 1, padding: "13px", borderRadius: 14, background: "#e8e8e822", color: "#e8e8e8", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: SANS }}>
               Export JSON
             </button>
-            <button onClick={() => downloadCSV(entries, weightLog)} style={{ flex: 1, padding: "13px", borderRadius: 14, background: "#1c1c1c", border: "1.5px solid #e8e8e844", color: "#e8e8e8", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: SANS }}>
+            <button onClick={() => downloadCSV(entries, weightLog)} style={{ flex: 1, padding: "13px", borderRadius: 14, background: "#e8e8e822", color: "#e8e8e8", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: SANS }}>
               Export CSV
             </button>
           </div>
@@ -2448,17 +2459,17 @@ export default function App() {
             } finally {
               setPdfLoading(false);
             }
-          }} disabled={pdfLoading} style={{ width: "100%", padding: "13px", borderRadius: 14, background: "#1c1c1c", border: `1.5px solid ${C.line}`, color: pdfLoading ? C.textDim : C.text, fontSize: 13, fontWeight: 700, cursor: pdfLoading ? "default" : "pointer", fontFamily: SANS, marginBottom: 10, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+          }} disabled={pdfLoading} style={{ width: "100%", padding: "13px", borderRadius: 14, background: "#1c1c1c", color: pdfLoading ? C.textDim : C.text, fontSize: 13, fontWeight: 700, cursor: pdfLoading ? "default" : "pointer", fontFamily: SANS, marginBottom: 10, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
             <Trophy size={15} color={pdfLoading ? C.textDim : C.accent} strokeWidth={2} /> {pdfLoading ? "Generating PDF…" : "Coach Report (PDF)"}
           </button>
           <input ref={fileInputRef} type="file" accept=".json" style={{ display: "none" }}
             onChange={e => { if (e.target.files[0]) handleImport(e.target.files[0]); e.target.value = ""; }} />
           <button onClick={() => { setImportStatus(null); fileInputRef.current?.click(); }}
-            style={{ width: "100%", padding: "13px", borderRadius: 14, background: "#1c1c1c", border: "1.5px solid #e8e8e844", color: "#e8e8e8", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: SANS }}>
+            style={{ width: "100%", padding: "13px", borderRadius: 14, background: "#e8e8e822", color: "#e8e8e8", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: SANS }}>
             Import JSON Backup
           </button>
           {importStatus && (
-            <div style={{ marginTop: 10, padding: "10px 14px", borderRadius: 10, background: importStatus === "success" ? "#1c1c1c" : "#1c1c1c", border: `1px solid ${importStatus === "success" ? "#e8e8e844" : "#e05a4d44"}`, color: importStatus === "success" ? "#e8e8e8" : "#e05a4d", fontSize: 13, fontFamily: SANS }}>
+            <div style={{ marginTop: 10, padding: "10px 14px", borderRadius: 10, background: importStatus === "success" ? "#e8e8e822" : "#e05a4d22", color: importStatus === "success" ? "#e8e8e8" : "#e05a4d", fontSize: 13, fontFamily: SANS }}>
               {importStatus === "success" ? "✓ " : "✕ "}{importMsg}
             </div>
           )}
@@ -2467,7 +2478,7 @@ export default function App() {
         {/* Session search */}
         <div style={{ padding: "8px 18px 4px" }}>
           <input value={searchQuery} onChange={e => setSearchQuery(e.target.value)} placeholder="Search sessions, movements, notes…"
-            style={{ width: "100%", padding: "11px 14px", borderRadius: 12, background: C.surface2, border: `1px solid ${C.line}`, color: C.text, fontSize: 16, fontFamily: SANS, outline: "none", boxSizing: "border-box" }} />
+            style={{ width: "100%", padding: "11px 14px", borderRadius: 12, background: C.surface2, color: C.text, fontSize: 16, fontFamily: SANS, outline: "none", boxSizing: "border-box" }} />
         </div>
 
         {/* Filter by day */}
@@ -2507,7 +2518,7 @@ export default function App() {
                 const totalVol = entry.movements.reduce((n, mv) =>
                   n + mv.sets.reduce((s, set) => s + (parseFloat(set.w)||0) * (parseFloat(set.r)||0), 0), 0);
                 return (
-                  <div key={entry.id} style={{ marginBottom: 8, borderRadius: 14, overflow: "hidden", background: "#131313", border: `1.5px solid ${expanded ? color + "66" : "#2e2e2e"}` }}>
+                  <div key={entry.id} style={{ marginBottom: 8, borderRadius: 14, overflow: "hidden", background: expanded ? color + "14" : "#131313" }}>
                     <div style={{ height: 3, background: prog ? color : "#2e2e2e" }} />
                     <div onClick={() => setExpandedId(expanded ? null : entry.id)}
                       style={{ padding: "12px 14px", cursor: "pointer", display: "flex", alignItems: "center", gap: 12 }}>
@@ -2534,7 +2545,7 @@ export default function App() {
                             </div>
                             <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
                               {mv.sets.map((s, si) => (
-                                <span key={si} style={{ fontSize: 11, fontFamily: SANS, padding: "3px 8px", borderRadius: 6, background: s.r ? entryColor + "22" : "#2e2e2e", border: `1px solid ${s.r ? entryColor + "44" : "#5c5c5c"}`, color: s.r ? entryColor : "#5c5c5c" }}>
+                                <span key={si} style={{ fontSize: 11, fontFamily: SANS, padding: "3px 8px", borderRadius: 6, background: s.r ? entryColor + "22" : "#2e2e2e", color: s.r ? entryColor : "#5c5c5c" }}>
                                   {s.w ? `${s.w}×` : "BW×"}{s.r || "–"}
                                 </span>
                               ))}
@@ -2551,7 +2562,8 @@ export default function App() {
           );
         })()}
         <ResumeBar session={inProgressSession && activeId !== inProgressSession?.id ? inProgressSession : null} onResume={() => { setActiveId(inProgressSession.id); setTab("journal"); setView("entry"); }} />
-        <BottomNav tab={tab} setTab={setTab} />
+        <BottomNav tab={tab} setTab={setTab} onOpenMenu={() => setShowMoreMenu(true)} />
+        <MoreMenu open={showMoreMenu} onClose={() => setShowMoreMenu(false)} onSelect={(id) => { setShowMoreMenu(false); setTab(id); setView("journal"); }} />
       </Shell>
     );
   }
@@ -2605,7 +2617,7 @@ export default function App() {
           )}
         </div>
         {chartData.length >= 2 && (
-          <div style={{ margin: "16px 18px 0", padding: "16px", borderRadius: 16, background: "#131313", border: "1px solid #2e2e2e", overflowX: "auto" }}>
+          <div style={{ margin: "16px 18px 0", padding: "16px", borderRadius: 16, background: "#131313", overflowX: "auto" }}>
             <div style={{ fontSize: 11, letterSpacing: 2, color: "#5c5c5c", textTransform: "uppercase", fontFamily: SANS, marginBottom: 10 }}>Progress</div>
             <svg width="100%" viewBox={`0 0 ${CHART_W} ${CHART_H + 20}`} style={{ display: "block", overflow: "visible" }}>
               {[0, 0.25, 0.5, 0.75, 1].map(p => {
@@ -2646,7 +2658,7 @@ export default function App() {
           <div style={{ fontSize: 11, letterSpacing: 2, color: "#5c5c5c", textTransform: "uppercase", fontFamily: SANS, fontWeight: 700 }}>History · {weightLog.length} entries</div>
         </div>
         {sorted_w.length === 0 ? (
-          <div style={{ margin: "20px 18px", padding: "32px 20px", borderRadius: 16, background: "#131313", border: "1px solid #2e2e2e", textAlign: "center" }}>
+          <div style={{ margin: "20px 18px", padding: "32px 20px", borderRadius: 16, background: "#131313", textAlign: "center" }}>
             <div style={{ display: "flex", justifyContent: "center", marginBottom: 10 }}><Scale size={30} color={C.textDim} strokeWidth={1.8} /></div>
             <div style={{ color: "#9a9a9a", fontSize: 14 }}>No weight entries yet</div>
           </div>
@@ -2656,7 +2668,7 @@ export default function App() {
               const prevW = sorted_w[i + 1];
               const d = prevW ? (parseFloat(w.weight) - parseFloat(prevW.weight)).toFixed(1) : null;
               return (
-                <div key={w.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", borderRadius: 14, background: "#131313", border: "1px solid #2e2e2e", marginBottom: 8 }}>
+                <div key={w.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", borderRadius: 14, background: "#131313", marginBottom: 8 }}>
                   <div style={{ flex: 1 }}>
                     <div style={{ fontSize: 11, color: "#5c5c5c", fontFamily: SANS }}>{fmtDate(w.date)}</div>
                     <div style={{ display: "flex", alignItems: "baseline", gap: 6, marginTop: 2 }}>
@@ -2670,7 +2682,7 @@ export default function App() {
                     </div>
                   </div>
                   <button onClick={() => setWeightLog(prev => { const updated = prev.filter(x => x.id !== w.id); saveWeights(updated); return updated; })}
-                    style={{ width: 30, height: 30, borderRadius: 8, background: "#1c1c1c", border: "1px solid #2a1e1e", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><X size={16} strokeWidth={2.5} color={C.red} /></button>
+                    style={{ width: 30, height: 30, borderRadius: 8, background: "#2a1a18", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><X size={16} strokeWidth={2.5} color={C.red} /></button>
                 </div>
               );
             })}
@@ -2679,7 +2691,7 @@ export default function App() {
         {showWeightForm && (
           <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.75)", display: "flex", alignItems: "flex-end", zIndex: 100 }}
             onClick={() => setShowWeightForm(false)}>
-            <div style={{ background: "#131313", width: "100%", borderRadius: "24px 24px 0 0", padding: "24px 18px 48px", border: "1.5px solid #2e2e2e", borderBottom: "none" }}
+            <div style={{ background: "#131313", width: "100%", borderRadius: "24px 24px 0 0", padding: "24px 18px 48px", borderBottom: "none" }}
               onClick={e => e.stopPropagation()}>
               <div style={{ width: 36, height: 4, borderRadius: 2, background: "#5c5c5c", margin: "0 auto 20px" }} />
               <div style={{ fontSize: 18, fontWeight: 800, color: "#f2f2f2", marginBottom: 16, fontFamily: SANS }}>Log Weight</div>
@@ -2706,7 +2718,8 @@ export default function App() {
           </div>
         )}
         <ResumeBar session={inProgressSession && activeId !== inProgressSession?.id ? inProgressSession : null} onResume={() => { setActiveId(inProgressSession.id); setTab("journal"); setView("entry"); }} />
-        <BottomNav tab={tab} setTab={setTab} />
+        <BottomNav tab={tab} setTab={setTab} onOpenMenu={() => setShowMoreMenu(true)} />
+        <MoreMenu open={showMoreMenu} onClose={() => setShowMoreMenu(false)} onSelect={(id) => { setShowMoreMenu(false); setTab(id); setView("journal"); }} />
       </Shell>
     );
   }
@@ -2727,7 +2740,7 @@ export default function App() {
         const meso = mesocycleWeek(entries, mesoOverride);
         const dimColor = "#e8e8e8";
         return (
-          <div onClick={() => setShowMesoEdit(true)} style={{ margin: "12px 18px 4px", padding: "14px 16px", borderRadius: 14, background: meso.isDeload ? "#1c1c1c" : "#131313", border: `1.5px solid ${meso.isDeload ? "#e8e8e844" : "#2e2e2e"}`, cursor: "pointer" }}>
+          <div onClick={() => setShowMesoEdit(true)} style={{ margin: "12px 18px 4px", padding: "14px 16px", borderRadius: 14, background: meso.isDeload ? "#e8e8e81a" : "#1c1c1c", cursor: "pointer" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
               <div style={{ fontSize: 11, letterSpacing: 2, color: dimColor, textTransform: "uppercase", fontFamily: SANS, fontWeight: 700 }}>
                 <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}><Flame size={13} strokeWidth={2.2} /> Mesocycle {meso.cycle} · Week {meso.week} of {meso.total}</span>
@@ -2790,7 +2803,7 @@ export default function App() {
         const remaining = trainingDays.filter(([dn]) => !completedDays.has(Number(dn)));
 
         return (
-          <div style={{ margin: "0 18px 12px", padding: "14px 16px", borderRadius: 16, background: C.surface, border: `1px solid ${C.line}` }}>
+          <div style={{ margin: "0 18px 12px", padding: "14px 16px", borderRadius: 16, background: C.surface }}>
             <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 12 }}>
               <div style={{ fontSize: 12, fontWeight: 700, color: C.textMid, letterSpacing: 0.5, textTransform: "uppercase", fontFamily: SANS }}>This Cycle</div>
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -2798,7 +2811,7 @@ export default function App() {
                   {doneCount}/{trainingDays.length} done
                 </div>
                 <button onClick={() => { if (window.confirm("Start a new cycle? This will reset the cycle tracker to today.")) saveCycleAnchor(todayStr()); }}
-                  style={{ fontSize: 10, fontWeight: 700, color: LAKE.sky, background: "transparent", border: `1px solid ${LAKE.sky}44`, borderRadius: 6, padding: "3px 8px", cursor: "pointer", fontFamily: SANS, letterSpacing: 0.3 }}>
+                  style={{ fontSize: 10, fontWeight: 700, color: LAKE.sky, background: LAKE.sky + "22", borderRadius: 6, padding: "3px 8px", cursor: "pointer", fontFamily: SANS, letterSpacing: 0.3 }}>
                   New Cycle
                 </button>
               </div>
@@ -2810,7 +2823,7 @@ export default function App() {
                   <div key={dn} onClick={() => { setNewProgramDay(Number(dn)); setNewDate(todayStr()); setShowNewModal(true); }}
                     style={{ flex: 1, borderRadius: 10, padding: "8px 4px", textAlign: "center", cursor: "pointer",
                       background: done ? d.color + "22" : C.surface2,
-                      border: `1.5px solid ${done ? d.color + "88" : C.line}`,
+                      
                       opacity: done ? 0.7 : 1,
                     }}>
                     <div style={{ fontSize: 15, fontWeight: 800, fontFamily: MONO, color: done ? d.color : C.text }}>
@@ -2854,7 +2867,7 @@ export default function App() {
             return (
               <div key={entry.id}
                 onClick={() => { setActiveId(entry.id); setView("entry"); }}
-                style={{ marginBottom: 12, borderRadius: 18, overflow: "hidden", background: "#131313", border: `1.5px solid ${inProgress ? LAKE.sky + "55" : "#2e2e2e"}`, cursor: "pointer", opacity: inProgress ? 0.85 : 1 }}>
+                style={{ marginBottom: 12, borderRadius: 18, overflow: "hidden", background: inProgress ? LAKE.sky + "14" : "#131313", cursor: "pointer", opacity: inProgress ? 0.9 : 1 }}>
                 <div style={{ height: 4, background: inProgress ? LAKE.sky + "66" : isRest ? "#2e2e2e" : color }} />
                 <div style={{ padding: "14px 16px" }}>
                   <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
@@ -2878,12 +2891,12 @@ export default function App() {
                   {!isRest && entry.movements.length > 0 && (
                     <div style={{ marginTop: 10, display: "flex", flexWrap: "wrap", gap: 6 }}>
                       {entry.movements.slice(0, 5).map(mv => (
-                        <span key={mv.id} style={{ fontSize: 11, padding: "3px 9px", borderRadius: 7, background: "#1c1c1c", border: "1px solid #2e2e2e", color: "#9a9a9a", fontFamily: SANS }}>
+                        <span key={mv.id} style={{ fontSize: 11, padding: "3px 9px", borderRadius: 7, background: "#1c1c1c", color: "#9a9a9a", fontFamily: SANS }}>
                           {mv.programRef ? `${mv.programRef}. ` : ""}{mv.name || "–"}
                         </span>
                       ))}
                       {entry.movements.length > 5 && (
-                        <span style={{ fontSize: 11, padding: "3px 9px", borderRadius: 7, background: "#1c1c1c", border: "1px solid #2e2e2e", color: "#5c5c5c" }}>
+                        <span style={{ fontSize: 11, padding: "3px 9px", borderRadius: 7, background: "#1c1c1c", color: "#5c5c5c" }}>
                           +{entry.movements.length - 5} more
                         </span>
                       )}
@@ -2905,7 +2918,7 @@ export default function App() {
       {showMesoEdit && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)", display: "flex", alignItems: "flex-end", zIndex: 100 }}
           onClick={() => setShowMesoEdit(false)}>
-          <div style={{ background: "#131313", width: "100%", borderRadius: "24px 24px 0 0", padding: "24px 18px 44px", border: "1.5px solid #2e2e2e", borderBottom: "none", boxSizing: "border-box" }}
+          <div style={{ background: "#131313", width: "100%", borderRadius: "24px 24px 0 0", padding: "24px 18px 44px", borderBottom: "none", boxSizing: "border-box" }}
             onClick={e => e.stopPropagation()}>
             <div style={{ width: 36, height: 4, borderRadius: 2, background: "#2e2e2e", margin: "0 auto 20px" }} />
             <div style={{ fontSize: 18, fontWeight: 700, color: "#f2f2f2", marginBottom: 6, fontFamily: SANS }}>Set Mesocycle Week</div>
@@ -2919,7 +2932,7 @@ export default function App() {
                 const current = mesocycleWeek(entries, mesoOverride).week === wk;
                 return (
                   <button key={wk} onClick={() => { saveMesoOverride({ anchorDate: todayStr(), weekAtAnchor: wk }); setShowMesoEdit(false); }}
-                    style={{ flex: 1, padding: "16px 0", borderRadius: 12, border: `1.5px solid ${current ? "#e8e8e8" : "#2e2e2e"}`, background: current ? "#e8e8e8" : "#1c1c1c", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+                    style={{ flex: 1, padding: "16px 0", borderRadius: 12, background: current ? "#e8e8e8" : "#1c1c1c", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
                     <span style={{ fontSize: 20, fontWeight: 800, fontFamily: MONO, color: current ? "#0a0a0a" : "#f2f2f2" }}>{wk}</span>
                     <span style={{ fontSize: 9, fontFamily: SANS, fontWeight: 700, letterSpacing: 0.5, color: current ? "#0a0a0a" : "#5c5c5c" }}>{isDeloadWk ? "DELOAD" : "WK"}</span>
                   </button>
@@ -2927,7 +2940,7 @@ export default function App() {
               })}
             </div>
             <button onClick={() => { saveMesoOverride(null); setShowMesoEdit(false); }}
-              style={{ width: "100%", padding: "12px", borderRadius: 12, background: "transparent", border: "1.5px solid #2e2e2e", color: "#9a9a9a", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: SANS }}>
+              style={{ width: "100%", padding: "12px", borderRadius: 12, background: "transparent", color: "#9a9a9a", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: SANS }}>
               Reset to automatic
             </button>
           </div>
@@ -2937,7 +2950,7 @@ export default function App() {
       {showNewModal && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.75)", display: "flex", alignItems: "flex-end", zIndex: 100 }}
           onClick={() => setShowNewModal(false)}>
-          <div style={{ background: "#131313", width: "100%", borderRadius: "24px 24px 0 0", padding: "24px 18px 44px", border: "1.5px solid #2e2e2e", borderBottom: "none", boxSizing: "border-box", overflow: "hidden" }}
+          <div style={{ background: "#131313", width: "100%", borderRadius: "24px 24px 0 0", padding: "24px 18px 44px", borderBottom: "none", boxSizing: "border-box", overflow: "hidden" }}
             onClick={e => e.stopPropagation()}>
             <div style={{ width: 36, height: 4, borderRadius: 2, background: "#5c5c5c", margin: "0 auto 20px" }} />
             <div style={{ fontSize: 18, fontWeight: 800, color: "#f2f2f2", marginBottom: 16, fontFamily: SANS }}>Log Session</div>
@@ -2955,9 +2968,9 @@ export default function App() {
             <div style={{ marginBottom: 18 }}>
               <label style={labelStyle}>Program Day (optional)</label>
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 6 }}>
-                <div onClick={() => setNewProgramDay(null)} style={{ padding: "7px 14px", borderRadius: 10, cursor: "pointer", fontSize: 13, fontWeight: 700, fontFamily: SANS, background: newProgramDay === null ? "#e8e8e8" : "#1c1c1c", color: newProgramDay === null ? "#131313" : "#9a9a9a", border: `1.5px solid ${newProgramDay === null ? "#e8e8e8" : "#2e2e2e"}` }}>Custom</div>
+                <div onClick={() => setNewProgramDay(null)} style={{ padding: "7px 14px", borderRadius: 10, cursor: "pointer", fontSize: 13, fontWeight: 700, fontFamily: SANS, background: newProgramDay === null ? "#e8e8e8" : "#1c1c1c", color: newProgramDay === null ? "#131313" : "#9a9a9a" }}>Custom</div>
                 {Object.entries(PROGRAM).map(([dn, d]) => (
-                  <div key={dn} onClick={() => setNewProgramDay(Number(dn))} style={{ padding: "8px 12px", borderRadius: 10, cursor: "pointer", fontFamily: SANS, background: newProgramDay === Number(dn) ? d.color : "#1c1c1c", color: newProgramDay === Number(dn) ? "#131313" : d.color, border: `1.5px solid ${newProgramDay === Number(dn) ? d.color : d.color + "33"}`, textAlign: "center", minWidth: 56 }}>
+                  <div key={dn} onClick={() => setNewProgramDay(Number(dn))} style={{ padding: "8px 12px", borderRadius: 10, cursor: "pointer", fontFamily: SANS, background: newProgramDay === Number(dn) ? d.color : "#1c1c1c", color: newProgramDay === Number(dn) ? "#131313" : d.color, textAlign: "center", minWidth: 56 }}>
                     <div style={{ fontSize: 15, fontWeight: 800 }}>{dn}</div>
                     <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: 0.5, marginTop: 2, opacity: 0.85 }}>
                       {{"1":"LEGS","2":"PUSH","3":"REST","4":"PULL","5":"REST","6":"LEGS II","7":"PUSH II"}[dn]}
@@ -2986,7 +2999,8 @@ export default function App() {
         </div>
       )}
       <ResumeBar session={inProgressSession && activeId !== inProgressSession?.id ? inProgressSession : null} onResume={() => { setActiveId(inProgressSession.id); setTab("journal"); setView("entry"); }} />
-      <BottomNav tab={tab} setTab={setTab} />
+      <BottomNav tab={tab} setTab={setTab} onOpenMenu={() => setShowMoreMenu(true)} />
+        <MoreMenu open={showMoreMenu} onClose={() => setShowMoreMenu(false)} onSelect={(id) => { setShowMoreMenu(false); setTab(id); setView("journal"); }} />
     </Shell>
   );
 }
@@ -3004,7 +3018,7 @@ function RestTimer({ restSecs, restLabel, color, timerState, onStart, onPause, o
   const mins = Math.floor(remaining / 60), secs = remaining % 60;
   const timeStr = mins > 0 ? `${mins}:${String(secs).padStart(2, "0")}` : `${secs}s`;
   return (
-    <div style={{ margin: "2px 18px 8px", padding: "10px 14px", borderRadius: 14, background: done ? "#1c1c1c" : "#131313", border: `1px solid ${done ? color + "66" : "#2e2e2e"}`, display: "flex", alignItems: "center", gap: 12, transition: "background 0.3s, border-color 0.3s" }}>
+    <div style={{ margin: "2px 18px 8px", padding: "10px 14px", borderRadius: 14, background: done ? color + "1a" : "#131313", display: "flex", alignItems: "center", gap: 12, transition: "background 0.3s" }}>
       <div style={{ position: "relative", width: 52, height: 52, flexShrink: 0 }}>
         <svg width="52" height="52" style={{ transform: "rotate(-90deg)" }}>
           <circle cx="26" cy="26" r={R} fill="none" stroke="#2e2e2e" strokeWidth="3" />
@@ -3071,7 +3085,7 @@ function MacroChefModal({ remaining, onResult, onClose }) {
 
   return (
     <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)", display: "flex", alignItems: "flex-end", zIndex: 100 }} onClick={onClose}>
-      <div style={{ background: C.surface, width: "100%", borderRadius: "24px 24px 0 0", padding: "24px 18px 44px", border: `1.5px solid ${C.line}`, borderBottom: "none", boxSizing: "border-box", maxHeight: "85vh", overflowY: "auto" }}
+      <div style={{ background: C.surface, width: "100%", borderRadius: "24px 24px 0 0", padding: "24px 18px 44px", borderBottom: "none", boxSizing: "border-box", maxHeight: "85vh", overflowY: "auto" }}
         onClick={e => e.stopPropagation()}>
         <div style={{ width: 36, height: 4, borderRadius: 2, background: C.line, margin: "0 auto 20px" }} />
         <div style={{ fontSize: 18, fontWeight: 700, color: C.text, marginBottom: 4, fontFamily: SANS, display: "flex", alignItems: "center", gap: 8 }}>
@@ -3083,11 +3097,11 @@ function MacroChefModal({ remaining, onResult, onClose }) {
 
         {mode === "home" && (
           <div style={{ display: "flex", gap: 10 }}>
-            <button onClick={() => setMode("kitchen")} style={{ flex: 1, padding: "20px 12px", borderRadius: 14, background: C.surface2, border: `1.5px solid ${C.line}`, color: C.text, cursor: "pointer", fontFamily: SANS, textAlign: "center" }}>
+            <button onClick={() => setMode("kitchen")} style={{ flex: 1, padding: "20px 12px", borderRadius: 14, background: C.surface2, color: C.text, cursor: "pointer", fontFamily: SANS, textAlign: "center" }}>
               <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 4 }}>In My Kitchen</div>
               <div style={{ fontSize: 11, color: C.textDim }}>Tell it what you have</div>
             </button>
-            <button onClick={() => setMode("restaurant")} style={{ flex: 1, padding: "20px 12px", borderRadius: 14, background: C.surface2, border: `1.5px solid ${C.line}`, color: C.text, cursor: "pointer", fontFamily: SANS, textAlign: "center" }}>
+            <button onClick={() => setMode("restaurant")} style={{ flex: 1, padding: "20px 12px", borderRadius: 14, background: C.surface2, color: C.text, cursor: "pointer", fontFamily: SANS, textAlign: "center" }}>
               <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 4 }}>Eating Out</div>
               <div style={{ fontSize: 11, color: C.textDim }}>Get ordering advice</div>
             </button>
@@ -3098,13 +3112,13 @@ function MacroChefModal({ remaining, onResult, onClose }) {
           <>
             {mode === "restaurant" && (
               <input value={restaurant} onChange={e => setRestaurant(e.target.value)} placeholder="Restaurant name (optional)"
-                style={{ width: "100%", background: C.surface2, border: `1px solid ${C.line}`, borderRadius: 10, padding: "11px 14px", fontSize: 16, color: C.text, outline: "none", fontFamily: SANS, boxSizing: "border-box", marginBottom: 10 }} />
+                style={{ width: "100%", background: C.surface2, borderRadius: 10, padding: "11px 14px", fontSize: 16, color: C.text, outline: "none", fontFamily: SANS, boxSizing: "border-box", marginBottom: 10 }} />
             )}
             <textarea value={input} onChange={e => setInput(e.target.value)} rows={3}
               placeholder={mode === "kitchen" ? "e.g. chicken breast, rice, eggs, spinach, olive oil" : "e.g. menu has salads, bowls, grilled proteins"}
-              style={{ width: "100%", background: C.surface2, border: `1px solid ${C.line}`, borderRadius: 10, padding: "11px 14px", fontSize: 16, color: C.text, outline: "none", resize: "none", fontFamily: SANS, boxSizing: "border-box", marginBottom: 10 }} />
+              style={{ width: "100%", background: C.surface2, borderRadius: 10, padding: "11px 14px", fontSize: 16, color: C.text, outline: "none", resize: "none", fontFamily: SANS, boxSizing: "border-box", marginBottom: 10 }} />
             <div style={{ display: "flex", gap: 8 }}>
-              <button onClick={() => setMode("home")} style={{ padding: "12px 16px", borderRadius: 10, background: "transparent", border: `1px solid ${C.line}`, color: C.textMid, fontSize: 13, cursor: "pointer", fontFamily: SANS }}>Back</button>
+              <button onClick={() => setMode("home")} style={{ padding: "12px 16px", borderRadius: 10, background: "transparent", color: C.textMid, fontSize: 13, cursor: "pointer", fontFamily: SANS }}>Back</button>
               <button onClick={askChef} disabled={loading || !input.trim()}
                 style={{ flex: 1, padding: "12px", borderRadius: 10, background: loading ? C.surface2 : LAKE.forest, border: "none", color: loading ? C.textDim : "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: SANS }}>
                 {loading ? "Thinking…" : "Ask Chef"}
@@ -3116,11 +3130,11 @@ function MacroChefModal({ remaining, onResult, onClose }) {
 
         {response && (
           <>
-            <div style={{ padding: "14px", borderRadius: 12, background: C.surface2, border: `1px solid ${C.line}`, fontSize: 14, color: C.text, fontFamily: SANS, lineHeight: 1.6, whiteSpace: "pre-wrap", marginBottom: 12 }}>
+            <div style={{ padding: "14px", borderRadius: 12, background: C.surface2, fontSize: 14, color: C.text, fontFamily: SANS, lineHeight: 1.6, whiteSpace: "pre-wrap", marginBottom: 12 }}>
               {response}
             </div>
             <div style={{ display: "flex", gap: 8 }}>
-              <button onClick={() => { setResponse(null); setInput(""); }} style={{ flex: 1, padding: "12px", borderRadius: 10, background: "transparent", border: `1px solid ${C.line}`, color: C.textMid, fontSize: 13, cursor: "pointer", fontFamily: SANS }}>Ask Again</button>
+              <button onClick={() => { setResponse(null); setInput(""); }} style={{ flex: 1, padding: "12px", borderRadius: 10, background: "transparent", color: C.textMid, fontSize: 13, cursor: "pointer", fontFamily: SANS }}>Ask Again</button>
               <button onClick={() => onResult({ name: mode === "restaurant" ? (restaurant || "Restaurant meal") : "Kitchen meal", p: 0, c: 0, f: 0, cal: 0, note: "Logged from Macro Chef — edit macros manually" })}
                 style={{ flex: 1, padding: "12px", borderRadius: 10, background: LAKE.sky, border: "none", color: "#0a0a0a", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: SANS }}>
                 Log Placeholder
@@ -3136,16 +3150,46 @@ function MacroChefModal({ remaining, onResult, onClose }) {
   );
 }
 
+function MoreMenu({ open, onClose, onSelect }) {
+  if (!open) return null;
+  const items = [
+    { id: "data", label: "Data & Backup", Icon: Database, desc: "Export, import, session history" },
+  ];
+  return (
+    <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)", display: "flex", alignItems: "flex-end", zIndex: 100 }}>
+      <div onClick={e => e.stopPropagation()} style={{ background: C.surface, width: "100%", borderRadius: "24px 24px 0 0", padding: "10px 18px 40px", boxSizing: "border-box", maxWidth: 430, margin: "0 auto" }}>
+        <div style={{ width: 36, height: 4, borderRadius: 2, background: C.line, margin: "0 auto 18px" }} />
+        {items.map(item => (
+          <button key={item.id} onClick={() => onSelect(item.id)} style={{
+            width: "100%", display: "flex", alignItems: "center", gap: 14, padding: "14px 4px",
+            background: "none", border: "none", cursor: "pointer", textAlign: "left",
+          }}>
+            <div style={{ width: 40, height: 40, borderRadius: 12, background: C.surface2, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+              <item.Icon size={19} color={C.text} strokeWidth={1.8} />
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 15, fontWeight: 600, color: C.text, fontFamily: SANS }}>{item.label}</div>
+              <div style={{ fontSize: 12, color: C.textDim, fontFamily: SANS, marginTop: 1 }}>{item.desc}</div>
+            </div>
+            <ChevronRight size={18} color={C.textDim} strokeWidth={2} />
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function ResumeBar({ session, onResume }) {
   if (!session) return null;
   const mvTotal = session.movements.length;
   const mvDone = session.movements.filter(m => m.doneAt).length;
+  const isToday = session.date === todayStr();
+  const dateLabel = isToday ? "" : ` · ${fmtDate(session.date)}`;
   return (
     <div onClick={onResume} style={{
       position: "fixed", bottom: 72, left: "50%", transform: "translateX(-50%)",
       width: "calc(100% - 36px)", maxWidth: 394,
       background: "linear-gradient(135deg, #1c1c1c, #161616)",
-      border: `1.5px solid ${LAKE.sky}55`,
       borderRadius: 16, padding: "11px 16px",
       display: "flex", alignItems: "center", gap: 12,
       cursor: "pointer", zIndex: 49,
@@ -3158,7 +3202,7 @@ function ResumeBar({ session, onResume }) {
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontSize: 13, fontWeight: 700, color: LAKE.sky, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-          {session.customTitle || "Session in progress"}
+          {session.customTitle || "Session in progress"}{dateLabel}
         </div>
         <div style={{ fontSize: 11, color: "#9a9a9a", fontFamily: SANS, marginTop: 1 }}>
           {mvDone}/{mvTotal} movements done · tap to resume
@@ -3169,26 +3213,29 @@ function ResumeBar({ session, onResume }) {
   );
 }
 
-function BottomNav({ tab, setTab }) {
+function BottomNav({ tab, setTab, onOpenMenu }) {
   const tabs = [
     { id: "journal", label: "Journal", Icon: ClipboardList },
     { id: "macros", label: "Macros", Icon: Utensils },
     { id: "volume", label: "Volume", Icon: BarChart3 },
     { id: "progress", label: "Progress", Icon: TrendingUp },
     { id: "weight", label: "Weight", Icon: Scale },
-    { id: "data", label: "Data", Icon: Database },
   ];
   return (
-    <div style={{ position: "fixed", bottom: 0, left: "50%", transform: "translateX(-50%)", width: "100%", maxWidth: 430, background: "rgba(13,13,15,0.94)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", borderTop: `1px solid ${C.line}`, display: "flex", padding: "8px 0 24px", zIndex: 50 }}>
+    <div style={{ position: "fixed", bottom: 0, left: "50%", transform: "translateX(-50%)", width: "100%", maxWidth: 430, background: "rgba(13,13,15,0.94)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", display: "flex", padding: "10px 0 26px", zIndex: 50 }}>
       {tabs.map(t => {
         const active = tab === t.id;
         return (
-          <button key={t.id} onClick={() => setTab(t.id)} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 3, background: "none", border: "none", cursor: "pointer", padding: "6px 0", transition: "transform 0.15s", transform: active ? "translateY(-1px)" : "none" }}>
-            <t.Icon size={18} strokeWidth={active ? 2.4 : 1.8} color={active ? C.accent : C.textDim} />
-            <span style={{ fontSize: 9, letterSpacing: 0.3, fontFamily: SANS, color: active ? C.accent : C.textDim, fontWeight: active ? 700 : 500 }}>{t.label}</span>
+          <button key={t.id} onClick={() => setTab(t.id)} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4, background: "none", border: "none", cursor: "pointer", padding: "6px 0", transition: "transform 0.15s", transform: active ? "translateY(-1px)" : "none" }}>
+            <t.Icon size={23} strokeWidth={active ? 2.4 : 1.8} color={active ? C.accent : C.textDim} />
+            <span style={{ fontSize: 10, letterSpacing: 0.3, fontFamily: SANS, color: active ? C.accent : C.textDim, fontWeight: active ? 700 : 500 }}>{t.label}</span>
           </button>
         );
       })}
+      <button onClick={onOpenMenu} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4, background: "none", border: "none", cursor: "pointer", padding: "6px 0" }}>
+        <MoreHorizontal size={23} strokeWidth={1.8} color={C.textDim} />
+        <span style={{ fontSize: 10, letterSpacing: 0.3, fontFamily: SANS, color: C.textDim, fontWeight: 500 }}>More</span>
+      </button>
     </div>
   );
 }
@@ -3210,10 +3257,10 @@ function SectionLabel({ children }) {
   return <div style={{ padding: "16px 18px 6px", fontSize: 11, letterSpacing: 2, color: "#5c5c5c", textTransform: "uppercase", fontFamily: SANS, fontWeight: 700 }}>{children}</div>;
 }
 function Pill({ color, children }) {
-  return <span style={{ padding: "5px 13px", borderRadius: 20, background: color + "1a", border: `1px solid ${color}33`, fontSize: 12, fontWeight: 600, color, fontFamily: SANS, letterSpacing: 0.2 }}>{children}</span>;
+  return <span style={{ padding: "5px 13px", borderRadius: 20, background: color + "2a", fontSize: 12, fontWeight: 600, color, fontFamily: SANS, letterSpacing: 0.2 }}>{children}</span>;
 }
 function MvCard({ children, color, onClick }) {
-  return <div onClick={onClick} style={{ margin: "0 18px 10px", padding: "16px 18px", borderRadius: 18, background: C.surface, border: `1px solid ${C.line}`, boxShadow: shadow, cursor: "pointer", transition: "transform 0.12s, border-color 0.2s" }}>{children}</div>;
+  return <div onClick={onClick} style={{ margin: "0 18px 10px", padding: "16px 18px", borderRadius: 18, background: C.surface, boxShadow: shadow, cursor: "pointer", transition: "transform 0.12s, border-color 0.2s" }}>{children}</div>;
 }
 function GhostBtn({ onClick, children }) {
   return <button onClick={onClick} style={{ display: "block", width: "calc(100% - 36px)", margin: "4px 18px", padding: "13px", borderRadius: 14, background: "transparent", border: `1.5px dashed ${C.line}`, color: C.textDim, fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: SANS }}>{children}</button>;
@@ -3251,7 +3298,7 @@ function SetRow({ num, weight, reps, rir, repsTarget, type, isLastSet, done, col
   const rirFb = rirFeedback(rir, type, isLastSet);
 
   return (
-    <div style={{ margin: "0 18px 4px", padding: "12px 14px", borderRadius: 14, background: done ? "#131313" : "#131313", border: `1px solid ${done ? color + "44" : "#2e2e2e"}`, transition: "background 0.2s, border-color 0.2s", opacity: done ? 0.75 : 1 }}>
+    <div style={{ margin: "0 18px 4px", padding: "12px 14px", borderRadius: 14, background: done ? color + "14" : "#1c1c1c", transition: "background 0.2s", opacity: done ? 0.75 : 1 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
         <div style={{ width: 26, height: 26, borderRadius: 7, background: "#1c1c1c", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 800, color: "#5c5c5c", fontFamily: SANS, flexShrink: 0 }}>{num}</div>
         <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
@@ -3271,9 +3318,9 @@ function SetRow({ num, weight, reps, rir, repsTarget, type, isLastSet, done, col
             {inRange ? "✓ in range" : belowRange ? "↓ go lighter" : aboveRange ? "↑ go heavier" : "reps"}
           </div>
         </div>
-        <button onClick={onDone} style={{ width: 44, height: 44, borderRadius: 12, flexShrink: 0, background: done ? LAKE.forest : C.surface2, border: `2px solid ${done ? LAKE.forest : C.line}`, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "transform 0.12s, background 0.15s, border-color 0.15s", transform: done ? "scale(1.05)" : "scale(1)" }}><Check size={20} strokeWidth={3} color={done ? C.bg : C.textDim} /></button>
+        <button onClick={onDone} style={{ width: 44, height: 44, borderRadius: 12, flexShrink: 0, background: done ? LAKE.forest : C.surface2, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "transform 0.12s, background 0.15s", transform: done ? "scale(1.05)" : "scale(1)" }}><Check size={20} strokeWidth={3} color={done ? C.bg : C.textDim} /></button>
         {onDelete && (
-          <button onClick={onDelete} style={{ width: 28, height: 28, borderRadius: 8, background: "#1c1c1c", border: "1px solid #2a1e1e", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><X size={15} strokeWidth={2.5} color={C.red} /></button>
+          <button onClick={onDelete} style={{ width: 28, height: 28, borderRadius: 8, background: "#2a1a18", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><X size={15} strokeWidth={2.5} color={C.red} /></button>
         )}
       </div>
       {/* RIR row */}
@@ -3286,7 +3333,7 @@ function SetRow({ num, weight, reps, rir, repsTarget, type, isLastSet, done, col
               <button key={v} onClick={() => onRIR(sel ? "" : v)} style={{
                 width: 30, height: 30, borderRadius: 8, cursor: "pointer",
                 background: sel ? color : "#1c1c1c",
-                border: `1.5px solid ${sel ? color : "#2e2e2e"}`,
+                
                 color: sel ? "#131313" : "#9a9a9a",
                 fontSize: 13, fontWeight: 800, fontFamily: SANS,
               }}>{v}</button>
@@ -3304,12 +3351,12 @@ function SetRow({ num, weight, reps, rir, repsTarget, type, isLastSet, done, col
 }
 
 function setInput(color) {
-  return { width: "100%", background: "#1c1c1c", border: `1.5px solid #2e2e2e`, borderRadius: 10, padding: "8px 6px", fontSize: 20, fontWeight: 800, color: "#f2f2f2", textAlign: "center", outline: "none", WebkitAppearance: "none", fontFamily: MONO };
+  return { width: "100%", background: "#1c1c1c", borderRadius: 10, padding: "8px 6px", fontSize: 20, fontWeight: 800, color: "#f2f2f2", textAlign: "center", outline: "none", border: "none", WebkitAppearance: "none", fontFamily: MONO };
 }
 const bigInput = { width: "100%", background: "transparent", border: "none", borderBottom: "1.5px solid #2e2e2e", padding: "6px 0", fontSize: 22, fontWeight: 800, color: "#f2f2f2", outline: "none", fontFamily: SANS, letterSpacing: -0.5, boxSizing: "border-box" };
 const ghostInput = { width: "100%", background: "transparent", border: "none", padding: "4px 0", outline: "none", fontFamily: SANS, boxSizing: "border-box", color: "#9a9a9a" };
-const noteArea = { width: "calc(100% - 36px)", margin: "0 18px", background: "#131313", border: "1.5px solid #2e2e2e", borderRadius: 14, padding: "12px 14px", fontSize: 16, color: "#9a9a9a", outline: "none", resize: "none", fontFamily: "'DM Sans', sans-serif", lineHeight: 1.6, boxSizing: "border-box" };
-const modalInput = { width: "100%", background: "#1c1c1c", border: "1.5px solid #2e2e2e", borderRadius: 10, padding: "11px 14px", fontSize: 16, color: "#f2f2f2", outline: "none", fontFamily: SANS, boxSizing: "border-box" };
+const noteArea = { width: "calc(100% - 36px)", margin: "0 18px", background: "#131313", borderRadius: 14, padding: "12px 14px", fontSize: 16, color: "#9a9a9a", outline: "none", resize: "none", fontFamily: "'DM Sans', sans-serif", lineHeight: 1.6, boxSizing: "border-box" };
+const modalInput = { width: "100%", background: "#1c1c1c", borderRadius: 10, padding: "11px 14px", fontSize: 16, color: "#f2f2f2", outline: "none", fontFamily: SANS, boxSizing: "border-box" };
 const labelStyle = { fontSize: 11, letterSpacing: 2, color: "#5c5c5c", textTransform: "uppercase", fontFamily: SANS, fontWeight: 700 };
 function btnStyle(bg, text) {
   return { padding: "7px 14px", borderRadius: 10, background: bg, border: "none", color: text, fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: SANS };
