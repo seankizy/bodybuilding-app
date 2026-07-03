@@ -34,6 +34,7 @@ const ArrowUp = (p) => <Icon {...p}><path d="M12 19V5M5 12l7-7 7 7"/></Icon>;
 const Download = (p) => <Icon {...p}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></Icon>;
 const Upload = (p) => <Icon {...p}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></Icon>;
 const Pencil = (p) => <Icon {...p}><path d="M17 3a2.83 2.83 0 0 1 4 4L7.5 20.5 2 22l1.5-5.5z"/></Icon>;
+const Utensils = (p) => <Icon {...p}><path d="M3 2v7c0 1.1.9 2 2 2h1v11M6 2v9M9 2v9M17 2c-2.2 0-4 2.7-4 6s1.8 6 4 6v10"/></Icon>;
 
 // ── DESIGN TOKENS ─────────────────────────────────────────────────────────────
 // Typography: clean sans for labels/body, monospace reserved for NUMBERS (data is the hero)
@@ -337,8 +338,8 @@ function downloadCSV(entries, weights) {
   a.click();
   URL.revokeObjectURL(url);
 }
-function downloadJSON(entries, weights, mesoOverride, cycleAnchor) {
-  const payload = { version: 3, exportedAt: new Date().toISOString(), entries, weights, mesoOverride: mesoOverride ?? null, cycleAnchor: cycleAnchor ?? null };
+function downloadJSON(entries, weights, mesoOverride, cycleAnchor, macros, macroTargets) {
+  const payload = { version: 4, exportedAt: new Date().toISOString(), entries, weights, mesoOverride: mesoOverride ?? null, cycleAnchor: cycleAnchor ?? null, macros: macros ?? {}, macroTargets: macroTargets ?? DEFAULT_MACRO_TARGETS };
   const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
@@ -357,12 +358,21 @@ function readJSONBackup(file) {
         const weights = Array.isArray(parsed) ? [] : (parsed.weights ?? []);
         const mesoOverride = parsed.mesoOverride ?? null;
         const cycleAnchor = parsed.cycleAnchor ?? null;
-        resolve({ entries, weights, mesoOverride, cycleAnchor });
+        const macros = parsed.macros ?? null;
+        const macroTargets = parsed.macroTargets ?? null;
+        resolve({ entries, weights, mesoOverride, cycleAnchor, macros, macroTargets, raw: parsed });
       } catch { reject(new Error("Invalid JSON file")); }
     };
     reader.onerror = () => reject(new Error("Could not read file"));
     reader.readAsText(file);
   });
+}
+// Detect a standalone macro-app backup: date-keyed object without an .entries array at top level
+function isMacroOnlyBackup(parsed) {
+  if (Array.isArray(parsed)) return false;
+  if (parsed.entries || parsed.movements) return false; // workout backup shape
+  const dateKeys = Object.keys(parsed).filter(k => /^\d{4}-\d{2}-\d{2}$/.test(k));
+  return dateKeys.length > 0;
 }
 
 function getLastSession(entries, programDay) {
@@ -605,6 +615,65 @@ function mesocycleWeek(entries, override) {
   return { week: weekInMeso, total: MESO_LENGTH, isDeload, cycle: Math.floor(safeDiff / MESO_LENGTH) + 1 };
 }
 
+// ── MACRO TRACKING ────────────────────────────────────────────────────────────
+// Merged from MacroTracker app. Data model matches the old app so backups import cleanly:
+//   wj_macros = { "YYYY-MM-DD": { entries: [{id, name, cal, p, c, f, time}], dayType } }
+const DEFAULT_MACRO_TARGETS = {
+  training: { p: 220, c: 200, f: 65 },
+  rest:     { p: 220, c: 120, f: 60 },
+};
+function macroCals(p, c, f) {
+  return Math.round((parseFloat(p)||0) * 4 + (parseFloat(c)||0) * 4 + (parseFloat(f)||0) * 9);
+}
+function loadMacros() {
+  try {
+    const raw = localStorage.getItem("wj_macros");
+    if (raw) { const p = JSON.parse(raw); if (p && typeof p === "object" && !Array.isArray(p)) return p; }
+  } catch {}
+  return {};
+}
+function saveMacrosLS(data) {
+  try { localStorage.setItem("wj_macros", JSON.stringify(data)); } catch (e) {
+    if (e.name === "QuotaExceededError") alert("Storage full — export a backup first.");
+  }
+}
+function loadMacroTargets() {
+  try {
+    const raw = localStorage.getItem("wj_macro_targets");
+    if (raw) { const p = JSON.parse(raw); if (p?.training && p?.rest) return p; }
+  } catch {}
+  return DEFAULT_MACRO_TARGETS;
+}
+function saveMacroTargetsLS(t) {
+  try { localStorage.setItem("wj_macro_targets", JSON.stringify(t)); } catch {}
+}
+function migrateMacroBackup(raw) {
+  const migrated = {};
+  Object.keys(raw).forEach(k => {
+    if (k.startsWith("__") || k === "exportedAt" || k === "version") return;
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(k)) return;
+    const day = raw[k];
+    if (Array.isArray(day)) {
+      migrated[k] = { entries: day, dayType: "training" };
+    } else if (day && typeof day === "object") {
+      const entries = Array.isArray(day.entries) ? day.entries : [];
+      const dt = day.dayType === "rest" ? "rest" : "training";
+      migrated[k] = { entries, dayType: dt };
+    }
+  });
+  return migrated;
+}
+function dayTotals(day) {
+  const t = { cal: 0, p: 0, c: 0, f: 0 };
+  (day?.entries ?? []).forEach(e => {
+    t.cal += parseFloat(e.cal) || 0;
+    t.p += parseFloat(e.p) || 0;
+    t.c += parseFloat(e.c) || 0;
+    t.f += parseFloat(e.f) || 0;
+  });
+  return { cal: Math.round(t.cal), p: Math.round(t.p), c: Math.round(t.c), f: Math.round(t.f) };
+}
+
 // ── MAIN APP ──────────────────────────────────────────────────────────────────
 export default function App() {
   const [entries, setEntries] = useState([]);
@@ -623,6 +692,20 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [mesoOverride, setMesoOverride] = useState(null); // { anchorDate, weekAtAnchor }
   const [cycleAnchor, setCycleAnchor] = useState(null); // ISO date string — manual cycle reset
+  // Macro tracking state
+  const [macros, setMacros] = useState({});
+  const [macroTargets, setMacroTargets] = useState(DEFAULT_MACRO_TARGETS);
+  const [macroDate, setMacroDate] = useState(todayStr());
+  const [showFoodModal, setShowFoodModal] = useState(false);
+  const [showTargetsModal, setShowTargetsModal] = useState(false);
+  const [foodName, setFoodName] = useState("");
+  const [foodP, setFoodP] = useState("");
+  const [foodC, setFoodC] = useState("");
+  const [foodF, setFoodF] = useState("");
+  const [aiDescription, setAiDescription] = useState("");
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState("");
+  const [dayTypeOverride, setDayTypeOverride] = useState(null); // per-date manual override stored in day data
   const [showMesoEdit, setShowMesoEdit] = useState(false);
   const [timerState, setTimerState] = useState(null);
   // NEW: between-movement stopwatch
@@ -657,6 +740,8 @@ export default function App() {
       const ca = localStorage.getItem("wj_cycle_anchor");
       if (ca) setCycleAnchor(ca);
     } catch {}
+    setMacros(loadMacros());
+    setMacroTargets(loadMacroTargets());
     if ("Notification" in window && Notification.permission === "default") {
       Notification.requestPermission();
     }
@@ -672,6 +757,24 @@ export default function App() {
       if (date) localStorage.setItem("wj_cycle_anchor", date);
       else localStorage.removeItem("wj_cycle_anchor");
     } catch {}
+  }
+  function mutateMacros(fn) {
+    setMacros(prev => {
+      const next = fn(JSON.parse(JSON.stringify(prev)));
+      saveMacrosLS(next);
+      return next;
+    });
+  }
+  function saveMacroTargets(t) {
+    setMacroTargets(t);
+    saveMacroTargetsLS(t);
+  }
+  // Is the given date a training day? Auto-detect from workout journal, honoring manual override.
+  function detectDayType(dateStr) {
+    const day = macros[dateStr];
+    if (day?.dayTypeManual) return day.dayType; // manual override wins
+    const trained = entries.some(e => e.date === dateStr && e.programDay && PROGRAM[e.programDay]?.exercises.length > 0);
+    return trained ? "training" : "rest";
   }
 
   useEffect(() => {
@@ -1317,6 +1420,297 @@ export default function App() {
     );
   }
 
+  // ── MACROS TAB ───────────────────────────────────────────────────────────
+  if (tab === "macros") {
+    const day = macros[macroDate] ?? { entries: [] };
+    const dType = detectDayType(macroDate);
+    const targets = macroTargets[dType] ?? DEFAULT_MACRO_TARGETS.training;
+    const targetCals = macroCals(targets.p, targets.c, targets.f);
+    const totals = dayTotals(day);
+    const isToday = macroDate === todayStr();
+    const trainedToday = entries.some(e => e.date === macroDate && e.programDay && PROGRAM[e.programDay]?.exercises.length > 0);
+
+    function shiftDate(delta) {
+      const d = new Date(macroDate + "T12:00:00");
+      d.setDate(d.getDate() + delta);
+      const next = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+      if (next <= todayStr()) setMacroDate(next);
+    }
+    function toggleDayType() {
+      mutateMacros(prev => {
+        const d = prev[macroDate] ?? { entries: [] };
+        const newType = dType === "training" ? "rest" : "training";
+        prev[macroDate] = { ...d, dayType: newType, dayTypeManual: true };
+        return prev;
+      });
+    }
+    function addFood() {
+      if (!foodName.trim() && !foodP && !foodC && !foodF) return;
+      const entry = {
+        id: Date.now(),
+        name: foodName.trim() || "Food",
+        p: parseFloat(foodP) || 0,
+        c: parseFloat(foodC) || 0,
+        f: parseFloat(foodF) || 0,
+        cal: macroCals(foodP, foodC, foodF),
+        time: new Date().toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }),
+      };
+      mutateMacros(prev => {
+        const d = prev[macroDate] ?? { entries: [], dayType: dType };
+        prev[macroDate] = { ...d, entries: [...(d.entries ?? []), entry] };
+        return prev;
+      });
+      setFoodName(""); setFoodP(""); setFoodC(""); setFoodF("");
+      setShowFoodModal(false);
+    }
+    function deleteFood(id) {
+      mutateMacros(prev => {
+        const d = prev[macroDate];
+        if (!d) return prev;
+        prev[macroDate] = { ...d, entries: d.entries.filter(e => e.id !== id) };
+        return prev;
+      });
+    }
+    function logAgain(entry) {
+      mutateMacros(prev => {
+        const d = prev[todayStr()] ?? { entries: [] };
+        prev[todayStr()] = { ...d, entries: [...(d.entries ?? []), { ...entry, id: Date.now(), time: new Date().toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }) }] };
+        return prev;
+      });
+    }
+    async function aiLogFood() {
+      if (!aiDescription.trim()) return;
+      setAiLoading(true); setAiError("");
+      try {
+        const apiKey = import.meta.env?.VITE_ANTHROPIC_API_KEY;
+        if (!apiKey) throw new Error("AI logging needs VITE_ANTHROPIC_API_KEY set in Vercel env vars.");
+        const resp = await fetch("https://api.anthropic.com/v1/messages", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "x-api-key": apiKey, "anthropic-version": "2023-06-01", "anthropic-dangerous-direct-browser-access": "true" },
+          body: JSON.stringify({
+            model: "claude-sonnet-4-5",
+            max_tokens: 500,
+            messages: [{ role: "user", content: `Estimate macros for: "${aiDescription}". Respond with ONLY a JSON object, no markdown: {"name": "short food name", "p": grams protein, "c": grams carbs, "f": grams fat}` }],
+          }),
+        });
+        const data = await resp.json();
+        const text = data.content?.map(b => b.text || "").join("") ?? "";
+        const clean = text.replace(/```json|```/g, "").trim();
+        const parsed = JSON.parse(clean);
+        const entry = {
+          id: Date.now(),
+          name: parsed.name || aiDescription.slice(0, 40),
+          p: parseFloat(parsed.p) || 0,
+          c: parseFloat(parsed.c) || 0,
+          f: parseFloat(parsed.f) || 0,
+          cal: macroCals(parsed.p, parsed.c, parsed.f),
+          time: new Date().toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }),
+        };
+        mutateMacros(prev => {
+          const d = prev[macroDate] ?? { entries: [], dayType: dType };
+          prev[macroDate] = { ...d, entries: [...(d.entries ?? []), entry] };
+          return prev;
+        });
+        setAiDescription("");
+        setShowFoodModal(false);
+      } catch (err) {
+        setAiError(err.message || "AI estimate failed — use manual entry.");
+      } finally {
+        setAiLoading(false);
+      }
+    }
+
+    const macroBar = (label, val, target, barColor) => {
+      const pct = Math.min(100, target > 0 ? (val / target) * 100 : 0);
+      const over = val > target;
+      return (
+        <div key={label} style={{ marginBottom: 12 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+            <span style={{ fontSize: 12, color: C.textMid, fontFamily: SANS, fontWeight: 600 }}>{label}</span>
+            <span style={{ fontSize: 12, fontFamily: MONO, color: over ? C.red : barColor }}>{val}g / {target}g</span>
+          </div>
+          <div style={{ height: 8, borderRadius: 4, background: C.surface2, overflow: "hidden" }}>
+            <div style={{ width: `${pct}%`, height: "100%", background: over ? C.red : barColor, borderRadius: 4, transition: "width 0.3s" }} />
+          </div>
+        </div>
+      );
+    };
+
+    return (
+      <Shell>
+        <div style={{ padding: "52px 18px 16px", background: "linear-gradient(160deg,#13141a 0%,#13141a 100%)" }}>
+          <div style={{ fontSize: 11, letterSpacing: 3, color: C.textDim, textTransform: "uppercase", fontFamily: SANS, marginBottom: 4 }}>Nutrition</div>
+          <div style={{ fontSize: 30, fontWeight: 900, color: C.text, lineHeight: 1, fontFamily: SANS, letterSpacing: -0.5 }}>Macros</div>
+          {/* Date navigation */}
+          <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 10 }}>
+            <button onClick={() => shiftDate(-1)} style={{ background: C.surface2, border: `1px solid ${C.line}`, borderRadius: 8, width: 30, height: 30, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}><ChevronLeft size={16} color={C.textMid} /></button>
+            <div style={{ fontSize: 14, fontWeight: 700, color: C.text, fontFamily: SANS, flex: 1, textAlign: "center" }}>
+              {isToday ? "Today" : fmtDate(macroDate)}
+            </div>
+            <button onClick={() => shiftDate(1)} disabled={isToday} style={{ background: C.surface2, border: `1px solid ${C.line}`, borderRadius: 8, width: 30, height: 30, display: "flex", alignItems: "center", justifyContent: "center", cursor: isToday ? "default" : "pointer", opacity: isToday ? 0.3 : 1 }}><ChevronRight size={16} color={C.textMid} /></button>
+          </div>
+        </div>
+
+        {/* Day type banner — auto-detected from workout journal */}
+        <div onClick={toggleDayType} style={{ margin: "12px 18px 4px", padding: "12px 16px", borderRadius: 14, cursor: "pointer",
+          background: dType === "training" ? LAKE.forest + "22" : C.surface,
+          border: `1.5px solid ${dType === "training" ? LAKE.forest + "66" : C.line}`,
+          display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div>
+            <div style={{ fontSize: 13, fontWeight: 800, color: dType === "training" ? LAKE.forest : C.textMid, letterSpacing: 0.5, textTransform: "uppercase", fontFamily: SANS }}>
+              {dType === "training" ? "Training Day" : "Rest Day"}
+            </div>
+            <div style={{ fontSize: 11, color: C.textDim, fontFamily: SANS, marginTop: 2 }}>
+              {macros[macroDate]?.dayTypeManual ? "Manually set · tap to switch" : trainedToday ? "Auto — session logged today" : "Auto — no session yet · tap to override"}
+            </div>
+          </div>
+          <div style={{ fontSize: 12, fontFamily: MONO, color: C.textMid }}>{targetCals} kcal</div>
+        </div>
+
+        {/* Calorie summary + macro bars */}
+        <div style={{ margin: "10px 18px", padding: "16px", borderRadius: 18, background: C.surface, border: `1px solid ${C.line}`, boxShadow: shadow }}>
+          <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 14 }}>
+            <span style={{ fontSize: 13, fontWeight: 700, color: C.text, fontFamily: SANS }}>Calories</span>
+            <span style={{ fontFamily: MONO }}>
+              <span style={{ fontSize: 24, fontWeight: 800, color: totals.cal > targetCals ? C.red : LAKE.sky }}>{totals.cal}</span>
+              <span style={{ fontSize: 13, color: C.textDim }}> / {targetCals}</span>
+            </span>
+          </div>
+          <div style={{ height: 10, borderRadius: 5, background: C.surface2, overflow: "hidden", marginBottom: 16 }}>
+            <div style={{ width: `${Math.min(100, targetCals > 0 ? (totals.cal / targetCals) * 100 : 0)}%`, height: "100%", background: totals.cal > targetCals ? C.red : `linear-gradient(90deg, ${LAKE.sky}aa, ${LAKE.sky})`, borderRadius: 5, transition: "width 0.3s" }} />
+          </div>
+          {macroBar("Protein", totals.p, targets.p, LAKE.forest)}
+          {macroBar("Carbs", totals.c, targets.c, LAKE.ochre)}
+          {macroBar("Fat", totals.f, targets.f, LAKE.peak)}
+          <div style={{ fontSize: 11, color: C.textDim, fontFamily: SANS, marginTop: 4 }}>
+            Remaining: {Math.max(0, targets.p - totals.p)}p · {Math.max(0, targets.c - totals.c)}c · {Math.max(0, targets.f - totals.f)}f · {Math.max(0, targetCals - totals.cal)} kcal
+          </div>
+        </div>
+
+        <div style={{ display: "flex", gap: 10, padding: "0 18px 8px" }}>
+          <button onClick={() => { setAiError(""); setShowFoodModal(true); }}
+            style={{ flex: 2, padding: "14px", borderRadius: 14, background: LAKE.sky, border: "none", color: "#0d0d0f", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: SANS, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+            <Plus size={16} strokeWidth={2.5} /> Log Food
+          </button>
+          <button onClick={() => setShowTargetsModal(true)}
+            style={{ flex: 1, padding: "14px", borderRadius: 14, background: C.surface2, border: `1px solid ${C.line}`, color: C.textMid, fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: SANS }}>
+            Targets
+          </button>
+        </div>
+
+        {/* Entries list */}
+        <div style={{ padding: "8px 18px 4px" }}>
+          <div style={{ fontSize: 11, letterSpacing: 2, color: C.textDim, textTransform: "uppercase", fontFamily: SANS, fontWeight: 700 }}>
+            {(day.entries ?? []).length} entr{(day.entries ?? []).length === 1 ? "y" : "ies"}
+          </div>
+        </div>
+        <div style={{ padding: "4px 18px 180px" }}>
+          {(day.entries ?? []).length === 0 ? (
+            <div style={{ padding: "32px 0", textAlign: "center", color: C.textDim, fontSize: 13, fontFamily: SANS }}>Nothing logged {isToday ? "yet today" : "this day"}</div>
+          ) : [...day.entries].reverse().map(e => (
+            <div key={e.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", borderRadius: 14, background: C.surface, border: `1px solid ${C.line}`, marginBottom: 8 }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 14, fontWeight: 600, color: C.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{e.name}</div>
+                <div style={{ fontSize: 11, color: C.textDim, fontFamily: MONO, marginTop: 2 }}>
+                  {e.cal} kcal · {Math.round(e.p)}p / {Math.round(e.c)}c / {Math.round(e.f)}f{e.time ? ` · ${e.time}` : ""}
+                </div>
+              </div>
+              <button onClick={() => logAgain(e)} title="Log again today"
+                style={{ width: 30, height: 30, borderRadius: 8, background: C.surface2, border: `1px solid ${C.line}`, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <Plus size={14} color={LAKE.sky} strokeWidth={2.5} />
+              </button>
+              <button onClick={() => deleteFood(e.id)}
+                style={{ width: 30, height: 30, borderRadius: 8, background: "#1a1b22", border: "1px solid #4a2820", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <X size={14} color={C.red} strokeWidth={2.5} />
+              </button>
+            </div>
+          ))}
+        </div>
+
+        {/* Log Food modal */}
+        {showFoodModal && (
+          <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)", display: "flex", alignItems: "flex-end", zIndex: 100 }}
+            onClick={() => setShowFoodModal(false)}>
+            <div style={{ background: C.surface, width: "100%", borderRadius: "24px 24px 0 0", padding: "24px 18px 44px", border: `1.5px solid ${C.line}`, borderBottom: "none", boxSizing: "border-box", maxHeight: "85vh", overflowY: "auto" }}
+              onClick={e => e.stopPropagation()}>
+              <div style={{ width: 36, height: 4, borderRadius: 2, background: C.line, margin: "0 auto 20px" }} />
+              <div style={{ fontSize: 18, fontWeight: 700, color: C.text, marginBottom: 16, fontFamily: SANS }}>Log Food</div>
+
+              {/* AI describe */}
+              <div style={{ marginBottom: 18, padding: "14px", borderRadius: 14, background: C.surface2, border: `1px solid ${C.line}` }}>
+                <div style={{ fontSize: 11, letterSpacing: 1.5, color: LAKE.sky, textTransform: "uppercase", fontFamily: SANS, fontWeight: 700, marginBottom: 8 }}>Describe It — AI estimates</div>
+                <textarea value={aiDescription} onChange={e => setAiDescription(e.target.value)} rows={2}
+                  placeholder="e.g. 1.5 scoops whey with oat milk and a banana"
+                  style={{ width: "100%", background: C.bg, border: `1px solid ${C.line}`, borderRadius: 10, padding: "10px 12px", fontSize: 16, color: C.text, outline: "none", resize: "none", fontFamily: SANS, boxSizing: "border-box" }} />
+                <button onClick={aiLogFood} disabled={aiLoading}
+                  style={{ width: "100%", marginTop: 8, padding: "11px", borderRadius: 10, background: aiLoading ? C.surface : LAKE.sky, border: "none", color: aiLoading ? C.textDim : "#0d0d0f", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: SANS }}>
+                  {aiLoading ? "Estimating…" : "Estimate & Log"}
+                </button>
+                {aiError && <div style={{ marginTop: 8, fontSize: 12, color: C.red, fontFamily: SANS }}>{aiError}</div>}
+              </div>
+
+              {/* Manual entry */}
+              <div style={{ fontSize: 11, letterSpacing: 1.5, color: C.textDim, textTransform: "uppercase", fontFamily: SANS, fontWeight: 700, marginBottom: 8 }}>Or Enter Manually</div>
+              <input value={foodName} onChange={e => setFoodName(e.target.value)} placeholder="Food name"
+                style={{ width: "100%", background: C.surface2, border: `1px solid ${C.line}`, borderRadius: 10, padding: "11px 14px", fontSize: 16, color: C.text, outline: "none", fontFamily: SANS, boxSizing: "border-box", marginBottom: 10 }} />
+              <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
+                {[["Protein", foodP, setFoodP], ["Carbs", foodC, setFoodC], ["Fat", foodF, setFoodF]].map(([lbl, val, setter]) => (
+                  <div key={lbl} style={{ flex: 1 }}>
+                    <div style={{ fontSize: 10, letterSpacing: 1, color: C.textDim, textTransform: "uppercase", fontFamily: SANS, marginBottom: 4, textAlign: "center" }}>{lbl} g</div>
+                    <input type="number" inputMode="decimal" value={val} onChange={e => setter(e.target.value)} placeholder="0"
+                      style={{ width: "100%", background: C.surface2, border: `1px solid ${C.line}`, borderRadius: 10, padding: "11px 6px", fontSize: 18, fontWeight: 700, color: C.text, textAlign: "center", outline: "none", fontFamily: MONO, boxSizing: "border-box" }} />
+                  </div>
+                ))}
+              </div>
+              <div style={{ fontSize: 13, color: C.textMid, fontFamily: MONO, textAlign: "center", marginBottom: 14 }}>
+                = {macroCals(foodP, foodC, foodF)} kcal
+              </div>
+              <button onClick={addFood}
+                style={{ width: "100%", padding: "14px", borderRadius: 12, background: LAKE.forest, border: "none", color: "#fff", fontSize: 15, fontWeight: 700, cursor: "pointer", fontFamily: SANS }}>
+                Add Entry
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Targets modal */}
+        {showTargetsModal && (
+          <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)", display: "flex", alignItems: "flex-end", zIndex: 100 }}
+            onClick={() => setShowTargetsModal(false)}>
+            <div style={{ background: C.surface, width: "100%", borderRadius: "24px 24px 0 0", padding: "24px 18px 44px", border: `1.5px solid ${C.line}`, borderBottom: "none", boxSizing: "border-box" }}
+              onClick={e => e.stopPropagation()}>
+              <div style={{ width: 36, height: 4, borderRadius: 2, background: C.line, margin: "0 auto 20px" }} />
+              <div style={{ fontSize: 18, fontWeight: 700, color: C.text, marginBottom: 16, fontFamily: SANS }}>Macro Targets</div>
+              {["training", "rest"].map(dt => (
+                <div key={dt} style={{ marginBottom: 16 }}>
+                  <div style={{ fontSize: 12, fontWeight: 800, color: dt === "training" ? LAKE.forest : C.textMid, textTransform: "uppercase", letterSpacing: 1, fontFamily: SANS, marginBottom: 8 }}>
+                    {dt === "training" ? "Training Day" : "Rest Day"} · {macroCals(macroTargets[dt].p, macroTargets[dt].c, macroTargets[dt].f)} kcal
+                  </div>
+                  <div style={{ display: "flex", gap: 8 }}>
+                    {[["p", "Protein"], ["c", "Carbs"], ["f", "Fat"]].map(([key, lbl]) => (
+                      <div key={key} style={{ flex: 1 }}>
+                        <div style={{ fontSize: 10, letterSpacing: 1, color: C.textDim, textTransform: "uppercase", fontFamily: SANS, marginBottom: 4, textAlign: "center" }}>{lbl}</div>
+                        <input type="number" inputMode="numeric" value={macroTargets[dt][key]}
+                          onChange={e => saveMacroTargets({ ...macroTargets, [dt]: { ...macroTargets[dt], [key]: parseFloat(e.target.value) || 0 } })}
+                          style={{ width: "100%", background: C.surface2, border: `1px solid ${C.line}`, borderRadius: 10, padding: "10px 6px", fontSize: 17, fontWeight: 700, color: C.text, textAlign: "center", outline: "none", fontFamily: MONO, boxSizing: "border-box" }} />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+              <div style={{ fontSize: 11, color: C.textDim, fontFamily: SANS, lineHeight: 1.5 }}>
+                The day type auto-switches based on whether you've logged a workout — no more forgetting which targets apply.
+              </div>
+            </div>
+          </div>
+        )}
+
+        <ResumeBar session={inProgressSession && activeId !== inProgressSession?.id ? inProgressSession : null} onResume={() => { setActiveId(inProgressSession.id); setTab("journal"); setView("entry"); }} />
+        <BottomNav tab={tab} setTab={setTab} />
+      </Shell>
+    );
+  }
+
   // ── VOLUME TAB ───────────────────────────────────────────────────────────
   if (tab === "volume") {
     const vol = cycleVolume(entries, cycleAnchor);
@@ -1576,7 +1970,31 @@ export default function App() {
 
     async function handleImport(file) {
       try {
-        const { entries: newEntries, weights: newWeights, mesoOverride: newMeso, cycleAnchor: newAnchor } = await readJSONBackup(file);
+        const result = await readJSONBackup(file);
+        const { entries: newEntries, weights: newWeights, mesoOverride: newMeso, cycleAnchor: newAnchor, macros: newMacros, raw } = result;
+
+        // Case 1: this is a standalone MacroTracker-app backup (date-keyed, no .entries)
+        if (isMacroOnlyBackup(raw)) {
+          const migrated = migrateMacroBackup(raw);
+          let addedDays = 0, addedEntries = 0;
+          mutateMacros(prev => {
+            Object.keys(migrated).forEach(dateKey => {
+              const incoming = migrated[dateKey];
+              const existing = prev[dateKey] ?? { entries: [], dayType: incoming.dayType };
+              const existingIds = new Set((existing.entries ?? []).map(e => String(e.id)));
+              const toAdd = (incoming.entries ?? []).filter(e => !existingIds.has(String(e.id)));
+              if (toAdd.length > 0 || !prev[dateKey]) addedDays++;
+              addedEntries += toAdd.length;
+              prev[dateKey] = { ...existing, entries: [...(existing.entries ?? []), ...toAdd] };
+            });
+            return prev;
+          });
+          setImportStatus("success");
+          setImportMsg(`Imported macro history: ${addedDays} days, ${addedEntries} food entries merged`);
+          return;
+        }
+
+        // Case 2: normal workout backup (may also contain merged macros from this app's own export)
         if (!Array.isArray(newEntries)) throw new Error("No entries found in file");
         const existingIds = new Set(entries.map(e => String(e.id)));
         const toAdd = newEntries.filter(e => !existingIds.has(String(e.id)));
@@ -1589,9 +2007,25 @@ export default function App() {
         }
         if (newMeso) saveMesoOverride(newMeso);
         if (newAnchor) saveCycleAnchor(newAnchor);
+        let macroNote = "";
+        if (newMacros && Object.keys(newMacros).length > 0) {
+          let addedEntries = 0;
+          mutateMacros(prev => {
+            Object.keys(newMacros).forEach(dateKey => {
+              const incoming = newMacros[dateKey];
+              const existing = prev[dateKey] ?? { entries: [], dayType: incoming.dayType };
+              const existingIds2 = new Set((existing.entries ?? []).map(e => String(e.id)));
+              const toAddF = (incoming.entries ?? []).filter(e => !existingIds2.has(String(e.id)));
+              addedEntries += toAddF.length;
+              prev[dateKey] = { ...existing, entries: [...(existing.entries ?? []), ...toAddF] };
+            });
+            return prev;
+          });
+          macroNote = ` + ${addedEntries} food entries`;
+        }
         const stateRestored = newMeso || newAnchor ? " · mesocycle & cycle state restored" : "";
         setImportStatus("success");
-        setImportMsg(`Imported ${toAdd.length} new session${toAdd.length !== 1 ? "s" : ""}${newWeights.length > 0 ? ` + ${newWeights.length} weight entries` : ""}${stateRestored}`);
+        setImportMsg(`Imported ${toAdd.length} new session${toAdd.length !== 1 ? "s" : ""}${newWeights.length > 0 ? ` + ${newWeights.length} weight entries` : ""}${macroNote}${stateRestored}`);
       } catch (err) {
         setImportStatus("error");
         setImportMsg(err.message || "Import failed");
@@ -1614,7 +2048,7 @@ export default function App() {
         <div style={{ padding: "16px 18px 8px" }}>
           <div style={{ fontSize: 11, letterSpacing: 2, color: "#50566a", textTransform: "uppercase", fontFamily: SANS, fontWeight: 700, marginBottom: 10 }}>Backup</div>
           <div style={{ display: "flex", gap: 10, marginBottom: 10 }}>
-            <button onClick={() => downloadJSON(entries, weightLog, mesoOverride, cycleAnchor)} style={{ flex: 1, padding: "13px", borderRadius: 14, background: "#1b1c23", border: "1.5px solid #b8d4e844", color: "#b8d4e8", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: SANS }}>
+            <button onClick={() => downloadJSON(entries, weightLog, mesoOverride, cycleAnchor, macros, macroTargets)} style={{ flex: 1, padding: "13px", borderRadius: 14, background: "#1b1c23", border: "1.5px solid #b8d4e844", color: "#b8d4e8", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: SANS }}>
               Export JSON
             </button>
             <button onClick={() => downloadCSV(entries, weightLog)} style={{ flex: 1, padding: "13px", borderRadius: 14, background: "#1b1c23", border: "1.5px solid #b8d4e844", color: "#b8d4e8", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: SANS }}>
@@ -2244,6 +2678,7 @@ function ResumeBar({ session, onResume }) {
 function BottomNav({ tab, setTab }) {
   const tabs = [
     { id: "journal", label: "Journal", Icon: ClipboardList },
+    { id: "macros", label: "Macros", Icon: Utensils },
     { id: "volume", label: "Volume", Icon: BarChart3 },
     { id: "progress", label: "Progress", Icon: TrendingUp },
     { id: "weight", label: "Weight", Icon: Scale },
@@ -2254,9 +2689,9 @@ function BottomNav({ tab, setTab }) {
       {tabs.map(t => {
         const active = tab === t.id;
         return (
-          <button key={t.id} onClick={() => setTab(t.id)} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4, background: "none", border: "none", cursor: "pointer", padding: "6px 0", transition: "transform 0.15s", transform: active ? "translateY(-1px)" : "none" }}>
-            <t.Icon size={20} strokeWidth={active ? 2.4 : 1.8} color={active ? C.accent : C.textDim} />
-            <span style={{ fontSize: 10, letterSpacing: 0.5, fontFamily: SANS, color: active ? C.accent : C.textDim, fontWeight: active ? 700 : 500 }}>{t.label}</span>
+          <button key={t.id} onClick={() => setTab(t.id)} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 3, background: "none", border: "none", cursor: "pointer", padding: "6px 0", transition: "transform 0.15s", transform: active ? "translateY(-1px)" : "none" }}>
+            <t.Icon size={18} strokeWidth={active ? 2.4 : 1.8} color={active ? C.accent : C.textDim} />
+            <span style={{ fontSize: 9, letterSpacing: 0.3, fontFamily: SANS, color: active ? C.accent : C.textDim, fontWeight: active ? 700 : 500 }}>{t.label}</span>
           </button>
         );
       })}
