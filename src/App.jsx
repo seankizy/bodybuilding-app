@@ -1726,34 +1726,52 @@ export default function App() {
           headers: { "Content-Type": "application/json", "x-api-key": apiKey, "anthropic-version": "2023-06-01", "anthropic-dangerous-direct-browser-access": "true" },
           body: JSON.stringify({
             model: "claude-sonnet-4-5",
-            max_tokens: 500,
+            max_tokens: 1200,
+            tools: [{ type: "web_search_20250305", name: "web_search", max_uses: 3 }],
             messages: [{
               role: "user",
               content: [
                 { type: "image", source: { type: "base64", media_type: foodPhoto.mediaType, data: base64Data } },
                 { type: "text", text: (aiDescription.trim()
-                    ? `Estimate macros for the food shown in this photo. IMPORTANT: the person has given this note about what they actually ate — it overrides what you'd guess from the image alone (e.g. if they say "half of this" or "ate 2 of the 4 pieces", calculate macros for that actual portion, not the full plate shown): "${aiDescription.trim()}". `
-                    : `Estimate macros for the food shown in this photo, for the full portion visible. `)
-                    + `If the photo does NOT show identifiable food (e.g. it's blank, unrelated, or too unclear to estimate), respond with ONLY: {"unidentifiable": true}
+                    ? `Log macros for the food shown in this photo. IMPORTANT: the person has given this note about what they actually ate — it overrides what you'd guess from the image alone (e.g. "half of this" or "2 of the 4 pieces" means calculate for that actual portion, not the full plate shown): "${aiDescription.trim()}". `
+                    : `Log macros for the food shown in this photo, for the full portion visible. `)
+                    + `If the photo does NOT show identifiable food (blank, unrelated, too unclear), respond with ONLY: {"unidentifiable": true} — skip everything below.
 
-Otherwise, follow these rules before estimating:
-1. Judge the actual visible portion size from the photo (container size, comparison to plate/hand/utensils) — don't default to an oversized assumption.
-2. For known branded/packaged foods visible in the photo (cereal boxes, protein powder tubs, packaged snacks), recall the actual nutrition label values for that product's standard serving as accurately as you can.
-3. Double-check internal consistency: calories should roughly equal (protein×4 + carbs×4 + fat×9). If your carb number alone implies far more calories than what's visibly in the photo, you've likely overestimated portion size — reconsider.
+Otherwise, you MUST use web_search before answering — do not skip straight to an answer from memory. Then:
 
-Respond with ONLY a JSON object, no markdown: {"name": "short food name reflecting the actual portion eaten", "p": grams protein, "c": grams carbs, "f": grams fat}` },
+1. Identify the food/brand shown as specifically as you can from the photo (packaging, labels, restaurant branding).
+2. Search for the actual nutrition label for that specific food (brand's site, USDA FoodData Central, or a reputable nutrition database).
+3. From the search results, extract the EXACT per-serving numbers you found: the serving size and its calories, protein, carbs, and fat AS STATED in the source. Put these unmodified in "sourceServing" and "sourceValues" — a record of what you actually read, not your final answer.
+4. Judge the actual visible portion in the photo (container size, comparison to plate/hand/utensils).
+5. Compute multiplier = (visible portion) ÷ (source serving size), same units.
+6. Multiply each of the source's macro values by that multiplier for your final p/c/f. This must be visibly consistent with sourceValues × multiplier.
+
+Respond with ONLY this JSON object as your final message, no markdown:
+{"name": "short food name reflecting the actual portion eaten", "sourceServing": "e.g. 3/4 cup (29g), 110 kcal", "sourceValues": {"p": number, "c": number, "f": number}, "multiplier": number, "p": final grams protein, "c": final grams carbs, "f": final grams fat}` },
               ],
             }],
           }),
         });
         const data = await resp.json();
-        const text = data.content?.map(b => b.text || "").join("") ?? "";
+        const textBlocks = (data.content ?? []).filter(b => b.type === "text").map(b => b.text);
+        const text = textBlocks.length ? textBlocks[textBlocks.length - 1] : "";
         const clean = text.replace(/```json|```/g, "").trim();
-        const parsed = JSON.parse(clean);
+        const jsonMatch = clean.match(/\{[\s\S]*\}/);
+        const parsed = JSON.parse(jsonMatch ? jsonMatch[0] : clean);
         if (parsed.unidentifiable) {
           setAiError("Couldn't identify food in that photo — try a clearer shot, or use manual entry below.");
           setAiLoading(false);
           return;
+        }
+        // Code-level check: verify the final numbers trace back to sourceValues × multiplier
+        if (parsed.sourceValues && typeof parsed.multiplier === "number") {
+          const expectedC = parsed.sourceValues.c * parsed.multiplier;
+          const gotC = parseFloat(parsed.c) || 0;
+          if (expectedC > 0 && Math.abs(gotC - expectedC) / expectedC > 0.25) {
+            parsed.p = Math.round(parsed.sourceValues.p * parsed.multiplier);
+            parsed.c = Math.round(parsed.sourceValues.c * parsed.multiplier);
+            parsed.f = Math.round(parsed.sourceValues.f * parsed.multiplier);
+          }
         }
         // Show for review/confirmation rather than logging immediately
         setAiPendingReview({
@@ -1761,6 +1779,7 @@ Respond with ONLY a JSON object, no markdown: {"name": "short food name reflecti
           p: parseFloat(parsed.p) || 0,
           c: parseFloat(parsed.c) || 0,
           f: parseFloat(parsed.f) || 0,
+          source: parsed.sourceServing || null,
         });
       } catch (err) {
         setAiError(err.message || "AI photo estimate failed — use manual entry.");
@@ -1785,28 +1804,50 @@ Respond with ONLY a JSON object, no markdown: {"name": "short food name reflecti
           headers: { "Content-Type": "application/json", "x-api-key": apiKey, "anthropic-version": "2023-06-01", "anthropic-dangerous-direct-browser-access": "true" },
           body: JSON.stringify({
             model: "claude-sonnet-4-5",
-            max_tokens: 500,
-            messages: [{ role: "user", content: `Estimate macros for this food description: "${aiDescription}"
+            max_tokens: 1200,
+            tools: [{ type: "web_search_20250305", name: "web_search", max_uses: 3 }],
+            messages: [{ role: "user", content: `Log macros for this food: "${aiDescription}"
 
-If this text does NOT describe an identifiable food or meal (e.g. it's gibberish, random letters, empty, or unrelated to food), respond with ONLY: {"unidentifiable": true}
+If this text does NOT describe an identifiable food or meal (gibberish, random letters, empty, unrelated to food), respond with ONLY: {"unidentifiable": true} — skip everything below.
 
-Otherwise, follow these rules carefully before estimating:
-1. If a specific quantity/serving size is given (e.g. "2 eggs", "1 cup", "200g chicken"), use that exact amount.
-2. If NO quantity is given, use the STANDARD LABELED SERVING SIZE for that food (e.g. cereal = the serving size printed on that brand's nutrition label, typically 3/4–1 cup / ~30-40g for most cereals — NOT a large bowl). Do not assume a larger-than-standard portion.
-3. For known branded/packaged foods (cereals, protein bars, common snacks, fast food items), recall the actual nutrition label values for that product and standard serving as accurately as you can, rather than estimating from scratch.
-4. Double-check your numbers are internally consistent: calories should roughly equal (protein×4 + carbs×4 + fat×9). If your carb number alone implies more calories than a reasonable meal/snack (e.g. 200g+ carbs for a single serving of cereal), you have likely overestimated portion size — reconsider using the standard serving instead.
+Otherwise, you MUST use web_search before answering — do not skip straight to an answer from memory. Then:
 
-Respond with ONLY a JSON object, no markdown: {"name": "short food name including serving size assumed, e.g. 'Frosted Flakes (3/4 cup)'", "p": grams protein, "c": grams carbs, "f": grams fat}` }],
+1. Search for the actual nutrition label for this specific food (brand's own site, USDA FoodData Central, or a reputable nutrition database).
+2. From the search results, extract the EXACT per-serving numbers you found: the serving size (e.g. "3/4 cup (29g)") and its calories, protein, carbs, and fat AS STATED in the source. Put these unmodified in "sourceServing" and "sourceValues" below — this is a record of what you actually read, not your final answer.
+3. Identify the quantity stated in the description (e.g. "3 cups"). If none given, use the source's own serving size as-is (multiplier = 1).
+4. Compute multiplier = (requested quantity) ÷ (source serving quantity), using the SAME unit (e.g. 3 cups ÷ 0.75 cup = 4).
+5. Multiply each of the source's macro values by that multiplier to get your final p/c/f. This arithmetic must be visibly consistent with sourceValues × multiplier — do not put a final number here that doesn't trace back to sourceValues.
+
+Respond with ONLY this JSON object as your final message, no markdown:
+{"name": "short food name including quantity", "sourceServing": "e.g. 3/4 cup (29g), 110 kcal", "sourceValues": {"p": number, "c": number, "f": number}, "multiplier": number, "p": final grams protein, "c": final grams carbs, "f": final grams fat}` }],
           }),
         });
         const data = await resp.json();
-        const text = data.content?.map(b => b.text || "").join("") ?? "";
+        // A search-enabled turn returns multiple content blocks (text explaining the search,
+        // tool_use/tool_result blocks, and the final answer). Only the text blocks matter here;
+        // the final JSON is the last text block in the response.
+        const textBlocks = (data.content ?? []).filter(b => b.type === "text").map(b => b.text);
+        const text = textBlocks.length ? textBlocks[textBlocks.length - 1] : "";
         const clean = text.replace(/```json|```/g, "").trim();
-        const parsed = JSON.parse(clean);
+        const jsonMatch = clean.match(/\{[\s\S]*\}/);
+        const parsed = JSON.parse(jsonMatch ? jsonMatch[0] : clean);
         if (parsed.unidentifiable) {
           setAiError("Couldn't identify a food in that description — try rephrasing, or use manual entry below.");
           setAiLoading(false);
           return;
+        }
+        // Code-level check: verify the final numbers actually trace back to what was found via
+        // search (sourceValues × multiplier), catching cases where the model searched but then
+        // answered from memory anyway instead of using what it found.
+        if (parsed.sourceValues && typeof parsed.multiplier === "number") {
+          const expectedC = parsed.sourceValues.c * parsed.multiplier;
+          const gotC = parseFloat(parsed.c) || 0;
+          if (expectedC > 0 && Math.abs(gotC - expectedC) / expectedC > 0.25) {
+            // Final answer doesn't match source × multiplier by more than 25% — untrustworthy, fall back to the traceable math ourselves
+            parsed.p = Math.round(parsed.sourceValues.p * parsed.multiplier);
+            parsed.c = Math.round(parsed.sourceValues.c * parsed.multiplier);
+            parsed.f = Math.round(parsed.sourceValues.f * parsed.multiplier);
+          }
         }
         // Show for review/confirmation rather than logging immediately —
         // catches cases where the estimate looks obviously wrong before it's saved.
@@ -1815,6 +1856,7 @@ Respond with ONLY a JSON object, no markdown: {"name": "short food name includin
           p: parseFloat(parsed.p) || 0,
           c: parseFloat(parsed.c) || 0,
           f: parseFloat(parsed.f) || 0,
+          source: parsed.sourceServing || null,
         });
       } catch (err) {
         setAiError(err.message || "AI estimate failed — use manual entry.");
@@ -2013,6 +2055,11 @@ Respond with ONLY a JSON object, no markdown: {"name": "short food name includin
                   <div style={{ fontSize: 13, color: C.textMid, fontFamily: MONO, textAlign: "center", marginBottom: 14 }}>
                     = {macroCals(aiPendingReview.p, aiPendingReview.c, aiPendingReview.f)} kcal
                   </div>
+                  {aiPendingReview.source && (
+                    <div style={{ fontSize: 11, color: LAKE.sky, fontFamily: SANS, marginBottom: 10, lineHeight: 1.4, padding: "8px 10px", background: C.bg, borderRadius: 8 }}>
+                      Found: {aiPendingReview.source}
+                    </div>
+                  )}
                   <div style={{ fontSize: 11, color: C.textDim, fontFamily: SANS, marginBottom: 14, lineHeight: 1.5 }}>
                     Does this look right for what you actually ate? Adjust the numbers above if not, then confirm.
                   </div>
@@ -2070,7 +2117,7 @@ Respond with ONLY a JSON object, no markdown: {"name": "short food name includin
                       style={{ width: "100%", marginTop: 10, background: C.bg, borderRadius: 10, padding: "10px 12px", fontSize: 16, color: C.text, outline: "none", resize: "none", fontFamily: SANS, boxSizing: "border-box" }} />
                     <button onClick={aiLogFoodPhoto} disabled={aiLoading}
                       style={{ width: "100%", marginTop: 8, padding: "11px", borderRadius: 10, background: aiLoading ? C.surface : LAKE.forest, border: "none", color: aiLoading ? C.textDim : "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: SANS }}>
-                      {aiLoading ? "Analyzing photo…" : "Estimate & Log from Photo"}
+                      {aiLoading ? "Searching for nutrition data…" : "Estimate & Log from Photo"}
                     </button>
                   </>
                 )}
@@ -2085,7 +2132,7 @@ Respond with ONLY a JSON object, no markdown: {"name": "short food name includin
                   style={{ width: "100%", background: C.bg, borderRadius: 10, padding: "10px 12px", fontSize: 16, color: C.text, outline: "none", resize: "none", fontFamily: SANS, boxSizing: "border-box" }} />
                 <button onClick={aiLogFood} disabled={aiLoading}
                   style={{ width: "100%", marginTop: 8, padding: "11px", borderRadius: 10, background: aiLoading ? C.surface : LAKE.sky, border: "none", color: aiLoading ? C.textDim : "#0a0a0a", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: SANS }}>
-                  {aiLoading ? "Estimating…" : "Estimate & Log"}
+                  {aiLoading ? "Searching for nutrition data…" : "Estimate & Log"}
                 </button>
                 {aiError && <div style={{ marginTop: 8, fontSize: 12, color: C.red, fontFamily: SANS }}>{aiError}</div>}
               </div>
