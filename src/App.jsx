@@ -176,6 +176,7 @@ function newEntry(dateStr) {
     note: "",
     movements: [],
     completedAt: null,
+    warmup: { stretchBefore: false, treadmill: false, stretchAfter: false },
   };
 }
 function newMovement(name = "") {
@@ -1114,6 +1115,11 @@ export default function App() {
   function updateEntry(id, patch) {
     mutate(prev => prev.map(e => e.id === id ? { ...e, ...patch } : e));
   }
+  function toggleWarmup(entryId, key) {
+    mutate(prev => prev.map(e => e.id === entryId
+      ? { ...e, warmup: { ...(e.warmup ?? { stretchBefore: false, treadmill: false, stretchAfter: false }), [key]: !((e.warmup ?? {})[key]) } }
+      : e));
+  }
   function addMovement(entryId) {
     const mv = newMovement();
     mutate(prev => prev.map(e => e.id === entryId ? { ...e, movements: [...e.movements, mv] } : e));
@@ -1472,6 +1478,18 @@ export default function App() {
           </div>
         ) : (
           <>
+            <SectionLabel>Warm-up</SectionLabel>
+            <WarmupItem
+              label="Stretching"
+              checked={!!activeEntry.warmup?.stretchBefore}
+              onToggle={() => toggleWarmup(activeEntry.id, "stretchBefore")}
+            />
+            <WarmupItem
+              label="Incline Treadmill (10 min)"
+              checked={!!activeEntry.warmup?.treadmill}
+              onToggle={() => toggleWarmup(activeEntry.id, "treadmill")}
+            />
+
             <SectionLabel>{activeEntry.movements.length} Movement{activeEntry.movements.length !== 1 ? "s" : ""}</SectionLabel>
             {activeEntry.movements.map((mv, i) => {
               const mvDone = !!mv.doneAt;
@@ -1541,6 +1559,13 @@ export default function App() {
               );
             })}
             <GhostBtn onClick={() => addMovement(activeEntry.id)}>+ Add Movement</GhostBtn>
+
+            <SectionLabel>Cool-down</SectionLabel>
+            <WarmupItem
+              label="Stretching"
+              checked={!!activeEntry.warmup?.stretchAfter}
+              onToggle={() => toggleWarmup(activeEntry.id, "stretchAfter")}
+            />
           </>
         )}
 
@@ -1709,7 +1734,14 @@ export default function App() {
                 { type: "text", text: (aiDescription.trim()
                     ? `Estimate macros for the food shown in this photo. IMPORTANT: the person has given this note about what they actually ate — it overrides what you'd guess from the image alone (e.g. if they say "half of this" or "ate 2 of the 4 pieces", calculate macros for that actual portion, not the full plate shown): "${aiDescription.trim()}". `
                     : `Estimate macros for the food shown in this photo, for the full portion visible. `)
-                    + `If the photo does NOT show identifiable food (e.g. it's blank, unrelated, or too unclear to estimate), respond with ONLY: {"unidentifiable": true}\n\nOtherwise respond with ONLY a JSON object, no markdown: {"name": "short food name reflecting the actual portion eaten", "p": grams protein, "c": grams carbs, "f": grams fat}` },
+                    + `If the photo does NOT show identifiable food (e.g. it's blank, unrelated, or too unclear to estimate), respond with ONLY: {"unidentifiable": true}
+
+Otherwise, follow these rules before estimating:
+1. Judge the actual visible portion size from the photo (container size, comparison to plate/hand/utensils) — don't default to an oversized assumption.
+2. For known branded/packaged foods visible in the photo (cereal boxes, protein powder tubs, packaged snacks), recall the actual nutrition label values for that product's standard serving as accurately as you can.
+3. Double-check internal consistency: calories should roughly equal (protein×4 + carbs×4 + fat×9). If your carb number alone implies far more calories than what's visibly in the photo, you've likely overestimated portion size — reconsider.
+
+Respond with ONLY a JSON object, no markdown: {"name": "short food name reflecting the actual portion eaten", "p": grams protein, "c": grams carbs, "f": grams fat}` },
               ],
             }],
           }),
@@ -1754,7 +1786,17 @@ export default function App() {
           body: JSON.stringify({
             model: "claude-sonnet-4-5",
             max_tokens: 500,
-            messages: [{ role: "user", content: `Estimate macros for this food description: "${aiDescription}"\n\nIf this text does NOT describe an identifiable food or meal (e.g. it's gibberish, random letters, empty, or unrelated to food), respond with ONLY: {"unidentifiable": true}\n\nOtherwise respond with ONLY a JSON object, no markdown: {"name": "short food name", "p": grams protein, "c": grams carbs, "f": grams fat}` }],
+            messages: [{ role: "user", content: `Estimate macros for this food description: "${aiDescription}"
+
+If this text does NOT describe an identifiable food or meal (e.g. it's gibberish, random letters, empty, or unrelated to food), respond with ONLY: {"unidentifiable": true}
+
+Otherwise, follow these rules carefully before estimating:
+1. If a specific quantity/serving size is given (e.g. "2 eggs", "1 cup", "200g chicken"), use that exact amount.
+2. If NO quantity is given, use the STANDARD LABELED SERVING SIZE for that food (e.g. cereal = the serving size printed on that brand's nutrition label, typically 3/4–1 cup / ~30-40g for most cereals — NOT a large bowl). Do not assume a larger-than-standard portion.
+3. For known branded/packaged foods (cereals, protein bars, common snacks, fast food items), recall the actual nutrition label values for that product and standard serving as accurately as you can, rather than estimating from scratch.
+4. Double-check your numbers are internally consistent: calories should roughly equal (protein×4 + carbs×4 + fat×9). If your carb number alone implies more calories than a reasonable meal/snack (e.g. 200g+ carbs for a single serving of cereal), you have likely overestimated portion size — reconsider using the standard serving instead.
+
+Respond with ONLY a JSON object, no markdown: {"name": "short food name including serving size assumed, e.g. 'Frosted Flakes (3/4 cup)'", "p": grams protein, "c": grams carbs, "f": grams fat}` }],
           }),
         });
         const data = await resp.json();
@@ -3309,6 +3351,18 @@ function MvCard({ children, color, onClick }) {
 function GhostBtn({ onClick, children }) {
   return <button onClick={onClick} style={{ display: "block", width: "calc(100% - 36px)", margin: "4px 18px", padding: "13px", borderRadius: 14, background: "transparent", border: `1.5px dashed ${C.line}`, color: C.textDim, fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: SANS }}>{children}</button>;
 }
+function WarmupItem({ label, checked, onToggle }) {
+  return (
+    <div onClick={onToggle} style={{ margin: "0 18px 8px", padding: "14px 16px", borderRadius: 14, background: checked ? "#e8e8e814" : C.surface, boxShadow: shadow, cursor: "pointer", display: "flex", alignItems: "center", gap: 12 }}>
+      <div style={{ width: 26, height: 26, borderRadius: 8, flexShrink: 0, background: checked ? "#e8e8e8" : "#1c1c1c", display: "flex", alignItems: "center", justifyContent: "center", transition: "background 0.15s" }}>
+        {checked && <Check size={15} strokeWidth={3} color="#131313" />}
+      </div>
+      <div style={{ fontSize: 14, fontWeight: 600, color: checked ? "#e8e8e8" : C.text, fontFamily: SANS, textDecoration: checked ? "line-through" : "none", opacity: checked ? 0.75 : 1 }}>
+        {label}
+      </div>
+    </div>
+  );
+}
 
 // SetRow with weight, reps, RIR selector, and movement-type-aware feedback
 function SetRow({ num, weight, reps, rir, repsTarget, type, isLastSet, done, color, onW, onR, onRIR, onDelete, onDone }) {
@@ -3367,9 +3421,9 @@ function SetRow({ num, weight, reps, rir, repsTarget, type, isLastSet, done, col
           <button onClick={onDelete} style={{ width: 28, height: 28, borderRadius: 8, background: "#2a1a18", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><X size={15} strokeWidth={2.5} color={C.red} /></button>
         )}
       </div>
-      {/* RIR row — centered under the Weight/Reps fields above, offset past the set-number circle */}
-      <div style={{ display: "flex", justifyContent: "center", marginTop: 10, paddingTop: 10, borderTop: "1px solid #1c1c1c", paddingLeft: 44, paddingRight: onDelete ? 38 : 0 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+      {/* RIR row — left-justified, aligned under "Weight" label above; feedback text sits in its own fixed-position slot so it never shifts the RIR buttons */}
+      <div style={{ display: "flex", alignItems: "center", marginTop: 10, paddingTop: 10, borderTop: "1px solid #1c1c1c", paddingLeft: 44 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
           <div style={{ fontSize: 10, letterSpacing: 1.5, color: "#5c5c5c", textTransform: "uppercase", fontFamily: SANS, flexShrink: 0 }}>RIR</div>
           <div style={{ display: "flex", gap: 5 }}>
             {["0", "1", "2", "3", "4"].map(v => {
@@ -3385,11 +3439,13 @@ function SetRow({ num, weight, reps, rir, repsTarget, type, isLastSet, done, col
             })}
           </div>
         </div>
-        {rirFb && (
-          <div style={{ fontSize: 10, fontFamily: SANS, fontWeight: 700, color: rirFb.color, marginLeft: 10, textAlign: "right", lineHeight: 1.2, alignSelf: "center" }}>
-            {rirFb.msg}
-          </div>
-        )}
+        <div style={{ flex: 1, minWidth: 0, textAlign: "right", paddingLeft: 10 }}>
+          {rirFb && (
+            <div style={{ fontSize: 10, fontFamily: SANS, fontWeight: 700, color: rirFb.color, lineHeight: 1.2 }}>
+              {rirFb.msg}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
