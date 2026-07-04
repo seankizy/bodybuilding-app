@@ -877,6 +877,7 @@ export default function App() {
   const [foodC, setFoodC] = useState("");
   const [foodF, setFoodF] = useState("");
   const [aiDescription, setAiDescription] = useState("");
+  const [aiPendingReview, setAiPendingReview] = useState(null); // { name, p, c, f, cal } awaiting confirm
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState("");
   const [dayTypeOverride, setDayTypeOverride] = useState(null); // per-date manual override stored in day data
@@ -1705,9 +1706,10 @@ export default function App() {
               role: "user",
               content: [
                 { type: "image", source: { type: "base64", media_type: foodPhoto.mediaType, data: base64Data } },
-                { type: "text", text: aiDescription.trim()
-                    ? `Estimate macros for the food shown in this photo. IMPORTANT: the person has given this note about what they actually ate — it overrides what you'd guess from the image alone (e.g. if they say "half of this" or "ate 2 of the 4 pieces", calculate macros for that actual portion, not the full plate shown): "${aiDescription.trim()}". Respond with ONLY a JSON object, no markdown: {"name": "short food name reflecting the actual portion eaten", "p": grams protein, "c": grams carbs, "f": grams fat}`
-                    : `Estimate macros for the food shown in this photo, for the full portion visible. Respond with ONLY a JSON object, no markdown: {"name": "short food name", "p": grams protein, "c": grams carbs, "f": grams fat}` },
+                { type: "text", text: (aiDescription.trim()
+                    ? `Estimate macros for the food shown in this photo. IMPORTANT: the person has given this note about what they actually ate — it overrides what you'd guess from the image alone (e.g. if they say "half of this" or "ate 2 of the 4 pieces", calculate macros for that actual portion, not the full plate shown): "${aiDescription.trim()}". `
+                    : `Estimate macros for the food shown in this photo, for the full portion visible. `)
+                    + `If the photo does NOT show identifiable food (e.g. it's blank, unrelated, or too unclear to estimate), respond with ONLY: {"unidentifiable": true}\n\nOtherwise respond with ONLY a JSON object, no markdown: {"name": "short food name reflecting the actual portion eaten", "p": grams protein, "c": grams carbs, "f": grams fat}` },
               ],
             }],
           }),
@@ -1716,22 +1718,18 @@ export default function App() {
         const text = data.content?.map(b => b.text || "").join("") ?? "";
         const clean = text.replace(/```json|```/g, "").trim();
         const parsed = JSON.parse(clean);
-        const entry = {
-          id: Date.now(),
+        if (parsed.unidentifiable) {
+          setAiError("Couldn't identify food in that photo — try a clearer shot, or use manual entry below.");
+          setAiLoading(false);
+          return;
+        }
+        // Show for review/confirmation rather than logging immediately
+        setAiPendingReview({
           name: parsed.name || "Food (photo)",
           p: parseFloat(parsed.p) || 0,
           c: parseFloat(parsed.c) || 0,
           f: parseFloat(parsed.f) || 0,
-          cal: macroCals(parsed.p, parsed.c, parsed.f),
-          time: new Date().toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }),
-        };
-        mutateMacros(prev => {
-          const d = prev[macroDate] ?? { entries: [], dayType: dType };
-          prev[macroDate] = { ...d, entries: [...(d.entries ?? []), entry] };
-          return prev;
         });
-        setAiDescription(""); setFoodPhoto(null);
-        setShowFoodModal(false);
       } catch (err) {
         setAiError(err.message || "AI photo estimate failed — use manual entry.");
       } finally {
@@ -1756,29 +1754,26 @@ export default function App() {
           body: JSON.stringify({
             model: "claude-sonnet-4-5",
             max_tokens: 500,
-            messages: [{ role: "user", content: `Estimate macros for: "${aiDescription}". Respond with ONLY a JSON object, no markdown: {"name": "short food name", "p": grams protein, "c": grams carbs, "f": grams fat}` }],
+            messages: [{ role: "user", content: `Estimate macros for this food description: "${aiDescription}"\n\nIf this text does NOT describe an identifiable food or meal (e.g. it's gibberish, random letters, empty, or unrelated to food), respond with ONLY: {"unidentifiable": true}\n\nOtherwise respond with ONLY a JSON object, no markdown: {"name": "short food name", "p": grams protein, "c": grams carbs, "f": grams fat}` }],
           }),
         });
         const data = await resp.json();
         const text = data.content?.map(b => b.text || "").join("") ?? "";
         const clean = text.replace(/```json|```/g, "").trim();
         const parsed = JSON.parse(clean);
-        const entry = {
-          id: Date.now(),
+        if (parsed.unidentifiable) {
+          setAiError("Couldn't identify a food in that description — try rephrasing, or use manual entry below.");
+          setAiLoading(false);
+          return;
+        }
+        // Show for review/confirmation rather than logging immediately —
+        // catches cases where the estimate looks obviously wrong before it's saved.
+        setAiPendingReview({
           name: parsed.name || aiDescription.slice(0, 40),
           p: parseFloat(parsed.p) || 0,
           c: parseFloat(parsed.c) || 0,
           f: parseFloat(parsed.f) || 0,
-          cal: macroCals(parsed.p, parsed.c, parsed.f),
-          time: new Date().toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }),
-        };
-        mutateMacros(prev => {
-          const d = prev[macroDate] ?? { entries: [], dayType: dType };
-          prev[macroDate] = { ...d, entries: [...(d.entries ?? []), entry] };
-          return prev;
         });
-        setAiDescription("");
-        setShowFoodModal(false);
       } catch (err) {
         setAiError(err.message || "AI estimate failed — use manual entry.");
       } finally {
@@ -1861,7 +1856,7 @@ export default function App() {
         </div>
 
         <div style={{ display: "flex", gap: 10, padding: "0 18px 8px" }}>
-          <button onClick={() => { setAiError(""); setEditingFoodId(null); setFoodName(""); setFoodP(""); setFoodC(""); setFoodF(""); setShowFoodModal(true); }}
+          <button onClick={() => { setAiError(""); setAiPendingReview(null); setEditingFoodId(null); setFoodName(""); setFoodP(""); setFoodC(""); setFoodF(""); setShowFoodModal(true); }}
             style={{ flex: 2, padding: "14px", borderRadius: 14, background: LAKE.sky, border: "none", color: "#0a0a0a", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: SANS, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
             <Plus size={16} strokeWidth={2.5} /> Log Food
           </button>
@@ -1952,13 +1947,61 @@ export default function App() {
         {/* Log Food modal */}
         {showFoodModal && (
           <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)", display: "flex", alignItems: "flex-end", zIndex: 100 }}
-            onClick={() => { setShowFoodModal(false); setFoodPhoto(null); setAiError(""); setEditingFoodId(null); setFoodName(""); setFoodP(""); setFoodC(""); setFoodF(""); }}>
+            onClick={() => { setShowFoodModal(false); setFoodPhoto(null); setAiError(""); setAiPendingReview(null); setEditingFoodId(null); setFoodName(""); setFoodP(""); setFoodC(""); setFoodF(""); }}>
             <div style={{ background: C.surface, width: "100%", borderRadius: "24px 24px 0 0", padding: "24px 18px 44px", borderBottom: "none", boxSizing: "border-box", maxHeight: "85vh", overflowY: "auto" }}
               onClick={e => e.stopPropagation()}>
               <div style={{ width: 36, height: 4, borderRadius: 2, background: C.line, margin: "0 auto 20px" }} />
-              <div style={{ fontSize: 18, fontWeight: 700, color: C.text, marginBottom: 16, fontFamily: SANS }}>{editingFoodId ? "Edit Entry" : "Log Food"}</div>
+              <div style={{ fontSize: 18, fontWeight: 700, color: C.text, marginBottom: 16, fontFamily: SANS }}>{editingFoodId ? "Edit Entry" : aiPendingReview ? "Review Estimate" : "Log Food"}</div>
 
-              {!editingFoodId && (
+              {aiPendingReview && (
+                <div style={{ marginBottom: 18, padding: "16px", borderRadius: 14, background: C.surface2 }}>
+                  <div style={{ fontSize: 11, letterSpacing: 1.5, color: LAKE.ochre, textTransform: "uppercase", fontFamily: SANS, fontWeight: 700, marginBottom: 10 }}>Check before logging</div>
+                  <input value={aiPendingReview.name} onChange={e => setAiPendingReview({ ...aiPendingReview, name: e.target.value })}
+                    style={{ width: "100%", background: C.bg, borderRadius: 10, padding: "11px 14px", fontSize: 16, fontWeight: 600, color: C.text, outline: "none", fontFamily: SANS, boxSizing: "border-box", marginBottom: 10, border: "none" }} />
+                  <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+                    {[["Protein", "p"], ["Carbs", "c"], ["Fat", "f"]].map(([lbl, key]) => (
+                      <div key={key} style={{ flex: 1 }}>
+                        <div style={{ fontSize: 10, letterSpacing: 1, color: C.textDim, textTransform: "uppercase", fontFamily: SANS, marginBottom: 4, textAlign: "center" }}>{lbl} g</div>
+                        <input type="number" inputMode="decimal" value={aiPendingReview[key]}
+                          onChange={e => setAiPendingReview({ ...aiPendingReview, [key]: parseFloat(e.target.value) || 0 })}
+                          style={{ width: "100%", background: C.bg, borderRadius: 10, padding: "11px 6px", fontSize: 18, fontWeight: 700, color: C.text, textAlign: "center", outline: "none", fontFamily: MONO, boxSizing: "border-box", border: "none" }} />
+                      </div>
+                    ))}
+                  </div>
+                  <div style={{ fontSize: 13, color: C.textMid, fontFamily: MONO, textAlign: "center", marginBottom: 14 }}>
+                    = {macroCals(aiPendingReview.p, aiPendingReview.c, aiPendingReview.f)} kcal
+                  </div>
+                  <div style={{ fontSize: 11, color: C.textDim, fontFamily: SANS, marginBottom: 14, lineHeight: 1.5 }}>
+                    Does this look right for what you actually ate? Adjust the numbers above if not, then confirm.
+                  </div>
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <button onClick={() => { setAiPendingReview(null); setAiDescription(""); setFoodPhoto(null); }}
+                      style={{ flex: 1, padding: "14px", borderRadius: 12, background: C.bg, color: C.textMid, fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: SANS, border: "none" }}>
+                      Discard
+                    </button>
+                    <button onClick={() => {
+                      const entry = {
+                        id: Date.now(),
+                        name: aiPendingReview.name || "Food",
+                        p: aiPendingReview.p, c: aiPendingReview.c, f: aiPendingReview.f,
+                        cal: macroCals(aiPendingReview.p, aiPendingReview.c, aiPendingReview.f),
+                        time: new Date().toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }),
+                      };
+                      mutateMacros(prev => {
+                        const d = prev[macroDate] ?? { entries: [], dayType: dType };
+                        prev[macroDate] = { ...d, entries: [...(d.entries ?? []), entry] };
+                        return prev;
+                      });
+                      setAiPendingReview(null); setAiDescription(""); setFoodPhoto(null);
+                      setShowFoodModal(false);
+                    }} style={{ flex: 2, padding: "14px", borderRadius: 12, background: LAKE.forest, color: "#0a0a0a", fontSize: 15, fontWeight: 700, cursor: "pointer", fontFamily: SANS, border: "none" }}>
+                      Confirm & Log
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {!editingFoodId && !aiPendingReview && (
               <>
               {/* Photo logging */}
               <div style={{ marginBottom: 14, padding: "14px", borderRadius: 14, background: C.surface2 }}>
@@ -2025,13 +2068,13 @@ export default function App() {
               </div>
               <div style={{ display: "flex", gap: 8 }}>
                 {editingFoodId && (
-                  <button onClick={() => { setEditingFoodId(null); setFoodName(""); setFoodP(""); setFoodC(""); setFoodF(""); setShowFoodModal(false); }}
-                    style={{ flex: 1, padding: "14px", borderRadius: 12, background: "transparent", color: C.textMid, fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: SANS }}>
+                  <button onClick={() => { setAiPendingReview(null); setEditingFoodId(null); setFoodName(""); setFoodP(""); setFoodC(""); setFoodF(""); setShowFoodModal(false); }}
+                    style={{ flex: 1, padding: "14px", borderRadius: 12, background: C.surface2, color: C.textMid, fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: SANS }}>
                     Cancel
                   </button>
                 )}
                 <button onClick={addFood}
-                  style={{ flex: editingFoodId ? 2 : 1, padding: "14px", borderRadius: 12, background: LAKE.forest, border: "none", color: "#fff", fontSize: 15, fontWeight: 700, cursor: "pointer", fontFamily: SANS }}>
+                  style={{ flex: editingFoodId ? 2 : 1, padding: "14px", borderRadius: 12, background: LAKE.forest, border: "none", color: "#0a0a0a", fontSize: 15, fontWeight: 700, cursor: "pointer", fontFamily: SANS }}>
                   {editingFoodId ? "Save Changes" : "Add Entry"}
                 </button>
               </div>
@@ -2451,6 +2494,12 @@ export default function App() {
               Export CSV
             </button>
           </div>
+          <input ref={fileInputRef} type="file" accept=".json" style={{ display: "none" }}
+            onChange={e => { if (e.target.files[0]) handleImport(e.target.files[0]); e.target.value = ""; }} />
+          <button onClick={() => { setImportStatus(null); fileInputRef.current?.click(); }}
+            style={{ width: "100%", padding: "13px", borderRadius: 14, background: "#e8e8e822", color: "#e8e8e8", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: SANS, marginBottom: 10 }}>
+            Import JSON Backup
+          </button>
           <button onClick={async () => {
             setPdfLoading(true);
             try {
@@ -2460,14 +2509,8 @@ export default function App() {
             } finally {
               setPdfLoading(false);
             }
-          }} disabled={pdfLoading} style={{ width: "100%", padding: "13px", borderRadius: 14, background: "#1c1c1c", color: pdfLoading ? C.textDim : C.text, fontSize: 13, fontWeight: 700, cursor: pdfLoading ? "default" : "pointer", fontFamily: SANS, marginBottom: 10, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+          }} disabled={pdfLoading} style={{ width: "100%", padding: "13px", borderRadius: 14, background: "#1c1c1c", color: pdfLoading ? C.textDim : C.text, fontSize: 13, fontWeight: 700, cursor: pdfLoading ? "default" : "pointer", fontFamily: SANS, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
             <Trophy size={15} color={pdfLoading ? C.textDim : C.accent} strokeWidth={2} /> {pdfLoading ? "Generating PDF…" : "Coach Report (PDF)"}
-          </button>
-          <input ref={fileInputRef} type="file" accept=".json" style={{ display: "none" }}
-            onChange={e => { if (e.target.files[0]) handleImport(e.target.files[0]); e.target.value = ""; }} />
-          <button onClick={() => { setImportStatus(null); fileInputRef.current?.click(); }}
-            style={{ width: "100%", padding: "13px", borderRadius: 14, background: "#e8e8e822", color: "#e8e8e8", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: SANS }}>
-            Import JSON Backup
           </button>
           {importStatus && (
             <div style={{ marginTop: 10, padding: "10px 14px", borderRadius: 10, background: importStatus === "success" ? "#e8e8e822" : "#e05a4d22", color: importStatus === "success" ? "#e8e8e8" : "#e05a4d", fontSize: 13, fontFamily: SANS }}>
