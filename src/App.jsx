@@ -1592,24 +1592,25 @@ export default function App() {
                   const updated = prev.map(e => e.id === activeEntry.id
                     ? { ...e, completedAt: ts, movements: e.movements.map(m => m.doneAt ? m : { ...m, doneAt: ts }) }
                     : e);
-                  // Check if this completion finishes all 5 training days in the current cycle
+                  // Check if this completion finishes all 5 training days in the current cycle.
+                  // Use the SAME "walk backwards, stop at first repeated day" logic as the This Cycle
+                  // display tracker — not a strict cycleAnchor date filter, which can go stale and
+                  // silently exclude earlier sessions in the same cycle (the bug that caused the
+                  // tracker to show only 1/5 done when 5/5 were actually complete).
                   const trainingDayNums = Object.entries(PROGRAM)
                     .filter(([, d]) => d.exercises.length > 0)
                     .map(([dn]) => Number(dn));
-                  const anchor = cycleAnchor;
-                  const completedInCycle = new Set(
-                    updated.filter(e => e.completedAt && e.programDay &&
-                      trainingDayNums.includes(e.programDay) &&
-                      (!anchor || e.date >= anchor))
-                      .map(e => e.programDay)
-                  );
-                  // If we just completed the last remaining day, auto-start a new cycle
-                  if (activeEntry.programDay && trainingDayNums.includes(activeEntry.programDay)) {
-                    completedInCycle.add(activeEntry.programDay);
-                    if (trainingDayNums.every(dn => completedInCycle.has(dn))) {
-                      // All 5 done — anchor new cycle to today
-                      saveCycleAnchor(new Date().toISOString().slice(0, 10));
-                    }
+                  const completedSessions = [...updated]
+                    .filter(e => e.completedAt && e.programDay && trainingDayNums.includes(e.programDay))
+                    .sort((a, b) => b.date.localeCompare(a.date) || b.completedAt.localeCompare(a.completedAt));
+                  const completedInCycle = new Set();
+                  for (const e of completedSessions) {
+                    if (completedInCycle.has(e.programDay)) break;
+                    completedInCycle.add(e.programDay);
+                  }
+                  // If all 5 training days are now accounted for in the current (uninterrupted) cycle, start a new one
+                  if (trainingDayNums.every(dn => completedInCycle.has(dn))) {
+                    saveCycleAnchor(new Date().toISOString().slice(0, 10));
                   }
                   return updated;
                 });
@@ -2116,7 +2117,7 @@ Respond with ONLY this JSON object as your final message, no markdown:
                       placeholder="Optional: correct the portion — e.g. &quot;I only ate half of this&quot; or &quot;2 of the 4 pieces&quot; — tap the mic on your keyboard to speak this"
                       style={{ width: "100%", marginTop: 10, background: C.bg, borderRadius: 10, padding: "10px 12px", fontSize: 16, color: C.text, outline: "none", resize: "none", fontFamily: SANS, boxSizing: "border-box" }} />
                     <button onClick={aiLogFoodPhoto} disabled={aiLoading}
-                      style={{ width: "100%", marginTop: 8, padding: "11px", borderRadius: 10, background: aiLoading ? C.surface : LAKE.forest, border: "none", color: aiLoading ? C.textDim : "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: SANS }}>
+                      style={{ width: "100%", marginTop: 8, padding: "11px", borderRadius: 10, background: aiLoading ? C.surface : LAKE.forest, border: "none", color: aiLoading ? C.textDim : "#0a0a0a", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: SANS }}>
                       {aiLoading ? "Searching for nutrition data…" : "Estimate & Log from Photo"}
                     </button>
                   </>
@@ -2139,7 +2140,9 @@ Respond with ONLY this JSON object as your final message, no markdown:
               </>
               )}
 
-              {/* Manual entry (always shown — this is the edit form too) */}
+              {!aiPendingReview && (
+              <>
+              {/* Manual entry (always shown when not reviewing — this is the edit form too) */}
               <div style={{ fontSize: 11, letterSpacing: 1.5, color: C.textDim, textTransform: "uppercase", fontFamily: SANS, fontWeight: 700, marginBottom: 8 }}>{editingFoodId ? "Edit Details" : "Or Enter Manually"}</div>
               <input value={foodName} onChange={e => setFoodName(e.target.value)} placeholder="Food name"
                 style={{ width: "100%", background: C.surface2, borderRadius: 10, padding: "11px 14px", fontSize: 16, color: C.text, outline: "none", fontFamily: SANS, boxSizing: "border-box", marginBottom: 10 }} />
@@ -2167,6 +2170,8 @@ Respond with ONLY this JSON object as your final message, no markdown:
                   {editingFoodId ? "Save Changes" : "Add Entry"}
                 </button>
               </div>
+              </>
+              )}
             </div>
           </div>
         )}
@@ -3253,7 +3258,7 @@ function MacroChefModal({ remaining, onResult, onClose }) {
             <div style={{ display: "flex", gap: 8 }}>
               <button onClick={() => setMode("home")} style={{ padding: "12px 16px", borderRadius: 10, background: "transparent", color: C.textMid, fontSize: 13, cursor: "pointer", fontFamily: SANS }}>Back</button>
               <button onClick={askChef} disabled={loading || !input.trim()}
-                style={{ flex: 1, padding: "12px", borderRadius: 10, background: loading ? C.surface2 : LAKE.forest, border: "none", color: loading ? C.textDim : "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: SANS }}>
+                style={{ flex: 1, padding: "12px", borderRadius: 10, background: loading ? C.surface2 : LAKE.forest, border: "none", color: loading ? C.textDim : "#0a0a0a", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: SANS }}>
                 {loading ? "Thinking…" : "Ask Chef"}
               </button>
             </div>
