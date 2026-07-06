@@ -889,6 +889,8 @@ export default function App() {
   const [showChef, setShowChef] = useState(false);
   const [showMesoEdit, setShowMesoEdit] = useState(false);
   const [showMoreMenu, setShowMoreMenu] = useState(false);
+  const [showAnchorEdit, setShowAnchorEdit] = useState(false);
+  const [anchorEditValue, setAnchorEditValue] = useState("");
   const [timerState, setTimerState] = useState(null);
   // NEW: between-movement stopwatch
   const [showStopwatch, setShowStopwatch] = useState(false);
@@ -1593,22 +1595,24 @@ export default function App() {
                     ? { ...e, completedAt: ts, movements: e.movements.map(m => m.doneAt ? m : { ...m, doneAt: ts }) }
                     : e);
                   // Check if this completion finishes all 5 training days in the current cycle.
-                  // Use the SAME "walk backwards, stop at first repeated day" logic as the This Cycle
-                  // display tracker — not a strict cycleAnchor date filter, which can go stale and
-                  // silently exclude earlier sessions in the same cycle (the bug that caused the
-                  // tracker to show only 1/5 done when 5/5 were actually complete).
+                  // IMPORTANT: only count sessions on/after the current cycleAnchor (if one exists).
+                  // Without this boundary, an old session from a previous cycle with a day-number
+                  // that hasn't repeated yet gets falsely counted as part of the current cycle,
+                  // triggering a premature reset (the bug that reset the cycle to 0/5 after only
+                  // 2 of the 5 days were actually done this time).
                   const trainingDayNums = Object.entries(PROGRAM)
                     .filter(([, d]) => d.exercises.length > 0)
                     .map(([dn]) => Number(dn));
+                  const anchor = cycleAnchor;
                   const completedSessions = [...updated]
-                    .filter(e => e.completedAt && e.programDay && trainingDayNums.includes(e.programDay))
+                    .filter(e => e.completedAt && e.programDay && trainingDayNums.includes(e.programDay) && (!anchor || e.date >= anchor))
                     .sort((a, b) => b.date.localeCompare(a.date) || b.completedAt.localeCompare(a.completedAt));
                   const completedInCycle = new Set();
                   for (const e of completedSessions) {
                     if (completedInCycle.has(e.programDay)) break;
                     completedInCycle.add(e.programDay);
                   }
-                  // If all 5 training days are now accounted for in the current (uninterrupted) cycle, start a new one
+                  // If all 5 training days are now accounted for since the current cycle anchor, start a new one
                   if (trainingDayNums.every(dn => completedInCycle.has(dn))) {
                     saveCycleAnchor(new Date().toISOString().slice(0, 10));
                   }
@@ -2124,11 +2128,12 @@ Respond with ONLY this JSON object as your final message, no markdown:
                 )}
               </div>
 
-              {/* AI describe (text only, no photo) */}
+              {/* AI describe (text only, no photo) — hidden once a photo is attached, since the photo section above already has its own note field and action button */}
+              {!foodPhoto && (
               <div style={{ marginBottom: 18, padding: "14px", borderRadius: 14, background: C.surface2 }}>
                 <div style={{ fontSize: 11, letterSpacing: 1.5, color: LAKE.sky, textTransform: "uppercase", fontFamily: SANS, fontWeight: 700, marginBottom: 8 }}>Describe It — AI estimates</div>
                 <div style={{ fontSize: 11, color: C.textDim, marginBottom: 8, fontFamily: SANS }}>No photo — type it, or tap the mic on your keyboard to speak it.</div>
-                <textarea value={foodPhoto ? "" : aiDescription} onChange={e => setAiDescription(e.target.value)} rows={2}
+                <textarea value={aiDescription} onChange={e => setAiDescription(e.target.value)} rows={2}
                   placeholder="e.g. 1.5 scoops whey with oat milk and a banana"
                   style={{ width: "100%", background: C.bg, borderRadius: 10, padding: "10px 12px", fontSize: 16, color: C.text, outline: "none", resize: "none", fontFamily: SANS, boxSizing: "border-box" }} />
                 <button onClick={aiLogFood} disabled={aiLoading}
@@ -2137,10 +2142,11 @@ Respond with ONLY this JSON object as your final message, no markdown:
                 </button>
                 {aiError && <div style={{ marginTop: 8, fontSize: 12, color: C.red, fontFamily: SANS }}>{aiError}</div>}
               </div>
+              )}
               </>
               )}
 
-              {!aiPendingReview && (
+              {!aiPendingReview && !foodPhoto && (
               <>
               {/* Manual entry (always shown when not reviewing — this is the edit form too) */}
               <div style={{ fontSize: 11, letterSpacing: 1.5, color: C.textDim, textTransform: "uppercase", fontFamily: SANS, fontWeight: 700, marginBottom: 8 }}>{editingFoodId ? "Edit Details" : "Or Enter Manually"}</div>
@@ -2948,7 +2954,7 @@ Respond with ONLY this JSON object as your final message, no markdown:
                 <div style={{ fontSize: 12, fontFamily: MONO, color: doneCount === trainingDays.length ? LAKE.forest : C.textMid }}>
                   {doneCount}/{trainingDays.length} done
                 </div>
-                <button onClick={() => { if (window.confirm("Start a new cycle? This will reset the cycle tracker to today.")) saveCycleAnchor(todayStr()); }}
+                <button onClick={() => { setAnchorEditValue(todayStr()); setShowAnchorEdit(true); }}
                   style={{ fontSize: 10, fontWeight: 700, color: LAKE.sky, background: LAKE.sky + "22", borderRadius: 6, padding: "3px 8px", cursor: "pointer", fontFamily: SANS, letterSpacing: 0.3 }}>
                   New Cycle
                 </button>
@@ -2980,6 +2986,30 @@ Respond with ONLY this JSON object as your final message, no markdown:
           </div>
         );
       })()}
+
+      {showAnchorEdit && (
+        <div onClick={() => setShowAnchorEdit(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)", display: "flex", alignItems: "flex-end", zIndex: 100 }}>
+          <div onClick={e => e.stopPropagation()} style={{ background: C.surface, width: "100%", borderRadius: "24px 24px 0 0", padding: "20px 18px 40px", boxSizing: "border-box", maxWidth: 430, margin: "0 auto" }}>
+            <div style={{ width: 36, height: 4, borderRadius: 2, background: C.line, margin: "0 auto 18px" }} />
+            <div style={{ fontSize: 17, fontWeight: 700, color: C.text, marginBottom: 6, fontFamily: SANS }}>Set Cycle Start Date</div>
+            <div style={{ fontSize: 12, color: C.textDim, marginBottom: 16, fontFamily: SANS, lineHeight: 1.5 }}>
+              Only sessions completed on or after this date count toward the current cycle. Use this to correct the tracker if it ever gets out of sync, or set it to today to deliberately start fresh.
+            </div>
+            <input type="date" value={anchorEditValue} onChange={e => setAnchorEditValue(e.target.value)}
+              style={{ width: "100%", background: C.surface2, borderRadius: 10, padding: "12px 14px", fontSize: 16, color: C.text, outline: "none", fontFamily: SANS, boxSizing: "border-box", marginBottom: 16, border: "none" }} />
+            <div style={{ display: "flex", gap: 8 }}>
+              <button onClick={() => setShowAnchorEdit(false)}
+                style={{ flex: 1, padding: "14px", borderRadius: 12, background: C.surface2, color: C.textMid, fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: SANS }}>
+                Cancel
+              </button>
+              <button onClick={() => { saveCycleAnchor(anchorEditValue); setShowAnchorEdit(false); }}
+                style={{ flex: 2, padding: "14px", borderRadius: 12, background: LAKE.sky, color: "#0a0a0a", fontSize: 15, fontWeight: 700, cursor: "pointer", fontFamily: SANS }}>
+                Save
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div style={{ padding: "4px 18px 8px" }}>
         <button onClick={() => { setNewProgramDay(null); setNewDate(todayStr()); setShowNewModal(true); }}
