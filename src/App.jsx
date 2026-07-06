@@ -153,7 +153,22 @@ const MESO_START = "2026-05-07"; // week 1 anchor (first logged session)
 
 // ── HELPERS ──────────────────────────────────────────────────────────────────
 function todayStr() {
-  return new Date().toISOString().slice(0, 10);
+  // IMPORTANT: use LOCAL date components, not toISOString() which is UTC-based.
+  // toISOString() rolls over to the next calendar day ~4-5 hours early for US timezones
+  // (e.g. 8pm Eastern is already after midnight UTC), which silently broke "today" for
+  // macros, journal entries, and cycle tracking in the evening.
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+function localDateStr(d) {
+  // Same local-date logic as todayStr(), for an arbitrary Date object (not just "now")
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
 }
 function restToSeconds(restStr) {
   if (!restStr) return 60;
@@ -533,7 +548,7 @@ function pushPullBalance(entries) {
   const PULL_MUSCLES = new Set(["Back", "Biceps"]);
   const cutoff = new Date();
   cutoff.setDate(cutoff.getDate() - 8);
-  const cutoffStr = cutoff.toISOString().slice(0, 10);
+  const cutoffStr = localDateStr(cutoff);
   let push = 0, pull = 0, legs = 0;
   const LEG_MUSCLES = new Set(["Quads", "Hamstrings", "Glutes", "Calves"]);
   entries.filter(e => e.date >= cutoffStr).forEach(e => {
@@ -617,7 +632,7 @@ async function downloadCoachPDF(entries, weightLog, mesoInfo, windowDays = 35) {
   text("Coach Report", MARGIN, y, { size: 28, bold: true, color: BLACK }); y += 20;
   const today = entries.length ? entries.map(e => e.date).sort().slice(-1)[0] : todayStr();
   const cutoff = new Date(today); cutoff.setDate(cutoff.getDate() - windowDays);
-  const cutoffStr = cutoff.toISOString().slice(0, 10);
+  const cutoffStr = localDateStr(cutoff);
   const fmtD = (d) => new Date(d + "T12:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" });
   text(`${fmtD(cutoffStr)} - ${fmtD(today)}, ${today.slice(0,4)}  ·  Generated ${new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}`, MARGIN, y, { size: 10.5, color: MID });
   y += 16; hr(y, BLACK, 1); y += 26;
@@ -889,6 +904,16 @@ export default function App() {
   const [showChef, setShowChef] = useState(false);
   const [showMesoEdit, setShowMesoEdit] = useState(false);
   const [showMoreMenu, setShowMoreMenu] = useState(false);
+  const [dismissedResumeIds, setDismissedResumeIds] = useState(() => {
+    try { return JSON.parse(localStorage.getItem("wj_dismissed_resume") || "[]"); } catch { return []; }
+  });
+  function dismissResume(id) {
+    setDismissedResumeIds(prev => {
+      const next = [...prev, id];
+      try { localStorage.setItem("wj_dismissed_resume", JSON.stringify(next)); } catch {}
+      return next;
+    });
+  }
   const [showAnchorEdit, setShowAnchorEdit] = useState(false);
   const [anchorEditValue, setAnchorEditValue] = useState("");
   const [timerState, setTimerState] = useState(null);
@@ -1177,7 +1202,7 @@ export default function App() {
   // (Separate from the journal list filter below, which only *displays* today's incomplete
   // session to avoid clutter — but a workout started days ago and never finished should
   // still be resumable.)
-  const incompleteSessions = entries.filter(e => !e.completedAt).sort((a, b) => b.date.localeCompare(a.date));
+  const incompleteSessions = entries.filter(e => !e.completedAt && !dismissedResumeIds.includes(e.id)).sort((a, b) => b.date.localeCompare(a.date));
   const inProgressSession = incompleteSessions[0] ?? null;
   const sorted = [...entries]
     .sort((a, b) => b.date.localeCompare(a.date))
@@ -1614,7 +1639,7 @@ export default function App() {
                   }
                   // If all 5 training days are now accounted for since the current cycle anchor, start a new one
                   if (trainingDayNums.every(dn => completedInCycle.has(dn))) {
-                    saveCycleAnchor(new Date().toISOString().slice(0, 10));
+                    saveCycleAnchor(todayStr());
                   }
                   return updated;
                 });
@@ -2230,7 +2255,7 @@ Respond with ONLY this JSON object as your final message, no markdown:
           </div>
         )}
 
-        <ResumeBar session={inProgressSession && activeId !== inProgressSession?.id ? inProgressSession : null} onResume={() => { setActiveId(inProgressSession.id); setTab("journal"); setView("entry"); }} />
+        <ResumeBar session={inProgressSession && activeId !== inProgressSession?.id ? inProgressSession : null} onResume={() => { setActiveId(inProgressSession.id); setTab("journal"); setView("entry"); }} onDismiss={() => dismissResume(inProgressSession.id)} />
         <BottomNav tab={tab} setTab={setTab} onOpenMenu={() => setShowMoreMenu(true)} />
         <MoreMenu open={showMoreMenu} onClose={() => setShowMoreMenu(false)} onSelect={(id) => { setShowMoreMenu(false); setTab(id); setView("journal"); }} />
       </Shell>
@@ -2306,7 +2331,7 @@ Respond with ONLY this JSON object as your final message, no markdown:
             MEV = minimum effective volume · MAV = max adaptive (the productive zone) · MRV = max recoverable. Stay in the green band for growth; back off if you're over MRV repeatedly.
           </div>
         </div>
-        <ResumeBar session={inProgressSession && activeId !== inProgressSession?.id ? inProgressSession : null} onResume={() => { setActiveId(inProgressSession.id); setTab("journal"); setView("entry"); }} />
+        <ResumeBar session={inProgressSession && activeId !== inProgressSession?.id ? inProgressSession : null} onResume={() => { setActiveId(inProgressSession.id); setTab("journal"); setView("entry"); }} onDismiss={() => dismissResume(inProgressSession.id)} />
         <BottomNav tab={tab} setTab={setTab} onOpenMenu={() => setShowMoreMenu(true)} />
         <MoreMenu open={showMoreMenu} onClose={() => setShowMoreMenu(false)} onSelect={(id) => { setShowMoreMenu(false); setTab(id); setView("journal"); }} />
       </Shell>
@@ -2327,7 +2352,7 @@ Respond with ONLY this JSON object as your final message, no markdown:
     const heatDays = [];
     for (let i = 69; i >= 0; i--) {
       const d = new Date(); d.setDate(d.getDate() - i);
-      const str = d.toISOString().slice(0, 10);
+      const str = localDateStr(d);
       heatDays.push({ date: str, count: heatmap[str] || 0 });
     }
     const completedSessions = heatDays.filter(d => d.count > 0).length;
@@ -2482,7 +2507,7 @@ Respond with ONLY this JSON object as your final message, no markdown:
 
           <div style={{ height: 20 }} />
         </div>
-        <ResumeBar session={inProgressSession && activeId !== inProgressSession?.id ? inProgressSession : null} onResume={() => { setActiveId(inProgressSession.id); setTab("journal"); setView("entry"); }} />
+        <ResumeBar session={inProgressSession && activeId !== inProgressSession?.id ? inProgressSession : null} onResume={() => { setActiveId(inProgressSession.id); setTab("journal"); setView("entry"); }} onDismiss={() => dismissResume(inProgressSession.id)} />
         <BottomNav tab={tab} setTab={setTab} onOpenMenu={() => setShowMoreMenu(true)} />
         <MoreMenu open={showMoreMenu} onClose={() => setShowMoreMenu(false)} onSelect={(id) => { setShowMoreMenu(false); setTab(id); setView("journal"); }} />
       </Shell>
@@ -2705,7 +2730,7 @@ Respond with ONLY this JSON object as your final message, no markdown:
             </div>
           );
         })()}
-        <ResumeBar session={inProgressSession && activeId !== inProgressSession?.id ? inProgressSession : null} onResume={() => { setActiveId(inProgressSession.id); setTab("journal"); setView("entry"); }} />
+        <ResumeBar session={inProgressSession && activeId !== inProgressSession?.id ? inProgressSession : null} onResume={() => { setActiveId(inProgressSession.id); setTab("journal"); setView("entry"); }} onDismiss={() => dismissResume(inProgressSession.id)} />
         <BottomNav tab={tab} setTab={setTab} onOpenMenu={() => setShowMoreMenu(true)} />
         <MoreMenu open={showMoreMenu} onClose={() => setShowMoreMenu(false)} onSelect={(id) => { setShowMoreMenu(false); setTab(id); setView("journal"); }} />
       </Shell>
@@ -2861,7 +2886,7 @@ Respond with ONLY this JSON object as your final message, no markdown:
             </div>
           </div>
         )}
-        <ResumeBar session={inProgressSession && activeId !== inProgressSession?.id ? inProgressSession : null} onResume={() => { setActiveId(inProgressSession.id); setTab("journal"); setView("entry"); }} />
+        <ResumeBar session={inProgressSession && activeId !== inProgressSession?.id ? inProgressSession : null} onResume={() => { setActiveId(inProgressSession.id); setTab("journal"); setView("entry"); }} onDismiss={() => dismissResume(inProgressSession.id)} />
         <BottomNav tab={tab} setTab={setTab} onOpenMenu={() => setShowMoreMenu(true)} />
         <MoreMenu open={showMoreMenu} onClose={() => setShowMoreMenu(false)} onSelect={(id) => { setShowMoreMenu(false); setTab(id); setView("journal"); }} />
       </Shell>
@@ -3166,7 +3191,7 @@ Respond with ONLY this JSON object as your final message, no markdown:
           </div>
         </div>
       )}
-      <ResumeBar session={inProgressSession && activeId !== inProgressSession?.id ? inProgressSession : null} onResume={() => { setActiveId(inProgressSession.id); setTab("journal"); setView("entry"); }} />
+      <ResumeBar session={inProgressSession && activeId !== inProgressSession?.id ? inProgressSession : null} onResume={() => { setActiveId(inProgressSession.id); setTab("journal"); setView("entry"); }} onDismiss={() => dismissResume(inProgressSession.id)} />
       <BottomNav tab={tab} setTab={setTab} onOpenMenu={() => setShowMoreMenu(true)} />
         <MoreMenu open={showMoreMenu} onClose={() => setShowMoreMenu(false)} onSelect={(id) => { setShowMoreMenu(false); setTab(id); setView("journal"); }} />
     </Shell>
@@ -3349,36 +3374,42 @@ function MoreMenu({ open, onClose, onSelect }) {
   );
 }
 
-function ResumeBar({ session, onResume }) {
+function ResumeBar({ session, onResume, onDismiss }) {
   if (!session) return null;
   const mvTotal = session.movements.length;
   const mvDone = session.movements.filter(m => m.doneAt).length;
   const isToday = session.date === todayStr();
   const dateLabel = isToday ? "" : ` · ${fmtDate(session.date)}`;
   return (
-    <div onClick={onResume} style={{
+    <div style={{
       position: "fixed", bottom: 72, left: "50%", transform: "translateX(-50%)",
       width: "calc(100% - 36px)", maxWidth: 394,
       background: "linear-gradient(135deg, #1c1c1c, #161616)",
       borderRadius: 16, padding: "11px 16px",
       display: "flex", alignItems: "center", gap: 12,
-      cursor: "pointer", zIndex: 49,
+      zIndex: 49,
       boxShadow: `0 4px 24px rgba(0,0,0,0.5), 0 0 0 1px ${LAKE.sky}22`,
     }}>
-      {/* Animated pulse dot */}
-      <div style={{ position: "relative", flexShrink: 0 }}>
-        <div style={{ width: 10, height: 10, borderRadius: "50%", background: LAKE.sky }} />
-        <div style={{ position: "absolute", inset: -3, borderRadius: "50%", border: `1.5px solid ${LAKE.sky}55`, animation: "pulse 2s infinite" }} />
-      </div>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 13, fontWeight: 700, color: LAKE.sky, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-          {session.customTitle || "Session in progress"}{dateLabel}
+      <div onClick={onResume} style={{ display: "flex", alignItems: "center", gap: 12, flex: 1, minWidth: 0, cursor: "pointer" }}>
+        {/* Animated pulse dot */}
+        <div style={{ position: "relative", flexShrink: 0 }}>
+          <div style={{ width: 10, height: 10, borderRadius: "50%", background: LAKE.sky }} />
+          <div style={{ position: "absolute", inset: -3, borderRadius: "50%", border: `1.5px solid ${LAKE.sky}55`, animation: "pulse 2s infinite" }} />
         </div>
-        <div style={{ fontSize: 11, color: "#9a9a9a", fontFamily: SANS, marginTop: 1 }}>
-          {mvDone}/{mvTotal} movements done · tap to resume
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: LAKE.sky, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            {session.customTitle || "Session in progress"}{dateLabel}
+          </div>
+          <div style={{ fontSize: 11, color: "#9a9a9a", fontFamily: SANS, marginTop: 1 }}>
+            {mvDone}/{mvTotal} movements done · tap to resume
+          </div>
         </div>
+        <div style={{ fontSize: 18, color: LAKE.sky, flexShrink: 0 }}>›</div>
       </div>
-      <div style={{ fontSize: 18, color: LAKE.sky, flexShrink: 0 }}>›</div>
+      <button onClick={(e) => { e.stopPropagation(); if (window.confirm("Dismiss this in-progress session? It stays in your history — this just stops the reminder.")) onDismiss(); }}
+        style={{ width: 26, height: 26, borderRadius: 8, background: "#2a2a2a", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+        <X size={13} color="#9a9a9a" strokeWidth={2.5} />
+      </button>
     </div>
   );
 }
