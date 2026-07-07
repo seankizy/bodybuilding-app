@@ -203,7 +203,7 @@ function newMovement(name = "") {
 const SEED_ENTRIES = [
   {
     id: 1000001, date: "2026-05-07", programDay: 1,
-    customTitle: "Heavy Squats & Legs", note: "", completedAt: null,
+    customTitle: "Heavy Squats & Legs", note: "", completedAt: "2026-05-07T18:00:00.000Z",
     movements: [
       { id: 1000101, name: "Barbell Squat (power rack)", programRef: "A", setsTarget: 4, repsTarget: "8–12", rest: "2m 30s", note: "", doneAt: null, lastSets: null, lastDate: null,
         sets: [{ w: "47.5", r: "12" }, { w: "50", r: "12" }, { w: "52", r: "12" }, { w: "52", r: "9" }] },
@@ -219,7 +219,7 @@ const SEED_ENTRIES = [
   },
   {
     id: 1000002, date: "2026-05-07", programDay: 2,
-    customTitle: "Heavy Bench & Chest", note: "", completedAt: null,
+    customTitle: "Heavy Bench & Chest", note: "", completedAt: "2026-05-07T18:00:00.000Z",
     movements: [
       { id: 1000201, name: "Barbell Bench Press (power rack)", programRef: "A", setsTarget: 4, repsTarget: "8–10", rest: "3m", note: "", doneAt: null, lastSets: null, lastDate: null,
         sets: [{ w: "84", r: "10" }, { w: "84", r: "10" }, { w: "84", r: "12" }, { w: "86", r: "9" }] },
@@ -235,7 +235,7 @@ const SEED_ENTRIES = [
   },
   {
     id: 1000004, date: "2026-05-07", programDay: 4,
-    customTitle: "Posterior Chain", note: "", completedAt: null,
+    customTitle: "Posterior Chain", note: "", completedAt: "2026-05-07T18:00:00.000Z",
     movements: [
       { id: 1000401, name: "Prone Hamstring Curl", programRef: "A", setsTarget: 4, repsTarget: "2×10-12, 2×15-20", rest: "1m", note: "", doneAt: null, lastSets: null, lastDate: null,
         sets: [{ w: "32", r: "12" }, { w: "32", r: "8" }, { w: "22.5", r: "16" }, { w: "22.5", r: "13" }] },
@@ -251,7 +251,7 @@ const SEED_ENTRIES = [
   },
   {
     id: 1000006, date: "2026-05-07", programDay: 6,
-    customTitle: "Secondary Lower Body", note: "", completedAt: null,
+    customTitle: "Secondary Lower Body", note: "", completedAt: "2026-05-07T18:00:00.000Z",
     movements: [
       { id: 1000601, name: "Barbell Front Squat (power rack)", programRef: "A", setsTarget: 4, repsTarget: "8–10", rest: "2m 30s", note: "", doneAt: null, lastSets: null, lastDate: null,
         sets: [{ w: "50", r: "10" }, { w: "50", r: "10" }, { w: "55", r: "10" }, { w: "55", r: "9" }] },
@@ -269,7 +269,7 @@ const SEED_ENTRIES = [
   },
   {
     id: 1000007, date: "2026-05-07", programDay: 7,
-    customTitle: "Overhead Press & Push", note: "", completedAt: null,
+    customTitle: "Overhead Press & Push", note: "", completedAt: "2026-05-07T18:00:00.000Z",
     movements: [
       { id: 1000701, name: "DB Shoulder Press", programRef: "A", setsTarget: 4, repsTarget: "5–8", rest: "2m", note: "", doneAt: null, lastSets: null, lastDate: null,
         sets: [{ w: "27", r: "8" }, { w: "27", r: "8" }, { w: "27", r: "7" }, { w: "27", r: "7" }] },
@@ -1756,28 +1756,27 @@ export default function App() {
           headers: { "Content-Type": "application/json", "x-api-key": apiKey, "anthropic-version": "2023-06-01", "anthropic-dangerous-direct-browser-access": "true" },
           body: JSON.stringify({
             model: "claude-sonnet-4-5",
-            max_tokens: 2000,
+            max_tokens: 3000,
             tools: [{ type: "web_search_20250305", name: "web_search", max_uses: 3 }],
             messages: [{
               role: "user",
               content: [
                 { type: "image", source: { type: "base64", media_type: foodPhoto.mediaType, data: base64Data } },
                 { type: "text", text: (aiDescription.trim()
-                    ? `Log macros for the food shown in this photo. IMPORTANT: the person has given this note about what they actually ate — it overrides what you'd guess from the image alone (e.g. "half of this" or "2 of the 4 pieces" means calculate for that actual portion, not the full plate shown): "${aiDescription.trim()}". `
+                    ? `Log macros for the food shown in this photo. IMPORTANT: the person has given this note about what they actually ate — it overrides what you'd guess from the image alone (e.g. "half of this" or "2 of the 4 pieces" means calculate for that actual portion, not the full plate shown). If this note lists MULTIPLE separate food items, treat them as one combined entry and sum their totals into a single final answer — don't describe each item at length. Note: "${aiDescription.trim()}". `
                     : `Log macros for the food shown in this photo, for the full portion visible. `)
                     + `If the photo does NOT show identifiable food (blank, unrelated, too unclear), respond with ONLY: {"unidentifiable": true} — skip everything below.
 
 Otherwise, you MUST use web_search before answering — do not skip straight to an answer from memory. Then:
 
-1. Identify the food/brand shown as specifically as you can from the photo (packaging, labels, restaurant branding).
-2. Search for the actual nutrition label for that specific food (brand's site, USDA FoodData Central, or a reputable nutrition database).
-3. From the search results, extract the EXACT per-serving numbers you found: the serving size and its calories, protein, carbs, and fat AS STATED in the source. Put these unmodified in "sourceServing" and "sourceValues" — a record of what you actually read, not your final answer.
-4. Judge the actual visible portion in the photo (container size, comparison to plate/hand/utensils).
-5. Compute multiplier = (visible portion) ÷ (source serving size), same units.
-6. Multiply each of the source's macro values by that multiplier for your final p/c/f. This must be visibly consistent with sourceValues × multiplier.
+1. Identify the food/brand shown as specifically as you can from the photo (packaging, labels, restaurant branding). If multiple distinct items are shown or described, identify each one.
+2. Search for the actual nutrition label for each specific food (brand's site, USDA FoodData Central, or a reputable nutrition database).
+3. For each item, note the per-serving values and serving size you found. Keep this internal reasoning BRIEF — a short phrase per item, not a full sentence — since a long explanation risks running out of room before your final answer.
+4. Judge the actual visible/stated portion for each item and scale accordingly.
+5. Sum all items into ONE final total. If there's a single dominant item, put its sourceServing/sourceValues/multiplier in the fields below; otherwise set multiplier to 1 and sourceValues to your final combined p/c/f.
 
-Respond with ONLY this JSON object as your final message, no markdown:
-{"name": "short food name reflecting the actual portion eaten", "sourceServing": "e.g. 3/4 cup (29g), 110 kcal", "sourceValues": {"p": number, "c": number, "f": number}, "multiplier": number, "p": final grams protein, "c": final grams carbs, "f": final grams fat}` },
+Respond with ONLY this JSON object as your final message, no markdown, no other text before or after it:
+{"name": "short food name (combine multiple items into one short label if needed)", "sourceServing": "brief, e.g. 3/4 cup (29g), 110 kcal", "sourceValues": {"p": number, "c": number, "f": number}, "multiplier": number, "p": final grams protein, "c": final grams carbs, "f": final grams fat}` },
               ],
             }],
           }),
@@ -1837,22 +1836,25 @@ Respond with ONLY this JSON object as your final message, no markdown:
           headers: { "Content-Type": "application/json", "x-api-key": apiKey, "anthropic-version": "2023-06-01", "anthropic-dangerous-direct-browser-access": "true" },
           body: JSON.stringify({
             model: "claude-sonnet-4-5",
-            max_tokens: 2000,
+            max_tokens: 3000,
             tools: [{ type: "web_search_20250305", name: "web_search", max_uses: 3 }],
             messages: [{ role: "user", content: `Log macros for this food: "${aiDescription}"
 
 If this text does NOT describe an identifiable food or meal (gibberish, random letters, empty, unrelated to food), respond with ONLY: {"unidentifiable": true} — skip everything below.
 
-Otherwise, you MUST use web_search before answering — do not skip straight to an answer from memory. Then:
+If the description lists MULTIPLE separate food items, treat them as one combined entry — sum their totals into a single final answer. Keep your reasoning about each item brief (a short phrase, not a full sentence) since a long explanation risks running out of room before your final answer.
+
+Otherwise, you MUST use web_search before answering — do not skip straight to an answer from memory. Then, for each item:
 
 1. Search for the actual nutrition label for this specific food (brand's own site, USDA FoodData Central, or a reputable nutrition database).
-2. From the search results, extract the EXACT per-serving numbers you found: the serving size (e.g. "3/4 cup (29g)") and its calories, protein, carbs, and fat AS STATED in the source. Put these unmodified in "sourceServing" and "sourceValues" below — this is a record of what you actually read, not your final answer.
-3. Identify the quantity stated in the description (e.g. "3 cups"). If none given, use the source's own serving size as-is (multiplier = 1).
-4. Compute multiplier = (requested quantity) ÷ (source serving quantity), using the SAME unit (e.g. 3 cups ÷ 0.75 cup = 4).
-5. Multiply each of the source's macro values by that multiplier to get your final p/c/f. This arithmetic must be visibly consistent with sourceValues × multiplier — do not put a final number here that doesn't trace back to sourceValues.
+2. Note the per-serving numbers you found: the serving size (e.g. "3/4 cup (29g)") and its calories, protein, carbs, and fat AS STATED in the source.
+3. Identify the quantity stated in the description (e.g. "3 cups"). If none given, use the source's own serving size as-is.
+4. Compute multiplier = (requested quantity) ÷ (source serving quantity), same units, and scale that item's macros accordingly.
 
-Respond with ONLY this JSON object as your final message, no markdown:
-{"name": "short food name including quantity", "sourceServing": "e.g. 3/4 cup (29g), 110 kcal", "sourceValues": {"p": number, "c": number, "f": number}, "multiplier": number, "p": final grams protein, "c": final grams carbs, "f": final grams fat}` }],
+Sum all items into ONE final total. If there's a single dominant item, put its info in sourceServing/sourceValues/multiplier below; if multiple items, set multiplier to 1 and sourceValues to your final combined p/c/f.
+
+Respond with ONLY this JSON object as your final message, no markdown, no other text before or after it:
+{"name": "short food name including quantity (combine multiple items into one short label if needed)", "sourceServing": "brief, e.g. 3/4 cup (29g), 110 kcal", "sourceValues": {"p": number, "c": number, "f": number}, "multiplier": number, "p": final grams protein, "c": final grams carbs, "f": final grams fat}` }],
           }),
         });
         const data = await resp.json();
