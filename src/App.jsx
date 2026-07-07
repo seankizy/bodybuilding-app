@@ -1782,11 +1782,22 @@ Respond with ONLY this JSON object as your final message, no markdown, no other 
           }),
         });
         const data = await resp.json();
+        if (data.error) throw new Error(data.error.message || "API error");
+        if (data.stop_reason === "max_tokens") {
+          setAiError("The response was too long and got cut off (hit the token limit). Try a simpler description, or use manual entry below.");
+          setAiLoading(false);
+          return;
+        }
         const textBlocks = (data.content ?? []).filter(b => b.type === "text").map(b => b.text);
         const text = textBlocks.length ? textBlocks[textBlocks.length - 1] : "";
         const clean = text.replace(/```json|```/g, "").trim();
         const jsonMatch = clean.match(/\{[\s\S]*\}/);
-        const parsed = JSON.parse(jsonMatch ? jsonMatch[0] : clean);
+        if (!jsonMatch) {
+          setAiError(`AI didn't return a usable answer. Raw response: "${clean.slice(0, 150)}" — try again, or use manual entry below.`);
+          setAiLoading(false);
+          return;
+        }
+        const parsed = JSON.parse(jsonMatch[0]);
         if (parsed.unidentifiable) {
           setAiError("Couldn't identify food in that photo — try a clearer shot, or use manual entry below.");
           setAiLoading(false);
@@ -1858,6 +1869,12 @@ Respond with ONLY this JSON object as your final message, no markdown, no other 
           }),
         });
         const data = await resp.json();
+        if (data.error) throw new Error(data.error.message || "API error");
+        if (data.stop_reason === "max_tokens") {
+          setAiError("The response was too long and got cut off (hit the token limit). Try a simpler description, or use manual entry below.");
+          setAiLoading(false);
+          return;
+        }
         // A search-enabled turn returns multiple content blocks (text explaining the search,
         // tool_use/tool_result blocks, and the final answer). Only the text blocks matter here;
         // the final JSON is the last text block in the response.
@@ -1865,7 +1882,12 @@ Respond with ONLY this JSON object as your final message, no markdown, no other 
         const text = textBlocks.length ? textBlocks[textBlocks.length - 1] : "";
         const clean = text.replace(/```json|```/g, "").trim();
         const jsonMatch = clean.match(/\{[\s\S]*\}/);
-        const parsed = JSON.parse(jsonMatch ? jsonMatch[0] : clean);
+        if (!jsonMatch) {
+          setAiError(`AI didn't return a usable answer. Raw response: "${clean.slice(0, 150)}" — try again, or use manual entry below.`);
+          setAiLoading(false);
+          return;
+        }
+        const parsed = JSON.parse(jsonMatch[0]);
         if (parsed.unidentifiable) {
           setAiError("Couldn't identify a food in that description — try rephrasing, or use manual entry below.");
           setAiLoading(false);
