@@ -1756,7 +1756,7 @@ export default function App() {
           headers: { "Content-Type": "application/json", "x-api-key": apiKey, "anthropic-version": "2023-06-01", "anthropic-dangerous-direct-browser-access": "true" },
           body: JSON.stringify({
             model: "claude-sonnet-4-5",
-            max_tokens: 1200,
+            max_tokens: 2000,
             tools: [{ type: "web_search_20250305", name: "web_search", max_uses: 3 }],
             messages: [{
               role: "user",
@@ -1812,7 +1812,10 @@ Respond with ONLY this JSON object as your final message, no markdown:
           source: parsed.sourceServing || null,
         });
       } catch (err) {
-        setAiError(err.message || "AI photo estimate failed — use manual entry.");
+        const isTruncated = err instanceof SyntaxError;
+        setAiError(isTruncated
+          ? "The AI's answer got cut off before finishing — this can happen when a search takes a while. Try again, or use manual entry below."
+          : (err.message || "AI photo estimate failed — use manual entry."));
       } finally {
         setAiLoading(false);
       }
@@ -1834,7 +1837,7 @@ Respond with ONLY this JSON object as your final message, no markdown:
           headers: { "Content-Type": "application/json", "x-api-key": apiKey, "anthropic-version": "2023-06-01", "anthropic-dangerous-direct-browser-access": "true" },
           body: JSON.stringify({
             model: "claude-sonnet-4-5",
-            max_tokens: 1200,
+            max_tokens: 2000,
             tools: [{ type: "web_search_20250305", name: "web_search", max_uses: 3 }],
             messages: [{ role: "user", content: `Log macros for this food: "${aiDescription}"
 
@@ -1889,7 +1892,10 @@ Respond with ONLY this JSON object as your final message, no markdown:
           source: parsed.sourceServing || null,
         });
       } catch (err) {
-        setAiError(err.message || "AI estimate failed — use manual entry.");
+        const isTruncated = err instanceof SyntaxError;
+        setAiError(isTruncated
+          ? "The AI's answer got cut off before finishing — this can happen when a search takes a while. Try again, or use manual entry below."
+          : (err.message || "AI estimate failed — use manual entry."));
       } finally {
         setAiLoading(false);
       }
