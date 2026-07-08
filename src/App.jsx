@@ -447,6 +447,42 @@ function isNewPR(entry, mv, allEntries) {
   return !prevBest || best.e1rm > prevBest.e1rm;
 }
 
+// Detailed PR info for a single movement in a session — used by the Complete Workout
+// summary to show exactly what improved (weight, reps, or estimated 1RM) and by how much.
+function detailedPRForMovement(entry, mv, allEntries) {
+  const best = bestSetForMovement(mv);
+  if (!best || !mv.name) return null;
+  const prevEntries = allEntries.filter(e => e.date < entry.date);
+  const priorHistory = movementHistory(prevEntries, mv.name);
+  if (priorHistory.length === 0) return null; // first time doing this movement — not a "record" yet, just a first entry
+  // Best-ever prior performance (by e1RM), not just the last session
+  const priorBest = priorHistory.reduce((a, b) => (b.e1rm > a.e1rm ? b : a));
+  if (best.e1rm <= priorBest.e1rm) return null;
+
+  // Determine what actually improved: weight PR (heavier at same or better reps),
+  // rep PR (same weight, more reps), or just an estimated-1RM PR (mixed change)
+  let type = "1RM";
+  if (best.w > priorBest.w && best.r >= priorBest.r) type = "weight";
+  else if (best.w === priorBest.w && best.r > priorBest.r) type = "reps";
+
+  return {
+    name: mv.name,
+    type,
+    newWeight: best.w, newReps: best.r, newE1RM: best.e1rm,
+    prevWeight: priorBest.w, prevReps: priorBest.r, prevE1RM: priorBest.e1rm, prevDate: priorBest.date,
+    weightDelta: best.w - priorBest.w,
+    repDelta: best.r - priorBest.r,
+    e1rmDelta: best.e1rm - priorBest.e1rm,
+  };
+}
+
+// Collect all PRs achieved across every movement in a completed session
+function collectSessionPRs(entry, allEntries) {
+  return entry.movements
+    .map(mv => detailedPRForMovement(entry, mv, allEntries))
+    .filter(Boolean);
+}
+
 // Session completion heatmap — last 10 weeks
 function sessionHeatmap(entries) {
   const map = {};
@@ -816,6 +852,7 @@ export default function App() {
   const [showChef, setShowChef] = useState(false);
   const [showMesoEdit, setShowMesoEdit] = useState(false);
   const [showMoreMenu, setShowMoreMenu] = useState(false);
+  const [completionSummary, setCompletionSummary] = useState(null); // { entry, prs: [...] } shown right after completing a workout
   const [dismissedResumeIds, setDismissedResumeIds] = useState(() => {
     try { return JSON.parse(localStorage.getItem("wj_dismissed_resume") || "[]"); } catch { return []; }
   });
@@ -1527,6 +1564,9 @@ export default function App() {
             ) : (
               <button onClick={() => {
                 const ts = new Date().toISOString();
+                // Compute PRs BEFORE mutating — comparison must be against history that
+                // doesn't yet include this session's own numbers.
+                const sessionPRs = collectSessionPRs(activeEntry, entries);
                 mutate(prev => {
                   const updated = prev.map(e => e.id === activeEntry.id
                     ? { ...e, completedAt: ts, movements: e.movements.map(m => m.doneAt ? m : { ...m, doneAt: ts }) }
@@ -1555,6 +1595,7 @@ export default function App() {
                   }
                   return updated;
                 });
+                setCompletionSummary({ entry: activeEntry, prs: sessionPRs });
               }} style={{
                 width: "100%", padding: "18px", borderRadius: 16,
                 background: "linear-gradient(135deg, #e8e8e8, #e8e8e8)",
@@ -1570,6 +1611,7 @@ export default function App() {
         )}
         <BottomNav tab={tab} setTab={t => { setTab(t); if (t !== "journal") setView("journal"); }} onOpenMenu={() => setShowMoreMenu(true)} />
         <MoreMenu open={showMoreMenu} onClose={() => setShowMoreMenu(false)} onSelect={(id) => { setShowMoreMenu(false); setTab(id); setView("journal"); }} />
+        <CompletionSummary summary={completionSummary} onClose={() => setCompletionSummary(null)} />
       </Shell>
     );
   }
@@ -3280,6 +3322,64 @@ function MacroChefModal({ remaining, onResult, onClose }) {
             </div>
           </>
         )}
+      </div>
+    </div>
+  );
+}
+
+function CompletionSummary({ summary, onClose }) {
+  if (!summary) return null;
+  const { entry, prs } = summary;
+  const totalSets = entry.movements.reduce((n, mv) => n + mv.sets.filter(s => s.r).length, 0);
+
+  const typeLabel = { weight: "Weight PR", reps: "Rep PR", "1RM": "Est. 1RM PR" };
+
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", display: "flex", alignItems: "flex-end", zIndex: 200 }}>
+      <div style={{ background: C.surface, width: "100%", borderRadius: "24px 24px 0 0", padding: "28px 18px 40px", boxSizing: "border-box", maxWidth: 430, margin: "0 auto", maxHeight: "88vh", overflowY: "auto" }}>
+        <div style={{ textAlign: "center", marginBottom: 22 }}>
+          <div style={{ display: "flex", justifyContent: "center", marginBottom: 10 }}>
+            <Trophy size={40} color={prs.length > 0 ? LAKE.sky : C.textDim} strokeWidth={1.6} />
+          </div>
+          <div style={{ fontSize: 22, fontWeight: 800, color: C.text, fontFamily: SANS }}>Workout Complete</div>
+          <div style={{ fontSize: 13, color: C.textDim, fontFamily: SANS, marginTop: 4 }}>
+            {entry.customTitle || "Session"} · {entry.movements.length} movements · {totalSets} sets
+          </div>
+        </div>
+
+        {prs.length > 0 ? (
+          <>
+            <div style={{ fontSize: 13, fontWeight: 700, color: LAKE.sky, textAlign: "center", marginBottom: 14, fontFamily: SANS }}>
+              {prs.length} PR{prs.length !== 1 ? "s" : ""} today
+            </div>
+            {prs.map((pr, i) => (
+              <div key={i} style={{ marginBottom: 10, padding: "14px 16px", borderRadius: 14, background: C.surface2 }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: C.text, fontFamily: SANS }}>{pr.name}</div>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: LAKE.sky, background: LAKE.sky + "22", padding: "3px 8px", borderRadius: 6, fontFamily: SANS, letterSpacing: 0.3 }}>
+                    {typeLabel[pr.type]}
+                  </div>
+                </div>
+                <div style={{ fontSize: 13, fontFamily: MONO, color: C.textMid, marginBottom: 4 }}>
+                  {pr.newWeight}×{pr.newReps} <span style={{ color: C.textDim }}>vs</span> {pr.prevWeight}×{pr.prevReps} <span style={{ color: C.textDim }}>on {fmtDate(pr.prevDate)}</span>
+                </div>
+                <div style={{ fontSize: 12, fontFamily: SANS, color: LAKE.sky, fontWeight: 600 }}>
+                  {pr.type === "weight" && `+${pr.weightDelta}g heavier at ${pr.repDelta >= 0 ? "same or more" : "fewer"} reps`}
+                  {pr.type === "reps" && `+${pr.repDelta} rep${pr.repDelta !== 1 ? "s" : ""} at the same weight`}
+                  {pr.type === "1RM" && `est. 1RM up ${pr.prevE1RM} → ${pr.newE1RM} lbs (+${pr.e1rmDelta})`}
+                </div>
+              </div>
+            ))}
+          </>
+        ) : (
+          <div style={{ textAlign: "center", padding: "10px 20px 4px", color: C.textDim, fontSize: 13, fontFamily: SANS, lineHeight: 1.6 }}>
+            No PRs this session — keep logging, they'll show up here the moment you beat a previous best.
+          </div>
+        )}
+
+        <button onClick={onClose} style={{ width: "100%", marginTop: 20, padding: "15px", borderRadius: 14, background: LAKE.sky, border: "none", color: "#0a0a0a", fontSize: 15, fontWeight: 700, cursor: "pointer", fontFamily: SANS }}>
+          Done
+        </button>
       </div>
     </div>
   );
