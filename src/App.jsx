@@ -2564,6 +2564,9 @@ Respond with ONLY this JSON object as your final message, no markdown, no other 
       const containerRef = useRef(null);
       const [scale, setScale] = useState(1);
       const [translate, setTranslate] = useState({ x: 0, y: 0 });
+      const stateRef = useRef({ scale: 1, translate: { x: 0, y: 0 } });
+      stateRef.current.scale = scale;
+      stateRef.current.translate = translate;
       const gestureRef = useRef({
         startDist: 0, startScale: 1,
         startTranslate: { x: 0, y: 0 }, startMid: { x: 0, y: 0 },
@@ -2580,7 +2583,6 @@ Respond with ONLY this JSON object as your final message, no markdown, no other 
         return { x: (a.clientX + b.clientX) / 2, y: (a.clientY + b.clientY) / 2 };
       }
       function clampTranslate(t, s) {
-        // Keep the image from being dragged so far it leaves an empty gap in the frame
         const el = containerRef.current;
         if (!el) return t;
         const maxX = (el.clientWidth * (s - 1)) / 2;
@@ -2588,56 +2590,77 @@ Respond with ONLY this JSON object as your final message, no markdown, no other 
         return { x: Math.max(-maxX, Math.min(maxX, t.x)), y: Math.max(-maxY, Math.min(maxY, t.y)) };
       }
 
-      function onTouchStart(e) {
-        const g = gestureRef.current;
-        if (e.touches.length === 2) {
-          g.startDist = dist(e.touches);
-          g.startScale = scale;
-          g.startMid = midpoint(e.touches);
-          g.startTranslate = translate;
-          g.panning = false;
-        } else if (e.touches.length === 1) {
-          const now = Date.now();
-          if (now - g.lastTapTime < 280) {
-            // Double-tap: reset zoom
-            setScale(1); setTranslate({ x: 0, y: 0 });
-            g.lastTapTime = 0;
-            return;
-          }
-          g.lastTapTime = now;
-          if (scale > 1) {
-            g.panning = true;
-            g.lastPan = { x: e.touches[0].clientX, y: e.touches[0].clientY };
-            g.startTranslate = translate;
+      // IMPORTANT: attach touch listeners natively with { passive: false }, not via React's
+      // onTouchMove prop. React attaches touch handlers as PASSIVE listeners by default (for
+      // scroll performance), which means calling e.preventDefault() inside a JSX onTouchMove
+      // silently does nothing in modern React + Safari — the browser has already committed to
+      // its native gesture before the handler runs. This was the actual reason pinch-zoom
+      // appeared to do "nothing at all": the code ran, but preventDefault() was a no-op, so
+      // neither our zoom nor the browser's own zoom (blocked separately by user-scalable=no)
+      // took effect.
+      useEffect(() => {
+        const el = containerRef.current;
+        if (!el) return;
+
+        function onTouchStart(e) {
+          const g = gestureRef.current;
+          if (e.touches.length === 2) {
+            g.startDist = dist(e.touches);
+            g.startScale = stateRef.current.scale;
+            g.startMid = midpoint(e.touches);
+            g.startTranslate = stateRef.current.translate;
+            g.panning = false;
+          } else if (e.touches.length === 1) {
+            const now = Date.now();
+            if (now - g.lastTapTime < 280) {
+              setScale(1); setTranslate({ x: 0, y: 0 });
+              g.lastTapTime = 0;
+              return;
+            }
+            g.lastTapTime = now;
+            if (stateRef.current.scale > 1) {
+              g.panning = true;
+              g.lastPan = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+              g.startTranslate = stateRef.current.translate;
+            }
           }
         }
-      }
-      function onTouchMove(e) {
-        const g = gestureRef.current;
-        if (e.touches.length === 2 && g.startDist > 0) {
-          e.preventDefault();
-          const newDist = dist(e.touches);
-          const nextScale = Math.max(1, Math.min(4, g.startScale * (newDist / g.startDist)));
-          setScale(nextScale);
-          setTranslate(clampTranslate(g.startTranslate, nextScale));
-        } else if (e.touches.length === 1 && g.panning) {
-          e.preventDefault();
-          const dx = e.touches[0].clientX - g.lastPan.x;
-          const dy = e.touches[0].clientY - g.lastPan.y;
-          setTranslate(clampTranslate({ x: g.startTranslate.x + dx, y: g.startTranslate.y + dy }, scale));
+        function onTouchMove(e) {
+          const g = gestureRef.current;
+          if (e.touches.length === 2 && g.startDist > 0) {
+            e.preventDefault();
+            const newDist = dist(e.touches);
+            const nextScale = Math.max(1, Math.min(4, g.startScale * (newDist / g.startDist)));
+            setScale(nextScale);
+            setTranslate(clampTranslate(g.startTranslate, nextScale));
+          } else if (e.touches.length === 1 && g.panning) {
+            e.preventDefault();
+            const dx = e.touches[0].clientX - g.lastPan.x;
+            const dy = e.touches[0].clientY - g.lastPan.y;
+            setTranslate(clampTranslate({ x: g.startTranslate.x + dx, y: g.startTranslate.y + dy }, stateRef.current.scale));
+          }
         }
-      }
-      function onTouchEnd(e) {
-        const g = gestureRef.current;
-        if (e.touches.length < 2) g.startDist = 0;
-        if (e.touches.length === 0) g.panning = false;
-        // Snap back to 1x if pinched down below/near the minimum
-        if (scale <= 1.02) { setScale(1); setTranslate({ x: 0, y: 0 }); }
-      }
+        function onTouchEnd(e) {
+          const g = gestureRef.current;
+          if (e.touches.length < 2) g.startDist = 0;
+          if (e.touches.length === 0) g.panning = false;
+          if (stateRef.current.scale <= 1.02) { setScale(1); setTranslate({ x: 0, y: 0 }); }
+        }
+
+        el.addEventListener("touchstart", onTouchStart, { passive: false });
+        el.addEventListener("touchmove", onTouchMove, { passive: false });
+        el.addEventListener("touchend", onTouchEnd, { passive: false });
+        el.addEventListener("touchcancel", onTouchEnd, { passive: false });
+        return () => {
+          el.removeEventListener("touchstart", onTouchStart);
+          el.removeEventListener("touchmove", onTouchMove);
+          el.removeEventListener("touchend", onTouchEnd);
+          el.removeEventListener("touchcancel", onTouchEnd);
+        };
+      }, []);
 
       return (
-        <div ref={containerRef} onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd}
-          style={{ width: "100%", height: "100%", overflow: "hidden", touchAction: "none" }}>
+        <div ref={containerRef} style={{ width: "100%", height: "100%", overflow: "hidden", touchAction: "none" }}>
           <img src={src} alt={alt} draggable={false} style={{
             width: "100%", height: "100%", objectFit: "cover",
             transform: `translate(${translate.x}px, ${translate.y}px) scale(${scale})`,
