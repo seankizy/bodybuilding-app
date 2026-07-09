@@ -735,6 +735,37 @@ function mesocycleWeek(entries, override) {
 // ── MACRO TRACKING ────────────────────────────────────────────────────────────
 // Merged from MacroTracker app. Data model matches the old app so backups import cleanly:
 //   wj_macros = { "YYYY-MM-DD": { entries: [{id, name, cal, p, c, f, time}], dayType } }
+// ── PROGRESS PHOTOS (Google Drive, public read-only API) ─────────────────────
+// Folder must be link-shared ("anyone with the link can view") for this to work
+// without OAuth — confirmed already shared as of this build.
+const DRIVE_PHOTOS_FOLDER_ID = "1RMrOwwsTqX0_wHiPfxjbgCJxz5tdNCwX";
+const DRIVE_API_BASE = "https://www.googleapis.com/drive/v3";
+
+async function driveListPhotos() {
+  const apiKey = import.meta.env?.VITE_GOOGLE_DRIVE_API_KEY;
+  if (!apiKey) throw new Error("Progress Photos needs VITE_GOOGLE_DRIVE_API_KEY set in Vercel env vars.");
+  const q = encodeURIComponent(`'${DRIVE_PHOTOS_FOLDER_ID}' in parents and mimeType contains 'image/' and trashed = false`);
+  const fields = encodeURIComponent("files(id,name,createdTime,thumbnailLink)");
+  const url = `${DRIVE_API_BASE}/files?q=${q}&fields=${fields}&pageSize=1000&key=${apiKey}`;
+  const resp = await fetch(url);
+  if (!resp.ok) {
+    const body = await resp.json().catch(() => null);
+    throw new Error(body?.error?.message || `Drive API error (${resp.status})`);
+  }
+  const data = await resp.json();
+  return (data.files ?? []).map(f => ({
+    id: f.id,
+    name: f.name,
+    date: (f.createdTime || "").slice(0, 10),
+    thumbnailLink: f.thumbnailLink,
+  })).sort((a, b) => b.date.localeCompare(a.date));
+}
+
+function driveImageUrl(fileId) {
+  const apiKey = import.meta.env?.VITE_GOOGLE_DRIVE_API_KEY;
+  return `${DRIVE_API_BASE}/files/${fileId}?alt=media&key=${apiKey}`;
+}
+
 const DEFAULT_MACRO_TARGETS = {
   training: { p: 220, c: 200, f: 65 },
   rest:     { p: 220, c: 120, f: 60 },
@@ -853,6 +884,12 @@ export default function App() {
   const [showMesoEdit, setShowMesoEdit] = useState(false);
   const [showMoreMenu, setShowMoreMenu] = useState(false);
   const [completionSummary, setCompletionSummary] = useState(null); // { entry, prs: [...] } shown right after completing a workout
+  const [drivePhotos, setDrivePhotos] = useState(null); // null = not loaded yet, [] = loaded but empty
+  const [drivePhotosError, setDrivePhotosError] = useState("");
+  const [drivePhotosLoading, setDrivePhotosLoading] = useState(false);
+  const [photoSlotA, setPhotoSlotA] = useState(null); // selected photo object for left slot
+  const [photoSlotB, setPhotoSlotB] = useState(null); // selected photo object for right slot
+  const [photoPickerSlot, setPhotoPickerSlot] = useState(null); // "A" | "B" | null — which slot is being picked
   const [dismissedResumeIds, setDismissedResumeIds] = useState(() => {
     try { return JSON.parse(localStorage.getItem("wj_dismissed_resume") || "[]"); } catch { return []; }
   });
@@ -2498,6 +2535,132 @@ Respond with ONLY this JSON object as your final message, no markdown, no other 
     );
   }
 
+  // ── PHOTOS TAB ───────────────────────────────────────────────────────────
+  if (tab === "photos") {
+    async function loadPhotos() {
+      setDrivePhotosLoading(true);
+      setDrivePhotosError("");
+      try {
+        const photos = await driveListPhotos();
+        setDrivePhotos(photos);
+      } catch (err) {
+        setDrivePhotosError(err.message || "Could not load photos from Drive.");
+      } finally {
+        setDrivePhotosLoading(false);
+      }
+    }
+    // Auto-load on first visit to this tab
+    if (drivePhotos === null && !drivePhotosLoading && !drivePhotosError) {
+      loadPhotos();
+    }
+
+    const photosByDate = {};
+    (drivePhotos ?? []).forEach(p => {
+      (photosByDate[p.date] = photosByDate[p.date] ?? []).push(p);
+    });
+    const dates = Object.keys(photosByDate).sort((a, b) => b.localeCompare(a));
+
+    function PhotoSlot({ label, photo, onPick }) {
+      return (
+        <div style={{ flex: 1 }}>
+          <div style={{ fontSize: 11, letterSpacing: 1.5, color: C.textDim, textTransform: "uppercase", fontFamily: SANS, fontWeight: 700, marginBottom: 8, textAlign: "center" }}>{label}</div>
+          <div onClick={onPick} style={{
+            aspectRatio: "3/4", borderRadius: 16, background: C.surface2, cursor: "pointer",
+            display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden",
+            border: photo ? "none" : `1.5px dashed ${C.line}`,
+          }}>
+            {photo ? (
+              <img src={driveImageUrl(photo.id)} alt={photo.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+            ) : (
+              <div style={{ textAlign: "center", padding: 16 }}>
+                <Camera size={26} color={C.textDim} strokeWidth={1.6} />
+                <div style={{ fontSize: 12, color: C.textDim, fontFamily: SANS, marginTop: 8 }}>Tap to choose</div>
+              </div>
+            )}
+          </div>
+          {photo && (
+            <div onClick={onPick} style={{ textAlign: "center", marginTop: 8, cursor: "pointer" }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: C.text, fontFamily: SANS }}>{fmtDate(photo.date)}</div>
+              <div style={{ fontSize: 11, color: LAKE.sky, fontFamily: SANS, marginTop: 2 }}>Change photo</div>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    return (
+      <Shell>
+        <div style={{ padding: "52px 18px 20px", background: "linear-gradient(160deg,#111110 0%,#141210 100%)" }}>
+          <div style={{ fontSize: 11, letterSpacing: 3, color: C.textDim, textTransform: "uppercase", fontFamily: SANS, marginBottom: 4 }}>Compare Dates</div>
+          <div style={{ fontSize: 30, fontWeight: 900, color: C.text, lineHeight: 1, fontFamily: SANS, letterSpacing: -0.5 }}>Progress Photos</div>
+          <div style={{ fontSize: 13, color: C.textDim, marginTop: 6, fontFamily: SANS }}>From your Google Drive folder</div>
+        </div>
+
+        <div style={{ padding: "0 18px 24px" }}>
+          {drivePhotosLoading && (
+            <div style={{ textAlign: "center", padding: "40px 0", color: C.textDim, fontSize: 13, fontFamily: SANS }}>Loading photos…</div>
+          )}
+          {drivePhotosError && (
+            <div style={{ padding: "16px", borderRadius: 14, background: "#2a1a18", marginBottom: 16 }}>
+              <div style={{ fontSize: 13, color: C.red, fontFamily: SANS, marginBottom: 10 }}>{drivePhotosError}</div>
+              <button onClick={loadPhotos} style={{ padding: "10px 16px", borderRadius: 10, background: C.surface2, border: "none", color: C.text, fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: SANS }}>
+                Try Again
+              </button>
+            </div>
+          )}
+          {!drivePhotosLoading && !drivePhotosError && drivePhotos && (
+            <>
+              <div style={{ display: "flex", gap: 12, marginBottom: 20 }}>
+                <PhotoSlot label="Slot A" photo={photoSlotA} onPick={() => setPhotoPickerSlot("A")} />
+                <PhotoSlot label="Slot B" photo={photoSlotB} onPick={() => setPhotoPickerSlot("B")} />
+              </div>
+              {photoSlotA && photoSlotB && (
+                <div style={{ textAlign: "center", padding: "12px 16px", borderRadius: 12, background: C.surface2, fontSize: 12, color: C.textMid, fontFamily: SANS }}>
+                  {fmtDate(photoSlotA.date)} → {fmtDate(photoSlotB.date)}
+                  {" · "}
+                  {Math.abs(Math.round((new Date(photoSlotB.date) - new Date(photoSlotA.date)) / 86400000))} days apart
+                </div>
+              )}
+              {dates.length === 0 && (
+                <div style={{ textAlign: "center", padding: "20px 0", color: C.textDim, fontSize: 13, fontFamily: SANS }}>
+                  No photos found in your Drive folder.
+                </div>
+              )}
+            </>
+          )}
+        </div>
+
+        {/* Date/photo picker sheet */}
+        {photoPickerSlot && (
+          <div onClick={() => setPhotoPickerSlot(null)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", display: "flex", alignItems: "flex-end", zIndex: 150 }}>
+            <div onClick={e => e.stopPropagation()} style={{ background: C.surface, width: "100%", borderRadius: "24px 24px 0 0", padding: "20px 18px 40px", boxSizing: "border-box", maxWidth: 430, margin: "0 auto", maxHeight: "80vh", overflowY: "auto" }}>
+              <div style={{ width: 36, height: 4, borderRadius: 2, background: C.line, margin: "0 auto 18px" }} />
+              <div style={{ fontSize: 17, fontWeight: 700, color: C.text, marginBottom: 16, fontFamily: SANS }}>Choose a Photo</div>
+              {dates.map(date => (
+                <div key={date} style={{ marginBottom: 18 }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: C.textMid, fontFamily: SANS, marginBottom: 8 }}>{fmtDate(date)}</div>
+                  <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 4 }}>
+                    {photosByDate[date].map(photo => (
+                      <div key={photo.id} onClick={() => {
+                        if (photoPickerSlot === "A") setPhotoSlotA(photo); else setPhotoSlotB(photo);
+                        setPhotoPickerSlot(null);
+                      }} style={{ flexShrink: 0, width: 90, height: 120, borderRadius: 10, overflow: "hidden", cursor: "pointer", background: C.surface2 }}>
+                        <img src={photo.thumbnailLink || driveImageUrl(photo.id)} alt={photo.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <BottomNav tab={tab} setTab={setTab} onOpenMenu={() => setShowMoreMenu(true)} />
+        <MoreMenu open={showMoreMenu} onClose={() => setShowMoreMenu(false)} onSelect={(id) => { setShowMoreMenu(false); setTab(id); setView("journal"); }} />
+      </Shell>
+    );
+  }
+
   // ── DATA TAB ─────────────────────────────────────────────────────────────
   if (tab === "data") {
     const sorted_all = [...entries].sort((a, b) => b.date.localeCompare(a.date));
@@ -3390,6 +3553,7 @@ function MoreMenu({ open, onClose, onSelect }) {
   const items = [
     { id: "volume", label: "Volume", Icon: BarChart3, desc: "Sets per muscle vs MEV/MAV/MRV" },
     { id: "progress", label: "Progress", Icon: TrendingUp, desc: "Consistency, lifts, PRs, balance" },
+    { id: "photos", label: "Progress Photos", Icon: Camera, desc: "Compare two dates side by side" },
     { id: "data", label: "Data & Backup", Icon: Database, desc: "Export, import, session history" },
   ];
   return (
