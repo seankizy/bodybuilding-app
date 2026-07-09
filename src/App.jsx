@@ -2560,19 +2560,108 @@ Respond with ONLY this JSON object as your final message, no markdown, no other 
     });
     const dates = Object.keys(photosByDate).sort((a, b) => b.localeCompare(a));
 
+    function ZoomableImage({ src, alt }) {
+      const containerRef = useRef(null);
+      const [scale, setScale] = useState(1);
+      const [translate, setTranslate] = useState({ x: 0, y: 0 });
+      const gestureRef = useRef({
+        startDist: 0, startScale: 1,
+        startTranslate: { x: 0, y: 0 }, startMid: { x: 0, y: 0 },
+        panning: false, lastPan: { x: 0, y: 0 },
+        lastTapTime: 0,
+      });
+
+      function dist(touches) {
+        const [a, b] = touches;
+        return Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
+      }
+      function midpoint(touches) {
+        const [a, b] = touches;
+        return { x: (a.clientX + b.clientX) / 2, y: (a.clientY + b.clientY) / 2 };
+      }
+      function clampTranslate(t, s) {
+        // Keep the image from being dragged so far it leaves an empty gap in the frame
+        const el = containerRef.current;
+        if (!el) return t;
+        const maxX = (el.clientWidth * (s - 1)) / 2;
+        const maxY = (el.clientHeight * (s - 1)) / 2;
+        return { x: Math.max(-maxX, Math.min(maxX, t.x)), y: Math.max(-maxY, Math.min(maxY, t.y)) };
+      }
+
+      function onTouchStart(e) {
+        const g = gestureRef.current;
+        if (e.touches.length === 2) {
+          g.startDist = dist(e.touches);
+          g.startScale = scale;
+          g.startMid = midpoint(e.touches);
+          g.startTranslate = translate;
+          g.panning = false;
+        } else if (e.touches.length === 1) {
+          const now = Date.now();
+          if (now - g.lastTapTime < 280) {
+            // Double-tap: reset zoom
+            setScale(1); setTranslate({ x: 0, y: 0 });
+            g.lastTapTime = 0;
+            return;
+          }
+          g.lastTapTime = now;
+          if (scale > 1) {
+            g.panning = true;
+            g.lastPan = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+            g.startTranslate = translate;
+          }
+        }
+      }
+      function onTouchMove(e) {
+        const g = gestureRef.current;
+        if (e.touches.length === 2 && g.startDist > 0) {
+          e.preventDefault();
+          const newDist = dist(e.touches);
+          const nextScale = Math.max(1, Math.min(4, g.startScale * (newDist / g.startDist)));
+          setScale(nextScale);
+          setTranslate(clampTranslate(g.startTranslate, nextScale));
+        } else if (e.touches.length === 1 && g.panning) {
+          e.preventDefault();
+          const dx = e.touches[0].clientX - g.lastPan.x;
+          const dy = e.touches[0].clientY - g.lastPan.y;
+          setTranslate(clampTranslate({ x: g.startTranslate.x + dx, y: g.startTranslate.y + dy }, scale));
+        }
+      }
+      function onTouchEnd(e) {
+        const g = gestureRef.current;
+        if (e.touches.length < 2) g.startDist = 0;
+        if (e.touches.length === 0) g.panning = false;
+        // Snap back to 1x if pinched down below/near the minimum
+        if (scale <= 1.02) { setScale(1); setTranslate({ x: 0, y: 0 }); }
+      }
+
+      return (
+        <div ref={containerRef} onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd}
+          style={{ width: "100%", height: "100%", overflow: "hidden", touchAction: "none" }}>
+          <img src={src} alt={alt} draggable={false} style={{
+            width: "100%", height: "100%", objectFit: "cover",
+            transform: `translate(${translate.x}px, ${translate.y}px) scale(${scale})`,
+            transformOrigin: "center center",
+            transition: scale === 1 && translate.x === 0 && translate.y === 0 ? "transform 0.2s ease-out" : "none",
+            willChange: "transform",
+          }} />
+        </div>
+      );
+    }
+
     function PhotoSlot({ label, photo, onPick }) {
       return (
         <div style={{ flex: 1 }}>
           <div style={{ fontSize: 11, letterSpacing: 1.5, color: C.textDim, textTransform: "uppercase", fontFamily: SANS, fontWeight: 700, marginBottom: 8, textAlign: "center" }}>{label}</div>
-          <div onClick={onPick} style={{
-            aspectRatio: "3/4", borderRadius: 16, background: C.surface2, cursor: "pointer",
+          <div style={{
+            aspectRatio: "3/4", borderRadius: 16, background: C.surface2,
             display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden",
-            border: photo ? "none" : `1.5px dashed ${C.line}`,
+            border: photo ? "none" : `1.5px dashed ${C.line}`, position: "relative",
           }}>
             {photo ? (
-              <img src={driveImageUrl(photo.id)} alt={photo.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              <ZoomableImage key={photo.id} src={driveImageUrl(photo.id)} alt={photo.name} />
             ) : (
-              <div style={{ textAlign: "center", padding: 16 }}>
+              <div onClick={onPick} style={{ textAlign: "center", padding: 16, cursor: "pointer", width: "100%", height: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
                 <Camera size={26} color={C.textDim} strokeWidth={1.6} />
                 <div style={{ fontSize: 12, color: C.textDim, fontFamily: SANS, marginTop: 8 }}>Tap to choose</div>
               </div>
