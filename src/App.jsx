@@ -113,7 +113,7 @@ const PROGRAM = {
       { id: "B", name: "Romanian Deadlift", sets: 3, reps: "6–10", rest: "1m 30s", type: "compound", muscle: "Hamstrings" },
       { id: "C", name: "Barbell Hip Thrust", sets: 4, reps: "20–25", rest: "1m", type: "compound", muscle: "Glutes" },
       { id: "D", name: "Barbell Bent Over Row", sets: 3, reps: "6–10", rest: "1m 30s", type: "compound", muscle: "Back" },
-      { id: "E", name: "Lat Pulldown", sets: 3, reps: "8–12", rest: "1m 30s", type: "compound", muscle: "Back" },
+      { id: "E", name: "Lat Pulldown (Wide Overhand, Flat Bar)", sets: 3, reps: "8–12", rest: "1m 30s", type: "compound", muscle: "Back" },
       { id: "F", name: "Cable Face Pull", sets: 3, reps: "15–20", rest: "1m", type: "isolation", muscle: "Shoulders" },
     ],
   },
@@ -125,7 +125,7 @@ const PROGRAM = {
     exercises: [
       { id: "A", name: "Hack Squat Machine", sets: 4, reps: "8–10", rest: "2m 30s", type: "compound", muscle: "Quads" },
       { id: "B", name: "DB Bulgarian Split Squat", sets: 2, reps: "8–10", rest: "1m", type: "compound", muscle: "Quads" },
-      { id: "C", name: "Lat Pulldown", sets: 3, reps: "10–12", rest: "1m", type: "compound", muscle: "Back" },
+      { id: "C", name: "Lat Pulldown (Neutral-Grip Handles)", sets: 3, reps: "10–12", rest: "1m", type: "compound", muscle: "Back" },
       { id: "D", name: "Seated Cable Row", sets: 3, reps: "10–12", rest: "1m", type: "compound", muscle: "Back" },
       { id: "E", name: "EZ Bar Curl", sets: 5, reps: "10–12", rest: "1m", type: "isolation", muscle: "Biceps" },
       { id: "F", name: "DB Hammer Curl", sets: 4, reps: "10–12", rest: "1m", type: "isolation", muscle: "Biceps" },
@@ -2560,10 +2560,12 @@ Respond with ONLY this JSON object as your final message, no markdown, no other 
     });
     const dates = Object.keys(photosByDate).sort((a, b) => b.localeCompare(a));
 
-    function ZoomableImage({ src, alt }) {
+    function ZoomableImage({ fileId, alt }) {
       const containerRef = useRef(null);
       const [scale, setScale] = useState(1);
       const [translate, setTranslate] = useState({ x: 0, y: 0 });
+      const [blobUrl, setBlobUrl] = useState(null);
+      const [loadError, setLoadError] = useState("");
       const stateRef = useRef({ scale: 1, translate: { x: 0, y: 0 } });
       stateRef.current.scale = scale;
       stateRef.current.translate = translate;
@@ -2573,6 +2575,36 @@ Respond with ONLY this JSON object as your final message, no markdown, no other 
         panning: false, lastPan: { x: 0, y: 0 },
         lastTapTime: 0,
       });
+
+      // Fetch the image via JS fetch() rather than a raw <img src="...">. Google Drive's
+      // alt=media endpoint has known CORS/redirect quirks when hit directly by an <img> tag
+      // (307 redirect to a googleusercontent.com URL that browsers don't always follow
+      // cleanly for image requests) — this was the actual cause of the broken-image icons.
+      // fetch() handles the redirect properly; we then convert the response to a blob URL.
+      useEffect(() => {
+        let cancelled = false;
+        let localBlobUrl = null;
+        setBlobUrl(null);
+        setLoadError("");
+        (async () => {
+          try {
+            const apiKey = import.meta.env?.VITE_GOOGLE_DRIVE_API_KEY;
+            if (!apiKey) throw new Error("Missing Drive API key");
+            const resp = await fetch(`${DRIVE_API_BASE}/files/${fileId}?alt=media&key=${apiKey}`);
+            if (!resp.ok) throw new Error(`Drive fetch failed (${resp.status})`);
+            const blob = await resp.blob();
+            if (cancelled) return;
+            localBlobUrl = URL.createObjectURL(blob);
+            setBlobUrl(localBlobUrl);
+          } catch (err) {
+            if (!cancelled) setLoadError(err.message || "Could not load photo");
+          }
+        })();
+        return () => {
+          cancelled = true;
+          if (localBlobUrl) URL.revokeObjectURL(localBlobUrl);
+        };
+      }, [fileId]);
 
       function dist(touches) {
         const [a, b] = touches;
@@ -2659,9 +2691,23 @@ Respond with ONLY this JSON object as your final message, no markdown, no other 
         };
       }, []);
 
+      if (loadError) {
+        return (
+          <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", padding: 16, textAlign: "center" }}>
+            <div style={{ fontSize: 12, color: C.red, fontFamily: SANS }}>{loadError}</div>
+          </div>
+        );
+      }
+      if (!blobUrl) {
+        return (
+          <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <div style={{ fontSize: 12, color: C.textDim, fontFamily: SANS }}>Loading…</div>
+          </div>
+        );
+      }
       return (
         <div ref={containerRef} style={{ width: "100%", height: "100%", overflow: "hidden", touchAction: "none" }}>
-          <img src={src} alt={alt} draggable={false} style={{
+          <img src={blobUrl} alt={alt} draggable={false} style={{
             width: "100%", height: "100%", objectFit: "cover",
             transform: `translate(${translate.x}px, ${translate.y}px) scale(${scale})`,
             transformOrigin: "center center",
@@ -2682,7 +2728,7 @@ Respond with ONLY this JSON object as your final message, no markdown, no other 
             border: photo ? "none" : `1.5px dashed ${C.line}`, position: "relative",
           }}>
             {photo ? (
-              <ZoomableImage key={photo.id} src={driveImageUrl(photo.id)} alt={photo.name} />
+              <ZoomableImage key={photo.id} fileId={photo.id} alt={photo.name} />
             ) : (
               <div onClick={onPick} style={{ textAlign: "center", padding: 16, cursor: "pointer", width: "100%", height: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
                 <Camera size={26} color={C.textDim} strokeWidth={1.6} />
@@ -2691,10 +2737,18 @@ Respond with ONLY this JSON object as your final message, no markdown, no other 
             )}
           </div>
           {photo && (
-            <div onClick={onPick} style={{ textAlign: "center", marginTop: 8, cursor: "pointer" }}>
-              <div style={{ fontSize: 13, fontWeight: 700, color: C.text, fontFamily: SANS }}>{fmtDate(photo.date)}</div>
-              <div style={{ fontSize: 11, color: LAKE.sky, fontFamily: SANS, marginTop: 2 }}>Change photo</div>
-            </div>
+            <>
+              <div style={{ textAlign: "center", marginTop: 8, fontSize: 13, fontWeight: 700, color: C.text, fontFamily: SANS }}>
+                {fmtDate(photo.date)}
+              </div>
+              <button onClick={onPick} style={{
+                display: "block", width: "100%", marginTop: 8, padding: "10px", borderRadius: 10,
+                background: LAKE.sky + "22", border: "none", cursor: "pointer",
+                fontSize: 12, fontWeight: 700, color: LAKE.sky, fontFamily: SANS,
+              }}>
+                Change Photo
+              </button>
+            </>
           )}
         </div>
       );
