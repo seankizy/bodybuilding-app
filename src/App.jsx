@@ -3559,10 +3559,11 @@ function MacroChefModal({ remaining, onResult, onClose }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [response, setResponse] = useState(null);
+  const [parsedMeal, setParsedMeal] = useState(null); // { name, p, c, f, cal } extracted from Chef's answer for real logging
 
   async function askChef() {
     if (!input.trim()) return;
-    setLoading(true); setError(""); setResponse(null);
+    setLoading(true); setError(""); setResponse(null); setParsedMeal(null);
     try {
       const apiKey = import.meta.env?.VITE_ANTHROPIC_API_KEY;
       if (!apiKey) throw new Error("Macro Chef needs VITE_ANTHROPIC_API_KEY set in Vercel env vars.");
@@ -3575,14 +3576,37 @@ function MacroChefModal({ remaining, onResult, onClose }) {
         method: "POST",
         headers: { "Content-Type": "application/json", "x-api-key": apiKey, "anthropic-version": "2023-06-01", "anthropic-dangerous-direct-browser-access": "true" },
         body: JSON.stringify({
-          model: "claude-sonnet-4-5", max_tokens: 1000,
-          system: "You are a nutrition-focused personal chef. Give practical, specific meal suggestions that hit macro targets. Format your response clearly with: 1) The meal/order recommendation, 2) Estimated macros, 3) Any prep tips. Keep it concise and actionable.",
+          model: "claude-sonnet-4-5", max_tokens: 1200,
+          system: `You are a nutrition-focused personal chef. Give practical, specific meal suggestions that hit macro targets.
+
+Respond in TWO parts:
+1. A readable recommendation: the meal/order, ingredients with quantities, and brief prep tips. Format clearly.
+2. At the very end of your response, on its own line, a single JSON object with your FINAL settled-on meal's totals — the exact numbers a person would log after making/ordering exactly what you recommended (if you suggested a range or an "extra step to get closer", pick the version you actually recommend as the answer). Format exactly like this, no markdown fence around it:
+{"name": "short meal name", "p": grams protein, "c": grams carbs, "f": grams fat, "cal": total calories}`,
           messages: [{ role: "user", content: prompt }],
         }),
       });
       const data = await res.json();
       if (data.error) throw new Error(data.error.message);
-      setResponse(data.content?.find(b => b.type === "text")?.text || "");
+      const fullText = data.content?.find(b => b.type === "text")?.text || "";
+
+      // Pull the trailing JSON block out for structured logging; keep the rest as the readable response
+      const jsonMatch = fullText.match(/\{[^{}]*"name"[^{}]*\}/);
+      if (jsonMatch) {
+        try {
+          const meal = JSON.parse(jsonMatch[0]);
+          setParsedMeal({
+            name: meal.name || "Chef meal",
+            p: parseFloat(meal.p) || 0,
+            c: parseFloat(meal.c) || 0,
+            f: parseFloat(meal.f) || 0,
+            cal: parseFloat(meal.cal) || macroCals(meal.p, meal.c, meal.f),
+          });
+        } catch { /* fall through — parsedMeal stays null, button falls back to manual logging */ }
+        setResponse(fullText.slice(0, jsonMatch.index).trim());
+      } else {
+        setResponse(fullText);
+      }
     } catch (e) {
       setError(e.message || "Could not get suggestions. Try again.");
     }
@@ -3639,15 +3663,24 @@ function MacroChefModal({ remaining, onResult, onClose }) {
             <div style={{ padding: "14px", borderRadius: 12, background: C.surface2, fontSize: 14, color: C.text, fontFamily: SANS, lineHeight: 1.6, whiteSpace: "pre-wrap", marginBottom: 12 }}>
               {response}
             </div>
+            {parsedMeal && (
+              <div style={{ padding: "12px 14px", borderRadius: 12, background: LAKE.sky + "14", fontSize: 13, color: LAKE.sky, fontFamily: SANS, marginBottom: 12 }}>
+                Will log: <strong>{parsedMeal.name}</strong> — {parsedMeal.cal} kcal · {parsedMeal.p}p / {parsedMeal.c}c / {parsedMeal.f}f
+              </div>
+            )}
             <div style={{ display: "flex", gap: 8 }}>
-              <button onClick={() => { setResponse(null); setInput(""); }} style={{ flex: 1, padding: "12px", borderRadius: 10, background: "transparent", color: C.textMid, fontSize: 13, cursor: "pointer", fontFamily: SANS }}>Ask Again</button>
-              <button onClick={() => onResult({ name: mode === "restaurant" ? (restaurant || "Restaurant meal") : "Kitchen meal", p: 0, c: 0, f: 0, cal: 0, note: "Logged from Macro Chef — edit macros manually" })}
+              <button onClick={() => { setResponse(null); setParsedMeal(null); setInput(""); }} style={{ flex: 1, padding: "12px", borderRadius: 10, background: "transparent", color: C.textMid, fontSize: 13, cursor: "pointer", fontFamily: SANS }}>Ask Again</button>
+              <button onClick={() => onResult(parsedMeal
+                ? { name: parsedMeal.name, p: parsedMeal.p, c: parsedMeal.c, f: parsedMeal.f, cal: parsedMeal.cal }
+                : { name: mode === "restaurant" ? (restaurant || "Restaurant meal") : "Kitchen meal", p: 0, c: 0, f: 0, cal: 0, note: "Logged from Macro Chef — edit macros manually" })}
                 style={{ flex: 1, padding: "12px", borderRadius: 10, background: LAKE.sky, border: "none", color: "#0a0a0a", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: SANS }}>
-                Log Placeholder
+                {parsedMeal ? "Log This Meal" : "Log Placeholder"}
               </button>
             </div>
             <div style={{ fontSize: 10, color: C.textDim, fontFamily: SANS, marginTop: 8, textAlign: "center" }}>
-              Chef gives suggestions, not exact macros — log the real meal manually once you know what you ate.
+              {parsedMeal
+                ? "Macros are Chef's estimate for what it recommended — double-check against what you actually make/order."
+                : "Chef gives suggestions, not exact macros — log the real meal manually once you know what you ate."}
             </div>
           </>
         )}
