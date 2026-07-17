@@ -351,12 +351,14 @@ const VOLUME_LANDMARKS = {
   Triceps:   { mev: Math.round(8  * SCALE), mav: Math.round(16 * SCALE), mrv: Math.round(20 * SCALE) },
   Calves:    { mev: Math.round(8  * SCALE), mav: Math.round(16 * SCALE), mrv: Math.round(20 * SCALE) },
 };
-function cycleVolume(entries, cycleAnchor) {
-  // Count working sets per muscle from the current cycle anchor onward
-  // Falls back to completion-based cycle detection if no manual anchor set
+function cycleVolume(entries, cycleAnchor, endDate = null) {
+  // Count working sets per muscle from the cycle anchor onward, optionally bounded by
+  // an end date (exclusive-of-later-sessions) so past, already-finished cycles can be
+  // viewed too — not just the open-ended "anchor to now" current cycle.
   const vol = {};
   for (const e of entries) {
     if (cycleAnchor && e.date < cycleAnchor) continue;
+    if (endDate && e.date > endDate) continue;
     for (const mv of e.movements) {
       let muscle = mv.muscle;
       if (!muscle && e.programDay && mv.programRef) {
@@ -369,6 +371,35 @@ function cycleVolume(entries, cycleAnchor) {
     }
   }
   return vol;
+}
+
+// Segment full training history into distinct past cycles, so Volume can show any
+// previous cycle's totals, not just the current in-progress one. A cycle boundary is
+// detected the same way "This Cycle" auto-completion works: walking forward through
+// completed training-day sessions, a cycle ends once every training day has repeated.
+function segmentPastCycles(entries) {
+  const trainingDayNums = Object.entries(PROGRAM).filter(([, d]) => d.exercises.length > 0).map(([dn]) => Number(dn));
+  const completed = [...entries]
+    .filter(e => e.completedAt && e.programDay && trainingDayNums.includes(e.programDay))
+    .sort((a, b) => a.date.localeCompare(b.date) || a.completedAt.localeCompare(b.completedAt));
+
+  const cycles = [];
+  let seenDays = new Set();
+  let cycleStart = null;
+  let cycleSessions = [];
+  for (const e of completed) {
+    if (cycleStart === null) cycleStart = e.date;
+    cycleSessions.push(e);
+    seenDays.add(e.programDay);
+    if (trainingDayNums.every(dn => seenDays.has(dn))) {
+      cycles.push({ start: cycleStart, end: e.date, sessions: cycleSessions });
+      seenDays = new Set();
+      cycleStart = null;
+      cycleSessions = [];
+    }
+  }
+  // Return most-recent-first; each entry has enough info to compute volume for that window
+  return cycles.reverse();
 }
 function volumeStatus(sets, muscle) {
   const lm = VOLUME_LANDMARKS[muscle];
@@ -883,6 +914,7 @@ export default function App() {
   const [showChef, setShowChef] = useState(false);
   const [showMesoEdit, setShowMesoEdit] = useState(false);
   const [showMoreMenu, setShowMoreMenu] = useState(false);
+  const [selectedCycleIdx, setSelectedCycleIdx] = useState(null); // null = current cycle; index into pastCycles otherwise
   const [completionSummary, setCompletionSummary] = useState(null); // { entry, prs: [...] } shown right after completing a workout
   const [drivePhotos, setDrivePhotos] = useState(null); // null = not loaded yet, [] = loaded but empty
   const [drivePhotosError, setDrivePhotosError] = useState("");
@@ -1092,7 +1124,27 @@ export default function App() {
     if (prog) {
       const last = getLastSession(entries, newProgramDay);
       entry.movements = prog.exercises.map(ex => {
-        const lastMv = last?.movements.find(m => m.programRef === ex.id) ?? null;
+        // Match by programRef first (the normal case); if that fails, fall back to matching
+        // by exercise name. This handles sessions where a movement's programRef is missing
+        // or null (e.g. it was manually renamed/re-added at some point and lost its slot
+        // reference) — without this fallback, "last session" seeding silently comes up empty
+        // even though a clearly-matching recent session exists.
+        const lastMv = last?.movements.find(m => m.programRef === ex.id)
+          ?? last?.movements.find(m => {
+            if (!m.name || !ex.name) return false;
+            const exHasVariant = ex.name.includes(" (");
+            if (exHasVariant) {
+              // Exercise has a specific grip/equipment qualifier (e.g. two different Lat
+              // Pulldown variants on different days) — require an exact name match so
+              // distinct variants never get confused with each other.
+              return m.name.toLowerCase().trim() === ex.name.toLowerCase().trim();
+            }
+            // No variant qualifier — allow fuzzy matching (e.g. "Leg Press" logged manually
+            // once vs the program's "Leg Press Machine") since there's no ambiguity to protect against.
+            const a = m.name.toLowerCase().trim(), b = ex.name.toLowerCase().trim();
+            return a.includes(b) || b.includes(a);
+          })
+          ?? null;
         const lastSets = lastMv?.sets ?? [];
         const seeded = Array.from({ length: ex.sets }, (_, i) => ({
           w: lastSets[i]?.w ?? "",
@@ -1626,9 +1678,16 @@ export default function App() {
                     if (completedInCycle.has(e.programDay)) break;
                     completedInCycle.add(e.programDay);
                   }
-                  // If all 5 training days are now accounted for since the current cycle anchor, start a new one
+                  // If all 5 training days are now accounted for since the current cycle anchor, start a new one.
+                  // IMPORTANT: anchor to the day AFTER this completion, not today's date itself —
+                  // otherwise this very session (the one that just finished the OLD cycle) is not
+                  // strictly before the new anchor, so it gets counted as already-done in the NEW
+                  // cycle too. That's exactly the bug where the last session of a finished cycle
+                  // (e.g. Push II) still showed as complete under the brand new cycle.
                   if (trainingDayNums.every(dn => completedInCycle.has(dn))) {
-                    saveCycleAnchor(todayStr());
+                    const tomorrow = new Date();
+                    tomorrow.setDate(tomorrow.getDate() + 1);
+                    saveCycleAnchor(localDateStr(tomorrow));
                   }
                   return updated;
                 });
@@ -2285,20 +2344,54 @@ Respond with ONLY this JSON object as your final message, no markdown, no other 
 
   // ── VOLUME TAB ───────────────────────────────────────────────────────────
   if (tab === "volume") {
-    const vol = cycleVolume(entries, cycleAnchor);
+    const pastCycles = segmentPastCycles(entries);
+    // selectedCycleIdx: null = current (live) cycle; otherwise index into pastCycles
+    const viewingPast = selectedCycleIdx !== null && pastCycles[selectedCycleIdx];
+    const vol = viewingPast
+      ? cycleVolume(entries, viewingPast.start, viewingPast.end)
+      : cycleVolume(entries, cycleAnchor);
     const allMuscles = Object.keys(VOLUME_LANDMARKS);
-    const cycleLabel = cycleAnchor
-      ? new Date(cycleAnchor + "T12:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })
-      : "cycle start";
+    const cycleLabel = viewingPast
+      ? `${fmtDate(viewingPast.start)} – ${fmtDate(viewingPast.end)}`
+      : (cycleAnchor ? new Date(cycleAnchor + "T12:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "cycle start");
     return (
       <Shell>
         <div style={{ padding: "52px 18px 20px", background: "linear-gradient(160deg,#131313 0%,#131313 100%)" }}>
-          <div style={{ fontSize: 11, letterSpacing: 3, color: "#5c5c5c", textTransform: "uppercase", fontFamily: SANS, marginBottom: 4 }}>Sets Per Muscle · This Cycle</div>
+          <div style={{ fontSize: 11, letterSpacing: 3, color: "#5c5c5c", textTransform: "uppercase", fontFamily: SANS, marginBottom: 4 }}>Sets Per Muscle</div>
           <div style={{ fontSize: 30, fontWeight: 900, color: "#f2f2f2", lineHeight: 1, fontFamily: SANS, letterSpacing: -0.5 }}>Volume</div>
-          <div style={{ fontSize: 13, color: "#5c5c5c", marginTop: 6, fontFamily: SANS }}>Since {cycleLabel} · resets with each new cycle</div>
+          <div style={{ fontSize: 13, color: "#5c5c5c", marginTop: 6, fontFamily: SANS }}>
+            {viewingPast ? cycleLabel : `Since ${cycleLabel} · resets with each new cycle`}
+          </div>
         </div>
-        {/* Deload guidance banner */}
-        {(() => {
+
+        {/* Cycle selector */}
+        {pastCycles.length > 0 && (
+          <div style={{ padding: "12px 18px 0" }}>
+            <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 4 }}>
+              <button onClick={() => setSelectedCycleIdx(null)} style={{
+                flexShrink: 0, padding: "8px 14px", borderRadius: 10, cursor: "pointer", fontFamily: SANS,
+                fontSize: 12, fontWeight: 700, whiteSpace: "nowrap",
+                background: !viewingPast ? LAKE.sky : C.surface2,
+                color: !viewingPast ? "#0a0a0a" : C.textMid,
+              }}>
+                Current Cycle
+              </button>
+              {pastCycles.map((c, i) => (
+                <button key={i} onClick={() => setSelectedCycleIdx(i)} style={{
+                  flexShrink: 0, padding: "8px 14px", borderRadius: 10, cursor: "pointer", fontFamily: SANS,
+                  fontSize: 12, fontWeight: 700, whiteSpace: "nowrap",
+                  background: selectedCycleIdx === i ? LAKE.sky : C.surface2,
+                  color: selectedCycleIdx === i ? "#0a0a0a" : C.textMid,
+                }}>
+                  {fmtDate(c.start)} – {fmtDate(c.end)}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Deload guidance banner — only relevant for the current cycle */}
+        {!viewingPast && (() => {
           const meso = mesocycleWeek(entries, mesoOverride);
           if (!meso.isDeload) return null;
           return (
