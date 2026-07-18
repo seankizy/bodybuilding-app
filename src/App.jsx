@@ -915,6 +915,8 @@ export default function App() {
   const [showMesoEdit, setShowMesoEdit] = useState(false);
   const [showMoreMenu, setShowMoreMenu] = useState(false);
   const [selectedCycleIdx, setSelectedCycleIdx] = useState(null); // null = current cycle; index into pastCycles otherwise
+  const [scrubIdx, setScrubIdx] = useState(null); // index into weight chart data being scrubbed, null = not scrubbing
+  const weightChartRef = useRef(null);
   const [completionSummary, setCompletionSummary] = useState(null); // { entry, prs: [...] } shown right after completing a workout
   const [drivePhotos, setDrivePhotos] = useState(null); // null = not loaded yet, [] = loaded but empty
   const [drivePhotosError, setDrivePhotosError] = useState("");
@@ -3191,10 +3193,53 @@ Respond with ONLY this JSON object as your final message, no markdown, no other 
             </div>
           )}
         </div>
-        {chartData.length >= 2 && (
-          <div style={{ margin: "16px 18px 0", padding: "16px", borderRadius: 16, background: "#131313", overflowX: "auto" }}>
-            <div style={{ fontSize: 11, letterSpacing: 2, color: "#5c5c5c", textTransform: "uppercase", fontFamily: SANS, marginBottom: 10 }}>Progress</div>
-            <svg width="100%" viewBox={`0 0 ${CHART_W} ${CHART_H + 20}`} style={{ display: "block", overflow: "visible" }}>
+        {chartData.length >= 2 && (() => {
+          const CHART_LEFT = 30;
+          // Map a clientX touch position to the nearest data point index. The SVG scales to
+          // its container via viewBox, so convert screen px -> viewBox units before comparing.
+          function idxFromClientX(clientX) {
+            const el = weightChartRef.current;
+            if (!el) return null;
+            const rect = el.getBoundingClientRect();
+            const scale = CHART_W / rect.width;              // viewBox units per screen px
+            const xInView = (clientX - rect.left) * scale;    // touch position in viewBox units
+            const usable = CHART_W - CHART_LEFT;
+            const frac = Math.max(0, Math.min(1, (xInView - CHART_LEFT) / usable));
+            return Math.round(frac * (vals.length - 1));
+          }
+          function handleScrub(e) {
+            const touch = e.touches?.[0];
+            if (!touch) return;
+            const i = idxFromClientX(touch.clientX);
+            if (i !== null) setScrubIdx(i);
+          }
+          const active = scrubIdx !== null && chartData[scrubIdx] ? chartData[scrubIdx] : null;
+          const activeX = scrubIdx !== null ? CHART_LEFT + (scrubIdx / Math.max(vals.length - 1, 1)) * (CHART_W - CHART_LEFT) : null;
+          const activeY = scrubIdx !== null && vals[scrubIdx] !== undefined
+            ? CHART_H - ((vals[scrubIdx] - minV) / range) * CHART_H
+            : null;
+          return (
+          <div style={{ margin: "16px 18px 0", padding: "16px", borderRadius: 16, background: "#131313" }}>
+            <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 10 }}>
+              <div style={{ fontSize: 11, letterSpacing: 2, color: "#5c5c5c", textTransform: "uppercase", fontFamily: SANS }}>Progress</div>
+              {active ? (
+                <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
+                  <span style={{ fontSize: 17, fontWeight: 800, color: "#e8e8e8", fontFamily: MONO }}>{active.weight}</span>
+                  <span style={{ fontSize: 11, color: "#9a9a9a", fontFamily: SANS }}>{fmtDate(active.date)}</span>
+                </div>
+              ) : (
+                <div style={{ fontSize: 10, color: "#5c5c5c", fontFamily: SANS }}>Touch & drag to scrub</div>
+              )}
+            </div>
+            <svg
+              ref={weightChartRef}
+              width="100%" viewBox={`0 0 ${CHART_W} ${CHART_H + 20}`}
+              style={{ display: "block", overflow: "visible", touchAction: "pan-y" }}
+              onTouchStart={handleScrub}
+              onTouchMove={handleScrub}
+              onTouchEnd={() => setScrubIdx(null)}
+              onTouchCancel={() => setScrubIdx(null)}
+            >
               {[0, 0.25, 0.5, 0.75, 1].map(p => {
                 const y = CHART_H - p * CHART_H;
                 const val = (minV + p * range).toFixed(1);
@@ -3220,9 +3265,19 @@ Respond with ONLY this JSON object as your final message, no markdown, no other 
                 const y = CHART_H - ((v - minV) / range) * CHART_H;
                 return <circle key={i} cx={x} cy={y} r="3.5" fill="#e8e8e8" stroke="#131313" strokeWidth="1.5" />;
               })}
+              {/* Scrubber: vertical line + emphasized point at the touched index */}
+              {activeX !== null && (
+                <g pointerEvents="none">
+                  <line x1={activeX} y1={0} x2={activeX} y2={CHART_H} stroke={LAKE.sky} strokeWidth="1.5" strokeDasharray="4,3" />
+                  <circle cx={activeX} cy={activeY} r="6" fill={LAKE.sky} stroke="#131313" strokeWidth="2" />
+                </g>
+              )}
+              {/* Invisible wide hit area so the whole chart height is touchable, not just the line */}
+              <rect x={CHART_LEFT} y={0} width={CHART_W - CHART_LEFT} height={CHART_H} fill="transparent" />
             </svg>
           </div>
-        )}
+          );
+        })()}
         <div style={{ padding: "14px 18px 4px" }}>
           <button onClick={() => { setWeightDate(todayStr()); setWeightInput(""); setShowWeightForm(true); }}
             style={{ width: "100%", padding: "14px", borderRadius: 14, background: "#e8e8e8", border: "none", color: "#131313", fontSize: 15, fontWeight: 800, cursor: "pointer", fontFamily: SANS }}>
