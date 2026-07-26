@@ -917,6 +917,46 @@ export default function App() {
   const [selectedCycleIdx, setSelectedCycleIdx] = useState(null); // null = current cycle; index into pastCycles otherwise
   const [scrubIdx, setScrubIdx] = useState(null); // index into weight chart data being scrubbed, null = not scrubbing
   const weightChartRef = useRef(null);
+  // Attach scrubber touch listeners natively with { passive: false }. React's JSX onTouch*
+  // props attach as PASSIVE listeners, so preventDefault() inside them is a silent no-op and
+  // iOS keeps the gesture for page scrolling — the same reason in-app pinch-zoom did nothing
+  // until it was rewritten this way. Keyed to weightLog so it rebinds when the chart changes.
+  useEffect(() => {
+    const el = weightChartRef.current;
+    if (!el) return;
+    const CHART_W_LOCAL = 340, CHART_LEFT_LOCAL = 30;
+    const points = [...weightLog].sort((a, b) => a.date.localeCompare(b.date));
+    if (points.length < 2) return;
+
+    function idxFromClientX(clientX) {
+      const rect = el.getBoundingClientRect();
+      if (!rect.width) return null;
+      const scale = CHART_W_LOCAL / rect.width;
+      const xInView = (clientX - rect.left) * scale;
+      const usable = CHART_W_LOCAL - CHART_LEFT_LOCAL;
+      const frac = Math.max(0, Math.min(1, (xInView - CHART_LEFT_LOCAL) / usable));
+      return Math.round(frac * (points.length - 1));
+    }
+    function onMove(e) {
+      const touch = e.touches?.[0];
+      if (!touch) return;
+      e.preventDefault();
+      const i = idxFromClientX(touch.clientX);
+      if (i !== null) setScrubIdx(i);
+    }
+    function onEnd() { setScrubIdx(null); }
+
+    el.addEventListener("touchstart", onMove, { passive: false });
+    el.addEventListener("touchmove", onMove, { passive: false });
+    el.addEventListener("touchend", onEnd, { passive: false });
+    el.addEventListener("touchcancel", onEnd, { passive: false });
+    return () => {
+      el.removeEventListener("touchstart", onMove);
+      el.removeEventListener("touchmove", onMove);
+      el.removeEventListener("touchend", onEnd);
+      el.removeEventListener("touchcancel", onEnd);
+    };
+  }, [weightLog, tab]);
   const [completionSummary, setCompletionSummary] = useState(null); // { entry, prs: [...] } shown right after completing a workout
   const [drivePhotos, setDrivePhotos] = useState(null); // null = not loaded yet, [] = loaded but empty
   const [drivePhotosError, setDrivePhotosError] = useState("");
@@ -3195,24 +3235,6 @@ Respond with ONLY this JSON object as your final message, no markdown, no other 
         </div>
         {chartData.length >= 2 && (() => {
           const CHART_LEFT = 30;
-          // Map a clientX touch position to the nearest data point index. The SVG scales to
-          // its container via viewBox, so convert screen px -> viewBox units before comparing.
-          function idxFromClientX(clientX) {
-            const el = weightChartRef.current;
-            if (!el) return null;
-            const rect = el.getBoundingClientRect();
-            const scale = CHART_W / rect.width;              // viewBox units per screen px
-            const xInView = (clientX - rect.left) * scale;    // touch position in viewBox units
-            const usable = CHART_W - CHART_LEFT;
-            const frac = Math.max(0, Math.min(1, (xInView - CHART_LEFT) / usable));
-            return Math.round(frac * (vals.length - 1));
-          }
-          function handleScrub(e) {
-            const touch = e.touches?.[0];
-            if (!touch) return;
-            const i = idxFromClientX(touch.clientX);
-            if (i !== null) setScrubIdx(i);
-          }
           const active = scrubIdx !== null && chartData[scrubIdx] ? chartData[scrubIdx] : null;
           const activeX = scrubIdx !== null ? CHART_LEFT + (scrubIdx / Math.max(vals.length - 1, 1)) * (CHART_W - CHART_LEFT) : null;
           const activeY = scrubIdx !== null && vals[scrubIdx] !== undefined
@@ -3234,11 +3256,7 @@ Respond with ONLY this JSON object as your final message, no markdown, no other 
             <svg
               ref={weightChartRef}
               width="100%" viewBox={`0 0 ${CHART_W} ${CHART_H + 20}`}
-              style={{ display: "block", overflow: "visible", touchAction: "pan-y" }}
-              onTouchStart={handleScrub}
-              onTouchMove={handleScrub}
-              onTouchEnd={() => setScrubIdx(null)}
-              onTouchCancel={() => setScrubIdx(null)}
+              style={{ display: "block", overflow: "visible", touchAction: "none" }}
             >
               {[0, 0.25, 0.5, 0.75, 1].map(p => {
                 const y = CHART_H - p * CHART_H;
