@@ -477,24 +477,16 @@ function roundLoad(weight, type) {
   return Math.round(weight / step) * step;
 }
 
-// Suggest the next session's load/rep action for one movement, based on how the
-// LAST logged session of that movement actually went. Returns null when there's
-// not enough signal to say anything useful (no history, no usable sets).
-//
-// Deliberately conservative: reads only logged sets, never auto-applies anything,
-// and holds steady rather than guessing when the signal is weak.
-function suggestProgression(entries, mvName, repsTarget, type, opts = {}) {
-  const { isDeloadWeek = false, excludeEntryId = null } = opts;
-  if (!mvName) return null;
-
-  // Most recent session for this movement that has usable logged sets,
-  // excluding the session currently being logged.
-  const candidates = [...entries]
+// Every past session of one movement, newest first, with its sets parsed and
+// summarized. Used by the progression engine so it can look back through the
+// whole history rather than only at the single most recent session.
+function movementSessions(entries, mvName, excludeEntryId = null) {
+  if (!mvName) return [];
+  const out = [];
+  const sorted = [...entries]
     .filter(e => e.id !== excludeEntryId)
     .sort((a, b) => b.date.localeCompare(a.date));
-
-  let lastSets = [], lastDate = null;
-  for (const e of candidates) {
+  for (const e of sorted) {
     for (const mv of e.movements) {
       if (!mv.name || mv.name.toLowerCase() !== mvName.toLowerCase()) continue;
       const sets = mv.sets
@@ -505,88 +497,155 @@ function suggestProgression(entries, mvName, repsTarget, type, opts = {}) {
           setNum: i + 1,
         }))
         .filter(s => !isNaN(s.w) && !isNaN(s.r));
-      if (sets.length > 0) { lastSets = sets; lastDate = e.date; break; }
+      if (sets.length === 0) continue;
+      const withRIR = sets.filter(s => s.rir !== null && !isNaN(s.rir));
+      out.push({
+        date: e.date,
+        sets,
+        topSet: sets.reduce((a, b) => (b.w > a.w ? b : a)),
+        totalReps: sets.reduce((n, s) => n + s.r, 0),
+        avgRIR: withRIR.length ? withRIR.reduce((sum, s) => sum + s.rir, 0) / withRIR.length : null,
+        lastSetRIR: withRIR.length ? withRIR[withRIR.length - 1].rir : null,
+        hasRIR: withRIR.length > 0,
+      });
     }
-    if (lastSets.length > 0) break;
   }
-  if (lastSets.length === 0) return null;
+  return out;
+}
 
-  const topSet = lastSets.reduce((a, b) => (b.w > a.w ? b : a));
+// Suggest the next session's load/rep action for one movement.
+//
+// Reads back through the FULL history for this movement, not just the last
+// session. If the most recent session has no RIR logged, it looks further back
+// for the last session that does, and if RIR was never logged at all it falls
+// back to reading the rep trend across sessions instead of giving up.
+//
+// Deliberately conservative: reads only logged sets, never auto-applies
+// anything, and holds steady rather than guessing when the signal is weak.
+function suggestProgression(entries, mvName, repsTarget, type, opts = {}) {
+  const { isDeloadWeek = false, excludeEntryId = null } = opts;
+  const sessions = movementSessions(entries, mvName, excludeEntryId);
+  if (sessions.length === 0) return null;
+
+  const recent = sessions[0];
+  const topSet = recent.topSet;
+  const lastDate = recent.date;
+  const range = parseRepRange(repsTarget, topSet.setNum);
+  const hitTopOfRange = range ? topSet.r >= range.max : false;
+  const belowRange = range ? topSet.r < range.min : false;
+  const bump = type === "compound" ? 10 : 5;
+
+  // Logged at bodyweight / zero load. Percentage-based advice is meaningless here,
+  // and for a movement the program expects to be loaded the real answer is to start
+  // putting weight on it, not to shave a percentage off nothing.
+  if (!(topSet.w > 0)) {
+    return {
+      action: "add_weight",
+      weight: 0,
+      lastWeight: 0, lastDate,
+      reason: `Logged at bodyweight last time (${topSet.r} reps). Add external load so this movement can actually progress, then log the weight.`,
+    };
+  }
 
   // Deload overrides everything — intensity comes down regardless of performance
   if (isDeloadWeek) {
     return {
       action: "deload",
       weight: roundLoad(topSet.w * 0.85, type),
-      lastWeight: topSet.w,
-      lastDate,
-      reason: "Deload week — drop load ~15% and leave 3+ reps in reserve.",
+      lastWeight: topSet.w, lastDate,
+      reason: "Deload week. Drop load about 15% and leave 3+ reps in reserve.",
     };
   }
 
-  const withRIR = lastSets.filter(s => s.rir !== null && !isNaN(s.rir));
-  const range = parseRepRange(repsTarget, topSet.setNum);
-
-  // Without RIR data there's no autoregulation signal — say so rather than guess
-  if (withRIR.length === 0) {
+  // ── Path A: the most recent session has RIR. Strongest signal available. ──
+  if (recent.hasRIR) {
+    const avgRIR = recent.avgRIR;
+    if (belowRange && avgRIR <= 1) {
+      return {
+        action: "back_off",
+        weight: roundLoad(topSet.w * 0.95, type),
+        lastWeight: topSet.w, lastDate,
+        reason: `Last time: ${topSet.r} reps at RIR ${recent.lastSetRIR}, under the ${range.min} to ${range.max} target. Ease the load and rebuild reps.`,
+      };
+    }
+    if (hitTopOfRange && avgRIR <= 1) {
+      return {
+        action: "add_weight",
+        weight: roundLoad(topSet.w + bump, type),
+        lastWeight: topSet.w, lastDate,
+        reason: `Last time: ${topSet.r} reps at RIR ${recent.lastSetRIR}, top of range with little left. Add weight.`,
+      };
+    }
+    if (avgRIR >= 2) {
+      return {
+        action: "add_reps",
+        weight: topSet.w, lastWeight: topSet.w, lastDate,
+        reason: `Averaged RIR ${avgRIR.toFixed(1)} last time, so there is room to push. Same weight, more reps.`,
+      };
+    }
     return {
       action: "hold",
-      weight: topSet.w,
-      lastWeight: topSet.w,
-      lastDate,
-      reason: "No RIR logged last time — log RIR to get progression suggestions.",
+      weight: topSet.w, lastWeight: topSet.w, lastDate,
+      reason: range && !hitTopOfRange
+        ? `Hold ${topSet.w} and work toward ${range.max} reps before adding load.`
+        : `Hold ${topSet.w} and progress reps before adding load.`,
     };
   }
 
-  const avgRIR = withRIR.reduce((sum, s) => sum + s.rir, 0) / withRIR.length;
-  const lastSetRIR = withRIR[withRIR.length - 1].rir;
-  const hitTopOfRange = range ? topSet.r >= range.max : false;
-  const belowRange = range ? topSet.r < range.min : false;
+  // ── Path B: no RIR on the most recent session. Look further back for one. ──
+  const lastWithRIR = sessions.find(s => s.hasRIR);
 
-  // Grinding near failure but still short of the rep-range floor: back off.
-  // This is the overreaching guard — don't add load on top of a hard session.
-  if (belowRange && avgRIR <= 1) {
-    return {
-      action: "back_off",
-      weight: roundLoad(topSet.w * 0.95, type),
-      lastWeight: topSet.w,
-      lastDate,
-      reason: `Last time: ${topSet.r} reps at RIR ${lastSetRIR}, under the ${range.min}–${range.max} target. Ease the load and rebuild reps.`,
-    };
-  }
+  // ── Path C: read the rep trend across sessions at comparable load. ──
+  // This is what makes the engine useful before RIR data exists at all.
+  const prior = sessions.find(s => s.date !== recent.date);
+  const trendNote = lastWithRIR
+    ? ` Last RIR on file is from ${fmtDate(lastWithRIR.date)} (avg ${lastWithRIR.avgRIR.toFixed(1)}).`
+    : " Log RIR today for sharper advice.";
 
-  // Earned the jump: top of the rep range with little left in the tank
-  if (hitTopOfRange && avgRIR <= 1) {
-    const bump = type === "compound" ? 10 : 5;
+  if (hitTopOfRange) {
+    // Top of the range without RIR: still the clearest earned-the-jump signal,
+    // but bump conservatively since we cannot see how hard it actually was.
     return {
       action: "add_weight",
       weight: roundLoad(topSet.w + bump, type),
-      lastWeight: topSet.w,
-      lastDate,
-      reason: `Last time: ${topSet.r} reps at RIR ${lastSetRIR} — top of range, little left. Add weight.`,
+      lastWeight: topSet.w, lastDate,
+      reason: `Last time: ${topSet.r} reps at ${topSet.w}, the top of your ${range.min} to ${range.max} range. That earns a jump.${trendNote}`,
     };
   }
 
-  // Still meaningful reps in reserve: chase reps before adding load
-  if (avgRIR >= 2) {
+  if (belowRange) {
     return {
-      action: "add_reps",
-      weight: topSet.w,
-      lastWeight: topSet.w,
-      lastDate,
-      reason: `Averaged RIR ${avgRIR.toFixed(1)} last time — room to push. Same weight, more reps.`,
+      action: "back_off",
+      weight: roundLoad(topSet.w * 0.95, type),
+      lastWeight: topSet.w, lastDate,
+      reason: `Last time: ${topSet.r} reps at ${topSet.w}, under the ${range.min} rep floor. Ease the load and rebuild reps.${trendNote}`,
     };
   }
 
-  // Productive middle: hold load, work toward the top of the range
+  if (prior && prior.topSet.w === topSet.w) {
+    const repDelta = recent.totalReps - prior.totalReps;
+    if (repDelta > 0) {
+      return {
+        action: "add_reps",
+        weight: topSet.w, lastWeight: topSet.w, lastDate,
+        reason: `Reps improved at ${topSet.w} since ${fmtDate(prior.date)} (${prior.totalReps} to ${recent.totalReps} total). Keep the load and keep adding reps.${trendNote}`,
+      };
+    }
+    if (repDelta < 0) {
+      return {
+        action: "hold",
+        weight: topSet.w, lastWeight: topSet.w, lastDate,
+        reason: `Total reps dropped at ${topSet.w} since ${fmtDate(prior.date)} (${prior.totalReps} to ${recent.totalReps}). Hold the load and rebuild before progressing.${trendNote}`,
+      };
+    }
+  }
+
   return {
     action: "hold",
-    weight: topSet.w,
-    lastWeight: topSet.w,
-    lastDate,
-    reason: range && !hitTopOfRange
-      ? `Hold ${topSet.w} and work toward ${range.max} reps before adding load.`
-      : `Hold ${topSet.w} — progress reps before adding load.`,
+    weight: topSet.w, lastWeight: topSet.w, lastDate,
+    reason: range
+      ? `Last time: ${topSet.r} reps at ${topSet.w}. Work toward ${range.max} reps before adding load.${trendNote}`
+      : `Hold ${topSet.w} and progress reps before adding load.${trendNote}`,
   };
 }
 
@@ -2045,20 +2104,22 @@ export default function App() {
               content: [
                 { type: "image", source: { type: "base64", media_type: foodPhoto.mediaType, data: base64Data } },
                 { type: "text", text: (aiDescription.trim()
-                    ? `Log macros for the food shown in this photo. IMPORTANT: the person has given this note about what they actually ate — it overrides what you'd guess from the image alone (e.g. "half of this" or "2 of the 4 pieces" means calculate for that actual portion, not the full plate shown). If this note lists MULTIPLE separate food items, treat them as one combined entry and sum their totals into a single final answer — don't describe each item at length. Note: "${aiDescription.trim()}". `
+                    ? `Log macros for the food shown in this photo. IMPORTANT: the person has given this note about what they actually ate, and it overrides what you would guess from the image alone (for example "half of this" or "2 of the 4 pieces" means calculate that actual portion, not the full plate shown). Note: "${aiDescription.trim()}". `
                     : `Log macros for the food shown in this photo, for the full portion visible. `)
-                    + `If the photo does NOT show identifiable food (blank, unrelated, too unclear), respond with ONLY: {"unidentifiable": true} — skip everything below.
+                    + `If the photo does NOT show identifiable food (blank, unrelated, too unclear), respond with ONLY: {"unidentifiable": true} and skip everything below.
 
-Otherwise, you MUST use web_search before answering — do not skip straight to an answer from memory. Then:
+Break what you see into its individual components. A bowl or plate with several parts is MULTIPLE items: count each protein, base, sauce, and topping separately.
 
-1. Identify the food/brand shown as specifically as you can from the photo (packaging, labels, restaurant branding). If multiple distinct items are shown or described, identify each one.
-2. Search for the actual nutrition label for each specific food (brand's site, USDA FoodData Central, or a reputable nutrition database).
-3. For each item, note the per-serving values and serving size you found. Keep this internal reasoning BRIEF — a short phrase per item, not a full sentence — since a long explanation risks running out of room before your final answer.
-4. Judge the actual visible/stated portion for each item and scale accordingly.
-5. Sum all items into ONE final total. If there's a single dominant item, put its sourceServing/sourceValues/multiplier in the fields below; otherwise set multiplier to 1 and sourceValues to your final combined p/c/f.
+For each component:
+- If a brand, package or restaurant is identifiable, use web_search to find that specific item's published nutrition data. Search efficiently, one query per component at most, and skip searching for generic whole foods where you already know standard values.
+- Judge the visible portion size and scale accordingly.
 
-Respond with ONLY this JSON object as your final message, no markdown, no other text before or after it:
-{"name": "short food name (combine multiple items into one short label if needed)", "sourceServing": "brief, e.g. 3/4 cup (29g), 110 kcal", "sourceValues": {"p": number, "c": number, "f": number}, "multiplier": number, "p": final grams protein, "c": final grams carbs, "f": final grams fat}` },
+Cooking oil, dressings and sauces are real calories. Include them as their own line item when the dish would realistically contain them.
+
+Respond with ONLY this JSON object as your final message, no markdown, no other text before or after it. Keep item names to a few words:
+{"name": "short meal name", "items": [{"n": "item name", "p": protein g, "c": carbs g, "f": fat g}], "p": total protein g, "c": total carbs g, "f": total fat g}
+
+The totals MUST equal the sum of the items. Do not let the totals disagree with the breakdown.` },
               ],
             }],
           }),
@@ -2085,14 +2146,20 @@ Respond with ONLY this JSON object as your final message, no markdown, no other 
           setAiLoading(false);
           return;
         }
-        // Code-level check: verify the final numbers trace back to sourceValues × multiplier
-        if (parsed.sourceValues && typeof parsed.multiplier === "number") {
-          const expectedC = parsed.sourceValues.c * parsed.multiplier;
-          const gotC = parseFloat(parsed.c) || 0;
-          if (expectedC > 0 && Math.abs(gotC - expectedC) / expectedC > 0.25) {
-            parsed.p = Math.round(parsed.sourceValues.p * parsed.multiplier);
-            parsed.c = Math.round(parsed.sourceValues.c * parsed.multiplier);
-            parsed.f = Math.round(parsed.sourceValues.f * parsed.multiplier);
+        // Code-level check: totals must equal the sum of the component breakdown.
+        // When they disagree, trust the breakdown over the headline total.
+        let items = Array.isArray(parsed.items) ? parsed.items : [];
+        let corrected = false;
+        if (items.length > 0) {
+          const sum = k => items.reduce((n, it) => n + (parseFloat(it[k]) || 0), 0);
+          const sp = sum("p"), sc = sum("c"), sf = sum("f");
+          const gp = parseFloat(parsed.p) || 0, gc = parseFloat(parsed.c) || 0, gf = parseFloat(parsed.f) || 0;
+          const off = (a, b) => b > 0 && Math.abs(a - b) / b > 0.1;
+          if (off(gp, sp) || off(gc, sc) || off(gf, sf)) {
+            parsed.p = Math.round(sp);
+            parsed.c = Math.round(sc);
+            parsed.f = Math.round(sf);
+            corrected = true;
           }
         }
         // Show for review/confirmation rather than logging immediately
@@ -2101,7 +2168,10 @@ Respond with ONLY this JSON object as your final message, no markdown, no other 
           p: parseFloat(parsed.p) || 0,
           c: parseFloat(parsed.c) || 0,
           f: parseFloat(parsed.f) || 0,
-          source: parsed.sourceServing || null,
+          source: items.length
+            ? items.map(it => `${it.n}: ${Math.round(parseFloat(it.p) || 0)}p/${Math.round(parseFloat(it.c) || 0)}c/${Math.round(parseFloat(it.f) || 0)}f`).join(" · ")
+              + (corrected ? " (totals corrected to match breakdown)" : "")
+            : null,
         });
       } catch (err) {
         const isTruncated = err instanceof SyntaxError;
@@ -2130,24 +2200,23 @@ Respond with ONLY this JSON object as your final message, no markdown, no other 
           body: JSON.stringify({
             model: "claude-sonnet-4-5",
             max_tokens: 3000,
-            tools: [{ type: "web_search_20250305", name: "web_search", max_uses: 3 }],
+            tools: [{ type: "web_search_20250305", name: "web_search", max_uses: 5 }],
             messages: [{ role: "user", content: `Log macros for this food: "${aiDescription}"
 
-If this text does NOT describe an identifiable food or meal (gibberish, random letters, empty, unrelated to food), respond with ONLY: {"unidentifiable": true} — skip everything below.
+If this text does NOT describe an identifiable food or meal (gibberish, random letters, empty, unrelated to food), respond with ONLY: {"unidentifiable": true} and skip everything below.
 
-If the description lists MULTIPLE separate food items, treat them as one combined entry — sum their totals into a single final answer. Keep your reasoning about each item brief (a short phrase, not a full sentence) since a long explanation risks running out of room before your final answer.
+Break the description into its individual components. A restaurant bowl or a plate with several parts is MULTIPLE items: count each protein, base, sauce, and topping separately, and respect the stated quantity of each (for example "two servings of chicken" is 2x one serving).
 
-Otherwise, you MUST use web_search before answering — do not skip straight to an answer from memory. Then, for each item:
+For each component, get per-serving macros:
+- If a brand or restaurant is named, use web_search to find that specific item's published nutrition data. Search efficiently, one query per component at most, and skip searching for generic whole foods like plain rice or chicken breast where you already know standard values.
+- Scale each component by the number of servings stated.
 
-1. Search for the actual nutrition label for this specific food (brand's own site, USDA FoodData Central, or a reputable nutrition database).
-2. Note the per-serving numbers you found: the serving size (e.g. "3/4 cup (29g)") and its calories, protein, carbs, and fat AS STATED in the source.
-3. Identify the quantity stated in the description (e.g. "3 cups"). If none given, use the source's own serving size as-is.
-4. Compute multiplier = (requested quantity) ÷ (source serving quantity), same units, and scale that item's macros accordingly.
+Cooking oil, dressings and sauces are real calories. Include them as their own line item when the dish would realistically contain them.
 
-Sum all items into ONE final total. If there's a single dominant item, put its info in sourceServing/sourceValues/multiplier below; if multiple items, set multiplier to 1 and sourceValues to your final combined p/c/f.
+Respond with ONLY this JSON object as your final message, no markdown, no other text before or after it. Keep item names to a few words:
+{"name": "short meal name", "items": [{"n": "item name", "p": protein g, "c": carbs g, "f": fat g}], "p": total protein g, "c": total carbs g, "f": total fat g}
 
-Respond with ONLY this JSON object as your final message, no markdown, no other text before or after it:
-{"name": "short food name including quantity (combine multiple items into one short label if needed)", "sourceServing": "brief, e.g. 3/4 cup (29g), 110 kcal", "sourceValues": {"p": number, "c": number, "f": number}, "multiplier": number, "p": final grams protein, "c": final grams carbs, "f": final grams fat}` }],
+The totals MUST equal the sum of the items. Do not let the totals disagree with the breakdown.` }],
           }),
         });
         const data = await resp.json();
@@ -2175,17 +2244,22 @@ Respond with ONLY this JSON object as your final message, no markdown, no other 
           setAiLoading(false);
           return;
         }
-        // Code-level check: verify the final numbers actually trace back to what was found via
-        // search (sourceValues × multiplier), catching cases where the model searched but then
-        // answered from memory anyway instead of using what it found.
-        if (parsed.sourceValues && typeof parsed.multiplier === "number") {
-          const expectedC = parsed.sourceValues.c * parsed.multiplier;
-          const gotC = parseFloat(parsed.c) || 0;
-          if (expectedC > 0 && Math.abs(gotC - expectedC) / expectedC > 0.25) {
-            // Final answer doesn't match source × multiplier by more than 25% — untrustworthy, fall back to the traceable math ourselves
-            parsed.p = Math.round(parsed.sourceValues.p * parsed.multiplier);
-            parsed.c = Math.round(parsed.sourceValues.c * parsed.multiplier);
-            parsed.f = Math.round(parsed.sourceValues.f * parsed.multiplier);
+        // Code-level check: the stated totals must equal the sum of the component
+        // breakdown. Models routinely produce a confident headline total that
+        // contradicts their own itemized table. When they disagree, trust the
+        // breakdown, since that is the part with visible per-item reasoning.
+        let items = Array.isArray(parsed.items) ? parsed.items : [];
+        let corrected = false;
+        if (items.length > 0) {
+          const sum = k => items.reduce((n, it) => n + (parseFloat(it[k]) || 0), 0);
+          const sp = sum("p"), sc = sum("c"), sf = sum("f");
+          const gp = parseFloat(parsed.p) || 0, gc = parseFloat(parsed.c) || 0, gf = parseFloat(parsed.f) || 0;
+          const off = (a, b) => b > 0 && Math.abs(a - b) / b > 0.1;
+          if (off(gp, sp) || off(gc, sc) || off(gf, sf)) {
+            parsed.p = Math.round(sp);
+            parsed.c = Math.round(sc);
+            parsed.f = Math.round(sf);
+            corrected = true;
           }
         }
         // Show for review/confirmation rather than logging immediately —
@@ -2195,7 +2269,10 @@ Respond with ONLY this JSON object as your final message, no markdown, no other 
           p: parseFloat(parsed.p) || 0,
           c: parseFloat(parsed.c) || 0,
           f: parseFloat(parsed.f) || 0,
-          source: parsed.sourceServing || null,
+          source: items.length
+            ? items.map(it => `${it.n}: ${Math.round(parseFloat(it.p) || 0)}p/${Math.round(parseFloat(it.c) || 0)}c/${Math.round(parseFloat(it.f) || 0)}f`).join(" · ")
+              + (corrected ? " (totals corrected to match breakdown)" : "")
+            : null,
         });
       } catch (err) {
         const isTruncated = err instanceof SyntaxError;
@@ -2398,8 +2475,8 @@ Respond with ONLY this JSON object as your final message, no markdown, no other 
                     = {macroCals(aiPendingReview.p, aiPendingReview.c, aiPendingReview.f)} kcal
                   </div>
                   {aiPendingReview.source && (
-                    <div style={{ fontSize: 11, color: LAKE.sky, fontFamily: SANS, marginBottom: 10, lineHeight: 1.4, padding: "8px 10px", background: C.bg, borderRadius: 8 }}>
-                      Found: {aiPendingReview.source}
+                    <div style={{ fontSize: 11, color: LAKE.sky, fontFamily: SANS, marginBottom: 10, lineHeight: 1.5, padding: "8px 10px", background: C.bg, borderRadius: 8, maxHeight: 120, overflowY: "auto", wordBreak: "break-word" }}>
+                      Breakdown: {aiPendingReview.source}
                     </div>
                   )}
                   <div style={{ fontSize: 11, color: C.textDim, fontFamily: SANS, marginBottom: 14, lineHeight: 1.5 }}>
