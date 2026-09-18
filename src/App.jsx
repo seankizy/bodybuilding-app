@@ -568,7 +568,7 @@ function suggestProgression(entries, mvName, repsTarget, type, opts = {}) {
   }
 
   // Still meaningful reps in reserve: chase reps before adding load
-  if (avgRIR >= 3) {
+  if (avgRIR >= 2) {
     return {
       action: "add_reps",
       weight: topSet.w,
