@@ -130,6 +130,7 @@ const PROGRAM = {
       { id: "E", name: "EZ Bar Curl", sets: 5, reps: "10–12", rest: "1m", type: "isolation", muscle: "Biceps" },
       { id: "F", name: "DB Hammer Curl", sets: 4, reps: "10–12", rest: "1m", type: "isolation", muscle: "Biceps" },
       { id: "G", name: "Standing Calf Raise Machine", sets: 5, reps: "10–15", rest: "1m", type: "isolation", muscle: "Calves" },
+      { id: "H", name: "Seated Leg Curl Machine", sets: 4, reps: "10–15", rest: "1m", type: "isolation", muscle: "Hamstrings" },
     ],
   },
   7: {
@@ -143,6 +144,7 @@ const PROGRAM = {
       { id: "D", name: "Reverse DB Rear Delt Fly", sets: 3, reps: "12–15", rest: "1m", type: "isolation", muscle: "Shoulders" },
       { id: "E", name: "Weighted Dip Machine", sets: 3, reps: "10–12", rest: "1m", type: "compound", muscle: "Chest" },
       { id: "F", name: "Cable Pushdown", sets: 3, reps: "12–15", rest: "1m", type: "isolation", muscle: "Triceps" },
+      { id: "G", name: "Overhead Rope Extension", sets: 3, reps: "10–15", rest: "1m", type: "isolation", muscle: "Triceps" },
     ],
   },
 };
@@ -444,6 +446,148 @@ function movementHistory(entries, mvName) {
     });
   });
   return results;
+}
+
+// ── AUTOREGULATED PROGRESSION ─────────────────────────────────────────────────
+// Parse a repsTarget string into {min,max} for a given set number.
+// Handles split formats ("2×10-12, 2×15-20"), ranges ("8–12"), and singles ("10").
+function parseRepRange(repsTarget, setNum = 1) {
+  if (!repsTarget) return null;
+  const splitMatch = repsTarget.match(/(\d+)×(\d+)[–\-](\d+)/g);
+  if (splitMatch) {
+    let setCounter = 0;
+    for (const chunk of splitMatch) {
+      const cm = chunk.match(/(\d+)×(\d+)[–\-](\d+)/);
+      if (!cm) continue;
+      setCounter += parseInt(cm[1]);
+      if (setNum <= setCounter) return { min: parseInt(cm[2]), max: parseInt(cm[3]) };
+    }
+  }
+  const m = repsTarget.match(/(\d+)\s*[–\-]\s*(\d+)/);
+  if (m) return { min: parseInt(m[1]), max: parseInt(m[2]) };
+  const single = repsTarget.match(/^(\d+)/);
+  if (single) return { min: parseInt(single[1]), max: parseInt(single[1]) };
+  return null;
+}
+
+// Round a suggested load to something actually loadable in a gym.
+// Barbell/plate-loaded work rounds to 5s; dumbbell/cable/isolation to 2.5s.
+function roundLoad(weight, type) {
+  const step = type === "compound" ? 5 : 2.5;
+  return Math.round(weight / step) * step;
+}
+
+// Suggest the next session's load/rep action for one movement, based on how the
+// LAST logged session of that movement actually went. Returns null when there's
+// not enough signal to say anything useful (no history, no usable sets).
+//
+// Deliberately conservative: reads only logged sets, never auto-applies anything,
+// and holds steady rather than guessing when the signal is weak.
+function suggestProgression(entries, mvName, repsTarget, type, opts = {}) {
+  const { isDeloadWeek = false, excludeEntryId = null } = opts;
+  if (!mvName) return null;
+
+  // Most recent session for this movement that has usable logged sets,
+  // excluding the session currently being logged.
+  const candidates = [...entries]
+    .filter(e => e.id !== excludeEntryId)
+    .sort((a, b) => b.date.localeCompare(a.date));
+
+  let lastSets = [], lastDate = null;
+  for (const e of candidates) {
+    for (const mv of e.movements) {
+      if (!mv.name || mv.name.toLowerCase() !== mvName.toLowerCase()) continue;
+      const sets = mv.sets
+        .map((s, i) => ({
+          w: parseFloat(s.w),
+          r: parseFloat(s.r),
+          rir: s.rir === "" || s.rir === null || s.rir === undefined ? null : parseFloat(s.rir),
+          setNum: i + 1,
+        }))
+        .filter(s => !isNaN(s.w) && !isNaN(s.r));
+      if (sets.length > 0) { lastSets = sets; lastDate = e.date; break; }
+    }
+    if (lastSets.length > 0) break;
+  }
+  if (lastSets.length === 0) return null;
+
+  const topSet = lastSets.reduce((a, b) => (b.w > a.w ? b : a));
+
+  // Deload overrides everything — intensity comes down regardless of performance
+  if (isDeloadWeek) {
+    return {
+      action: "deload",
+      weight: roundLoad(topSet.w * 0.85, type),
+      lastWeight: topSet.w,
+      lastDate,
+      reason: "Deload week — drop load ~15% and leave 3+ reps in reserve.",
+    };
+  }
+
+  const withRIR = lastSets.filter(s => s.rir !== null && !isNaN(s.rir));
+  const range = parseRepRange(repsTarget, topSet.setNum);
+
+  // Without RIR data there's no autoregulation signal — say so rather than guess
+  if (withRIR.length === 0) {
+    return {
+      action: "hold",
+      weight: topSet.w,
+      lastWeight: topSet.w,
+      lastDate,
+      reason: "No RIR logged last time — log RIR to get progression suggestions.",
+    };
+  }
+
+  const avgRIR = withRIR.reduce((sum, s) => sum + s.rir, 0) / withRIR.length;
+  const lastSetRIR = withRIR[withRIR.length - 1].rir;
+  const hitTopOfRange = range ? topSet.r >= range.max : false;
+  const belowRange = range ? topSet.r < range.min : false;
+
+  // Grinding near failure but still short of the rep-range floor: back off.
+  // This is the overreaching guard — don't add load on top of a hard session.
+  if (belowRange && avgRIR <= 1) {
+    return {
+      action: "back_off",
+      weight: roundLoad(topSet.w * 0.95, type),
+      lastWeight: topSet.w,
+      lastDate,
+      reason: `Last time: ${topSet.r} reps at RIR ${lastSetRIR}, under the ${range.min}–${range.max} target. Ease the load and rebuild reps.`,
+    };
+  }
+
+  // Earned the jump: top of the rep range with little left in the tank
+  if (hitTopOfRange && avgRIR <= 1) {
+    const bump = type === "compound" ? 10 : 5;
+    return {
+      action: "add_weight",
+      weight: roundLoad(topSet.w + bump, type),
+      lastWeight: topSet.w,
+      lastDate,
+      reason: `Last time: ${topSet.r} reps at RIR ${lastSetRIR} — top of range, little left. Add weight.`,
+    };
+  }
+
+  // Still meaningful reps in reserve: chase reps before adding load
+  if (avgRIR >= 3) {
+    return {
+      action: "add_reps",
+      weight: topSet.w,
+      lastWeight: topSet.w,
+      lastDate,
+      reason: `Averaged RIR ${avgRIR.toFixed(1)} last time — room to push. Same weight, more reps.`,
+    };
+  }
+
+  // Productive middle: hold load, work toward the top of the range
+  return {
+    action: "hold",
+    weight: topSet.w,
+    lastWeight: topSet.w,
+    lastDate,
+    reason: range && !hitTopOfRange
+      ? `Hold ${topSet.w} and work toward ${range.max} reps before adding load.`
+      : `Hold ${topSet.w} — progress reps before adding load.`,
+  };
 }
 
 // Get all unique movement names across entries
@@ -1419,6 +1563,52 @@ export default function App() {
             </div>
           </div>
         )}
+
+        {/* Autoregulated progression suggestion — advisory only, never auto-applied */}
+        {(() => {
+          const meso = mesocycleWeek(entries, mesoOverride);
+          const sug = suggestProgression(
+            entries, activeMv.name, activeMv.repsTarget,
+            PROGRAM[activeEntry.programDay]?.exercises.find(x => x.id === activeMv.programRef)?.type ?? "isolation",
+            { isDeloadWeek: meso.isDeload, excludeEntryId: activeEntry.id }
+          );
+          if (!sug) return null;
+          const LABEL = {
+            add_weight: "Add weight", add_reps: "Chase reps",
+            hold: "Hold steady", back_off: "Ease off", deload: "Deload",
+          };
+          // Emphasize only when the suggestion is a real change from last time
+          const isChange = sug.action === "add_weight" || sug.action === "back_off" || sug.action === "deload";
+          const accent = isChange ? LAKE.sky : "#5c5c5c";
+          const alreadyApplied = activeMv.sets.length > 0 && String(activeMv.sets[0].w) === String(sug.weight);
+          return (
+            <div style={{ margin: "0 18px 14px", padding: "12px 14px", borderRadius: 12, background: isChange ? LAKE.sky + "14" : "#131313" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, marginBottom: 6 }}>
+                <div style={{ fontSize: 10, letterSpacing: 2, color: accent, textTransform: "uppercase", fontFamily: SANS, fontWeight: 700 }}>
+                  Suggested · {LABEL[sug.action]}
+                </div>
+                {sug.weight > 0 && (
+                  <div style={{ fontSize: 15, fontWeight: 800, color: accent, fontFamily: MONO }}>
+                    {sug.weight} lbs
+                  </div>
+                )}
+              </div>
+              <div style={{ fontSize: 11, color: "#9a9a9a", fontFamily: SANS, lineHeight: 1.5 }}>
+                {sug.reason}
+              </div>
+              {sug.weight > 0 && !alreadyApplied && (
+                <button
+                  onClick={() => {
+                    const next = activeMv.sets.map(s => (s.done ? s : { ...s, w: String(sug.weight) }));
+                    updateMovement(activeEntry.id, activeMv.id, { sets: next });
+                  }}
+                  style={{ marginTop: 10, padding: "8px 14px", borderRadius: 9, background: accent, border: "none", color: "#0a0a0a", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: SANS }}>
+                  Apply {sug.weight} lbs to unlogged sets
+                </button>
+              )}
+            </div>
+          );
+        })()}
 
         <SectionLabel>Set Log</SectionLabel>
 
