@@ -84,11 +84,12 @@ const PROGRAM = {
     tag: "LEGS",
     color: "#e8e8e8",
     exercises: [
-      { id: "A", name: "Barbell Squat", sets: 4, reps: "8–12", rest: "2m 30s", type: "compound", muscle: "Quads" },
+      { id: "A", name: "Barbell Squat", sets: 4, reps: "8–12", rest: "2m 30s", type: "compound", muscle: "Quads", startWeight: 110 },
       { id: "B", name: "Leg Press Machine", sets: 2, reps: "6–10", rest: "2m", type: "compound", muscle: "Quads" },
       { id: "C", name: "Leg Extension Machine", sets: 3, reps: "10–15", rest: "1m", type: "isolation", muscle: "Quads" },
       { id: "D", name: "DB Walking Lunge", sets: 3, reps: "10 each leg", rest: "1m", type: "compound", muscle: "Glutes" },
       { id: "E", name: "Seated Calf Raise Machine", sets: 4, reps: "10–15", rest: "1m", type: "isolation", muscle: "Calves" },
+      { id: "F", name: "Hanging Leg Raise", sets: 3, reps: "10–15", rest: "1m", type: "isolation", muscle: "Abs", bodyweight: true, cue: "Posterior pelvic tilt at the top. Curl the pelvis up, don't just lift the legs." },
     ],
   },
   2: {
@@ -97,8 +98,8 @@ const PROGRAM = {
     color: "#f0f0f0",
     exercises: [
       { id: "A", name: "Smith Machine Bench Press", sets: 4, reps: "8–10", rest: "3m", type: "compound", muscle: "Chest" },
-      { id: "B", name: "DB Incline Chest Press", sets: 3, reps: "8–12", rest: "1m 30s", type: "compound", muscle: "Chest" },
-      { id: "C", name: "Decline Bench Press", sets: 3, reps: "8–12", rest: "1m 30s", type: "compound", muscle: "Chest" },
+      { id: "B", name: "DB Incline Chest Press", sets: 4, reps: "8–12", rest: "1m 30s", type: "compound", muscle: "Chest" },
+      { id: "C", name: "Decline Bench Press", sets: 3, reps: "8–12", rest: "1m 30s", type: "compound", muscle: "Chest", startWeight: 120 },
       { id: "D", name: "Tricep Overhead Extension", sets: 3, reps: "10–15", rest: "1m", type: "isolation", muscle: "Triceps" },
       { id: "E", name: "Cable Pushdown", sets: 3, reps: "10–15", rest: "1m", type: "isolation", muscle: "Triceps" },
     ],
@@ -111,9 +112,9 @@ const PROGRAM = {
     exercises: [
       { id: "A", name: "Prone Hamstring Curl", sets: 4, reps: "2×10-12, 2×15-20", rest: "1m", type: "isolation", muscle: "Hamstrings" },
       { id: "B", name: "Romanian Deadlift", sets: 3, reps: "6–10", rest: "1m 30s", type: "compound", muscle: "Hamstrings" },
-      { id: "C", name: "Barbell Hip Thrust", sets: 4, reps: "20–25", rest: "1m", type: "compound", muscle: "Glutes" },
+      { id: "C", name: "Barbell Hip Thrust", sets: 4, reps: "20–25", rest: "1m", type: "compound", muscle: "Glutes", startWeight: 20, loadStep: 10 },
       { id: "D", name: "Barbell Bent Over Row", sets: 3, reps: "6–10", rest: "1m 30s", type: "compound", muscle: "Back" },
-      { id: "E", name: "Lat Pulldown (Wide Overhand, Flat Bar)", sets: 3, reps: "8–12", rest: "1m 30s", type: "compound", muscle: "Back" },
+      { id: "E", name: "Lat Pulldown (Wide Overhand, Flat Bar)", sets: 3, reps: "8–12", rest: "1m 30s", type: "compound", muscle: "Back", startWeight: 130 },
       { id: "F", name: "Cable Face Pull", sets: 3, reps: "15–20", rest: "1m", type: "isolation", muscle: "Shoulders" },
     ],
   },
@@ -130,7 +131,8 @@ const PROGRAM = {
       { id: "E", name: "EZ Bar Curl", sets: 5, reps: "10–12", rest: "1m", type: "isolation", muscle: "Biceps" },
       { id: "F", name: "DB Hammer Curl", sets: 4, reps: "10–12", rest: "1m", type: "isolation", muscle: "Biceps" },
       { id: "G", name: "Standing Calf Raise Machine", sets: 5, reps: "10–15", rest: "1m", type: "isolation", muscle: "Calves" },
-      { id: "H", name: "Seated Leg Curl Machine", sets: 4, reps: "10–15", rest: "1m", type: "isolation", muscle: "Hamstrings" },
+      { id: "H", name: "Seated Leg Curl Machine", sets: 3, reps: "10–15", rest: "1m", type: "isolation", muscle: "Hamstrings" },
+      { id: "I", name: "Ab Wheel Rollout", sets: 3, reps: "8–12", rest: "1m", type: "isolation", muscle: "Abs", bodyweight: true, cue: "Lower back never arches. Brace hard and stop the rollout before the hips sag." },
     ],
   },
   7: {
@@ -140,7 +142,7 @@ const PROGRAM = {
     exercises: [
       { id: "A", name: "DB Shoulder Press", sets: 4, reps: "5–8", rest: "2m", type: "compound", muscle: "Shoulders" },
       { id: "B", name: "DB Lateral Raise (leaning)", sets: 4, reps: "10–15", rest: "1m", type: "isolation", muscle: "Shoulders" },
-      { id: "C", name: "Smith Machine Incline Press", sets: 3, reps: "8–12", rest: "1m", type: "compound", muscle: "Chest" },
+      { id: "C", name: "Smith Machine Incline Press", sets: 4, reps: "8–12", rest: "1m", type: "compound", muscle: "Chest" },
       { id: "D", name: "Reverse DB Rear Delt Fly", sets: 3, reps: "12–15", rest: "1m", type: "isolation", muscle: "Shoulders" },
       { id: "E", name: "Weighted Dip Machine", sets: 3, reps: "10–12", rest: "1m", type: "compound", muscle: "Chest" },
       { id: "F", name: "Cable Pushdown", sets: 3, reps: "12–15", rest: "1m", type: "isolation", muscle: "Triceps" },
@@ -152,6 +154,25 @@ const PROGRAM = {
 // Mesocycle config — RP-style 5-week block then deload
 const MESO_LENGTH = 5; // weeks before deload
 const MESO_START = "2026-05-07"; // week 1 anchor (first logged session)
+
+// Start of the current training block (lean bulk, Sep 2026). Exercises with a
+// `startWeight` seed that load on their FIRST session on or after this date;
+// once one session is logged in the block, normal last-session seeding and the
+// progression engine take over. Change this date when starting a new block.
+const BLOCK_START = "2026-09-21";
+
+// True if this movement already has a logged working set on or after `sinceDate`.
+function loggedSince(entries, mvName, sinceDate) {
+  if (!mvName) return false;
+  const target = mvName.toLowerCase().trim();
+  return entries.some(e =>
+    e.date >= sinceDate &&
+    e.movements.some(m =>
+      m.name && m.name.toLowerCase().trim() === target &&
+      m.sets.some(s => s.w !== "" && s.w != null && s.r !== "" && s.r != null)
+    )
+  );
+}
 
 // ── HELPERS ──────────────────────────────────────────────────────────────────
 function todayStr() {
@@ -472,15 +493,15 @@ function parseRepRange(repsTarget, setNum = 1) {
 
 // Round a suggested load to something actually loadable in a gym.
 // Barbell/plate-loaded work rounds to 5s; dumbbell/cable/isolation to 2.5s.
-function roundLoad(weight, type) {
-  const step = type === "compound" ? 5 : 2.5;
+function roundLoad(weight, type, stepOverride = null) {
+  const step = stepOverride ?? (type === "compound" ? 5 : 2.5);
   return Math.round(weight / step) * step;
 }
 
 // Every past session of one movement, newest first, with its sets parsed and
 // summarized. Used by the progression engine so it can look back through the
 // whole history rather than only at the single most recent session.
-function movementSessions(entries, mvName, excludeEntryId = null) {
+function movementSessions(entries, mvName, excludeEntryId = null, bodyweight = false) {
   if (!mvName) return [];
   const out = [];
   const sorted = [...entries]
@@ -491,7 +512,8 @@ function movementSessions(entries, mvName, excludeEntryId = null) {
       if (!mv.name || mv.name.toLowerCase() !== mvName.toLowerCase()) continue;
       const sets = mv.sets
         .map((s, i) => ({
-          w: parseFloat(s.w),
+          // Bodyweight movements are usually logged with a blank weight; count them as 0.
+          w: isNaN(parseFloat(s.w)) && bodyweight ? 0 : parseFloat(s.w),
           r: parseFloat(s.r),
           rir: s.rir === "" || s.rir === null || s.rir === undefined ? null : parseFloat(s.rir),
           setNum: i + 1,
@@ -523,8 +545,24 @@ function movementSessions(entries, mvName, excludeEntryId = null) {
 // Deliberately conservative: reads only logged sets, never auto-applies
 // anything, and holds steady rather than guessing when the signal is weak.
 function suggestProgression(entries, mvName, repsTarget, type, opts = {}) {
-  const { isDeloadWeek = false, excludeEntryId = null } = opts;
-  const sessions = movementSessions(entries, mvName, excludeEntryId);
+  const {
+    isDeloadWeek = false, excludeEntryId = null,
+    loadStep = null, bodyweight = false, startWeight = null,
+  } = opts;
+
+  // Block starting weight takes priority until the movement is logged once in the
+  // current block, so the card agrees with the weight that was pre-filled.
+  if (startWeight != null && !loggedSince(
+    entries.filter(e => e.id !== excludeEntryId), mvName, BLOCK_START)) {
+    return {
+      action: "block_start",
+      weight: startWeight,
+      lastWeight: null, lastDate: null,
+      reason: `Starting weight for the new block. Log RIR on every set and the engine takes over from next session.${loadStep ? ` Progress in ${loadStep} lb steps only.` : ""}`,
+    };
+  }
+
+  const sessions = movementSessions(entries, mvName, excludeEntryId, bodyweight);
   if (sessions.length === 0) return null;
 
   const recent = sessions[0];
@@ -533,7 +571,36 @@ function suggestProgression(entries, mvName, repsTarget, type, opts = {}) {
   const range = parseRepRange(repsTarget, topSet.setNum);
   const hitTopOfRange = range ? topSet.r >= range.max : false;
   const belowRange = range ? topSet.r < range.min : false;
-  const bump = type === "compound" ? 10 : 5;
+  // Per-exercise step override (e.g. hip thrust moves in 10 lb jumps only)
+  const bump = loadStep ?? (type === "compound" ? 10 : 5);
+  const rl = w => roundLoad(w, type, loadStep);
+  // A reduction must actually reduce. With coarse steps (e.g. 10 lb on a 30 lb hip
+  // thrust), 95% of the load can round straight back to the same number, so fall
+  // back to dropping one full step whenever rounding erases the cut.
+  const stepSize = loadStep ?? (type === "compound" ? 5 : 2.5);
+  const down = (w, pct) => { const eased = rl(w * pct); return eased < w ? eased : Math.max(0, w - stepSize); };
+
+  // Bodyweight movements (ab work etc.) progress by reps and control, never load.
+  if (bodyweight) {
+    if (isDeloadWeek) {
+      return {
+        action: "deload", weight: 0, lastWeight: 0, lastDate,
+        reason: "Deload week. Cut to 2 sets and stop well short of failure.",
+      };
+    }
+    if (range && topSet.r >= range.max) {
+      return {
+        action: "add_reps", weight: 0, lastWeight: 0, lastDate,
+        reason: `Hit ${topSet.r} reps last time, the top of the ${range.min} to ${range.max} range. Slow the eccentric or add a pause rather than chasing more reps.`,
+      };
+    }
+    return {
+      action: "add_reps", weight: 0, lastWeight: 0, lastDate,
+      reason: range
+        ? `Last time: ${topSet.r} reps. Build toward ${range.max} with strict form before making it harder.`
+        : `Build reps with strict form before making it harder.`,
+    };
+  }
 
   // Logged at bodyweight / zero load. Percentage-based advice is meaningless here,
   // and for a movement the program expects to be loaded the real answer is to start
@@ -551,7 +618,7 @@ function suggestProgression(entries, mvName, repsTarget, type, opts = {}) {
   if (isDeloadWeek) {
     return {
       action: "deload",
-      weight: roundLoad(topSet.w * 0.85, type),
+      weight: down(topSet.w, 0.85),
       lastWeight: topSet.w, lastDate,
       reason: "Deload week. Drop load about 15% and leave 3+ reps in reserve.",
     };
@@ -563,7 +630,7 @@ function suggestProgression(entries, mvName, repsTarget, type, opts = {}) {
     if (belowRange && avgRIR <= 1) {
       return {
         action: "back_off",
-        weight: roundLoad(topSet.w * 0.95, type),
+        weight: down(topSet.w, 0.95),
         lastWeight: topSet.w, lastDate,
         reason: `Last time: ${topSet.r} reps at RIR ${recent.lastSetRIR}, under the ${range.min} to ${range.max} target. Ease the load and rebuild reps.`,
       };
@@ -571,7 +638,7 @@ function suggestProgression(entries, mvName, repsTarget, type, opts = {}) {
     if (hitTopOfRange && avgRIR <= 1) {
       return {
         action: "add_weight",
-        weight: roundLoad(topSet.w + bump, type),
+        weight: rl(topSet.w + bump),
         lastWeight: topSet.w, lastDate,
         reason: `Last time: ${topSet.r} reps at RIR ${recent.lastSetRIR}, top of range with little left. Add weight.`,
       };
@@ -607,7 +674,7 @@ function suggestProgression(entries, mvName, repsTarget, type, opts = {}) {
     // but bump conservatively since we cannot see how hard it actually was.
     return {
       action: "add_weight",
-      weight: roundLoad(topSet.w + bump, type),
+      weight: rl(topSet.w + bump),
       lastWeight: topSet.w, lastDate,
       reason: `Last time: ${topSet.r} reps at ${topSet.w}, the top of your ${range.min} to ${range.max} range. That earns a jump.${trendNote}`,
     };
@@ -616,7 +683,7 @@ function suggestProgression(entries, mvName, repsTarget, type, opts = {}) {
   if (belowRange) {
     return {
       action: "back_off",
-      weight: roundLoad(topSet.w * 0.95, type),
+      weight: down(topSet.w, 0.95),
       lastWeight: topSet.w, lastDate,
       reason: `Last time: ${topSet.r} reps at ${topSet.w}, under the ${range.min} rep floor. Ease the load and rebuild reps.${trendNote}`,
     };
@@ -1001,8 +1068,8 @@ function driveImageUrl(fileId) {
 }
 
 const DEFAULT_MACRO_TARGETS = {
-  training: { p: 220, c: 200, f: 65 },
-  rest:     { p: 220, c: 120, f: 60 },
+  training: { p: 220, c: 300, f: 70 }, // ~2,710 kcal, lean bulk (Sep 2026)
+  rest:     { p: 220, c: 200, f: 65 }, // ~2,265 kcal
 };
 function macroCals(p, c, f) {
   return Math.round((parseFloat(p)||0) * 4 + (parseFloat(c)||0) * 4 + (parseFloat(f)||0) * 9);
@@ -1200,6 +1267,18 @@ export default function App() {
   const activeMv = activeEntry?.movements.find(m => m.id === activeMvId);
 
   useEffect(() => {
+    // One-time migration for the start of the lean bulk block. Saved settings in
+    // localStorage override the defaults, so changing DEFAULT_MACRO_TARGETS alone would
+    // never reach an existing install. This writes the new targets and resets the
+    // mesocycle to Week 1 at BLOCK_START exactly once, then never touches them again,
+    // so later manual edits in the app are respected.
+    try {
+      if (!localStorage.getItem("wj_migration_bulk_2026_09")) {
+        localStorage.setItem("wj_macro_targets", JSON.stringify(DEFAULT_MACRO_TARGETS));
+        localStorage.setItem("wj_meso", JSON.stringify({ anchorDate: BLOCK_START, weekAtAnchor: 1 }));
+        localStorage.setItem("wj_migration_bulk_2026_09", "1");
+      }
+    } catch {}
     Promise.all([loadEntries(), loadWeights()]).then(([e, w]) => {
       setEntries(e);
       setWeightLog(w);
@@ -1391,9 +1470,13 @@ export default function App() {
           })
           ?? null;
         const lastSets = lastMv?.sets ?? [];
+        // Block starting weight: applies only until this movement is logged once in
+        // the current block. Reps start blank since last block's reps were at a
+        // different load and would be misleading.
+        const useStartWeight = ex.startWeight != null && !loggedSince(entries, ex.name, BLOCK_START);
         const seeded = Array.from({ length: ex.sets }, (_, i) => ({
-          w: lastSets[i]?.w ?? "",
-          r: lastSets[i]?.r ?? "",
+          w: useStartWeight ? String(ex.startWeight) : (lastSets[i]?.w ?? ""),
+          r: useStartWeight ? "" : (lastSets[i]?.r ?? ""),
           rir: "",
         }));
         return {
@@ -1405,6 +1488,9 @@ export default function App() {
           rest: ex.rest,
           type: ex.type ?? "compound",
           muscle: ex.muscle ?? "",
+          cue: ex.cue ?? "",
+          bodyweight: !!ex.bodyweight,
+          loadStep: ex.loadStep ?? null,
           sets: seeded,
           lastSets: lastSets.length > 0 ? lastSets : null,
           lastDate: last?.date ?? null,
@@ -1606,6 +1692,15 @@ export default function App() {
               {activeMv.rest && <Pill color="#9a9a9a">Rest {activeMv.rest}</Pill>}
             </div>
           )}
+          {(() => {
+            const cue = activeMv.cue || PROGRAM[activeEntry.programDay]?.exercises.find(x => x.id === activeMv.programRef)?.cue;
+            return cue ? (
+              <div style={{ marginTop: 10, padding: "9px 12px", borderRadius: 10, background: "#1c1c1c", fontSize: 12, color: "#c9c9c9", fontFamily: SANS, lineHeight: 1.5 }}>
+                <span style={{ fontSize: 10, letterSpacing: 1.5, color: "#5c5c5c", textTransform: "uppercase", fontWeight: 700, marginRight: 6 }}>Cue</span>
+                {cue}
+              </div>
+            ) : null;
+          })()}
         </div>
 
         {activeMv.lastSets && activeMv.lastDate && (
@@ -1626,18 +1721,27 @@ export default function App() {
         {/* Autoregulated progression suggestion — advisory only, never auto-applied */}
         {(() => {
           const meso = mesocycleWeek(entries, mesoOverride);
+          // Read exercise settings from the program so sessions created before a program
+          // change still get the right step size, bodyweight handling, and start weight.
+          const progEx = PROGRAM[activeEntry.programDay]?.exercises.find(x => x.id === activeMv.programRef);
           const sug = suggestProgression(
             entries, activeMv.name, activeMv.repsTarget,
-            PROGRAM[activeEntry.programDay]?.exercises.find(x => x.id === activeMv.programRef)?.type ?? "isolation",
-            { isDeloadWeek: meso.isDeload, excludeEntryId: activeEntry.id }
+            progEx?.type ?? "isolation",
+            {
+              isDeloadWeek: meso.isDeload, excludeEntryId: activeEntry.id,
+              loadStep: progEx?.loadStep ?? activeMv.loadStep ?? null,
+              bodyweight: !!(progEx?.bodyweight ?? activeMv.bodyweight),
+              startWeight: progEx?.startWeight ?? null,
+            }
           );
           if (!sug) return null;
           const LABEL = {
             add_weight: "Add weight", add_reps: "Chase reps",
             hold: "Hold steady", back_off: "Ease off", deload: "Deload",
+            block_start: "Block start",
           };
           // Emphasize only when the suggestion is a real change from last time
-          const isChange = sug.action === "add_weight" || sug.action === "back_off" || sug.action === "deload";
+          const isChange = sug.action === "add_weight" || sug.action === "back_off" || sug.action === "deload" || sug.action === "block_start";
           const accent = isChange ? LAKE.sky : "#5c5c5c";
           const alreadyApplied = activeMv.sets.length > 0 && String(activeMv.sets[0].w) === String(sug.weight);
           return (
@@ -1965,9 +2069,18 @@ export default function App() {
                     .filter(e => e.completedAt && e.programDay && trainingDayNums.includes(e.programDay) && (!anchor || e.date >= anchor))
                     .sort((a, b) => b.date.localeCompare(a.date) || b.completedAt.localeCompare(a.completedAt));
                   const completedInCycle = new Set();
-                  for (const e of completedSessions) {
-                    if (completedInCycle.has(e.programDay)) break;
-                    completedInCycle.add(e.programDay);
+                  if (anchor) {
+                    // The anchor already bounds the cycle, so count every distinct day in it.
+                    // Stopping at the first repeated day here is wrong: a day logged twice
+                    // (e.g. Posterior Chain on two consecutive dates) cut the walk short before
+                    // it reached earlier days, so the tracker read 5/5 but never rolled over.
+                    for (const e of completedSessions) completedInCycle.add(e.programDay);
+                  } else {
+                    // No anchor to bound the cycle: fall back to stopping at the first repeat.
+                    for (const e of completedSessions) {
+                      if (completedInCycle.has(e.programDay)) break;
+                      completedInCycle.add(e.programDay);
+                    }
                   }
                   // If all 5 training days are now accounted for since the current cycle anchor, start a new one.
                   // IMPORTANT: anchor to the day AFTER this completion, not today's date itself —
