@@ -174,6 +174,52 @@ function loggedSince(entries, mvName, sinceDate) {
   );
 }
 
+// ── TRAINING LOCATIONS ─────────────────────────────────────────────────────
+// Sean trains at two spots: Equinox (full equipment, the default the PROGRAM
+// above is written for) and his apartment building's gym (limited equipment,
+// no Hack Squat, no cable stack, no dip machine, no leg press). Rather than
+// hand-editing the session every time, a session can be flagged with a
+// `location`, and GYM_SUBS below swaps in an apartment-friendly version of
+// any exercise that needs one, keyed by program day + the exercise's slot id
+// (so the slot letter, and therefore last-session seeding and volume
+// tracking, never shifts). An exercise not listed here has no substitute and
+// is used as-is at either location (e.g. DB and barbell work needs no swap).
+//
+// Each substitute carries its own name/sets/reps/rest/type/muscle/cue so it
+// behaves exactly like a normal PROGRAM exercise once seeded onto a movement.
+// Edit these entries directly as the apartment gym's equipment becomes
+// better known — no other code needs to change.
+const LOCATIONS = {
+  equinox: { label: "Equinox", short: "Equinox" },
+  apartment: { label: "Apartment Gym", short: "Apartment" },
+};
+const GYM_SUBS = {
+  // Day 1 — Heavy Squats & Legs
+  "1.A": { name: "DB Goblet Squat", sets: 4, reps: "8–12", rest: "2m 30s", type: "compound", muscle: "Quads" },
+  "1.B": { name: "DB Walking Lunge", sets: 3, reps: "10 each leg", rest: "2m", type: "compound", muscle: "Quads" },
+  // Day 6 — Secondary Lower Body (no Hack Squat at the apartment gym)
+  "6.A": { name: "DB Bulgarian Split Squat", sets: 4, reps: "8–10 each leg", rest: "2m 30s", type: "compound", muscle: "Quads" },
+  // Day 7 — Overhead Press & Push (no cable stack, no dip machine)
+  "7.E": { name: "DB Weighted Dip (bench)", sets: 3, reps: "10–12", rest: "1m", type: "compound", muscle: "Chest" },
+  "7.F": { name: "DB Tricep Kickback", sets: 3, reps: "12–15", rest: "1m", type: "isolation", muscle: "Triceps" },
+  "7.G": { name: "DB Overhead Tricep Extension", sets: 3, reps: "10–15", rest: "1m", type: "isolation", muscle: "Triceps" },
+  // Posterior Chain / Push exercises that use the cable stack elsewhere
+  "4.F": { name: "DB Rear Delt Fly (bent over)", sets: 3, reps: "15–20", rest: "1m", type: "isolation", muscle: "Shoulders" },
+};
+// Returns the exercise definition to use for this program day + slot id, given
+// a session's location: the substitute if one exists and location is not
+// Equinox, otherwise the normal PROGRAM exercise. Always keeps the original
+// `id` (slot letter) so programRef never changes between locations.
+function resolveExercise(programDay, exId, location) {
+  const base = PROGRAM[programDay]?.exercises.find(x => x.id === exId);
+  if (!base) return null;
+  if (location && location !== "equinox") {
+    const sub = GYM_SUBS[`${programDay}.${exId}`];
+    if (sub) return { ...base, ...sub, id: base.id, substituted: true };
+  }
+  return base;
+}
+
 // ── HELPERS ──────────────────────────────────────────────────────────────────
 function todayStr() {
   // IMPORTANT: use LOCAL date components, not toISOString() which is UTC-based.
@@ -215,6 +261,7 @@ function newEntry(dateStr) {
     movements: [],
     completedAt: null,
     warmup: { stretchBefore: false, treadmill: false, stretchAfter: false },
+    location: "equinox",
   };
 }
 function newMovement(name = "") {
@@ -1153,6 +1200,9 @@ export default function App() {
   const [showNewModal, setShowNewModal] = useState(false);
   const [newDate, setNewDate] = useState(todayStr());
   const [newProgramDay, setNewProgramDay] = useState(null);
+  const [newLocation, setNewLocation] = useState(() => {
+    try { return localStorage.getItem("wj_last_location") || "equinox"; } catch { return "equinox"; }
+  });
   const [tab, setTab] = useState("journal");
   const [weightLog, setWeightLog] = useState([]);
   const [weightInput, setWeightInput] = useState("");
@@ -1445,15 +1495,24 @@ export default function App() {
     const entry = newEntry(newDate);
     entry.programDay = newProgramDay;
     entry.customTitle = prog ? prog.title : "";
+    entry.location = newLocation;
     if (prog) {
       const last = getLastSession(entries, newProgramDay);
-      entry.movements = prog.exercises.map(ex => {
+      // Resolve each slot to either its normal Equinox exercise or, when this session
+      // is flagged for the apartment gym, its GYM_SUBS substitute. The resolved list
+      // still has one entry per PROGRAM slot id, so slot letters and programRef never
+      // shift between locations.
+      const resolvedExercises = prog.exercises.map(ex => resolveExercise(newProgramDay, ex.id, newLocation) ?? ex);
+      entry.movements = resolvedExercises.map(ex => {
         // Match by programRef first (the normal case); if that fails, fall back to matching
         // by exercise name. This handles sessions where a movement's programRef is missing
         // or null (e.g. it was manually renamed/re-added at some point and lost its slot
         // reference) — without this fallback, "last session" seeding silently comes up empty
         // even though a clearly-matching recent session exists.
-        const lastMv = last?.movements.find(m => m.programRef === ex.id)
+        // Note: matching by programRef alone would wrongly carry Equinox weights onto an
+        // apartment substitute (different equipment, different load). Requiring the name
+        // to also match keeps the two locations' loads separate for the same slot.
+        const lastMv = last?.movements.find(m => m.programRef === ex.id && m.name && ex.name && m.name.toLowerCase().trim() === ex.name.toLowerCase().trim())
           ?? last?.movements.find(m => {
             if (!m.name || !ex.name) return false;
             const exHasVariant = ex.name.includes(" (");
@@ -1491,12 +1550,14 @@ export default function App() {
           cue: ex.cue ?? "",
           bodyweight: !!ex.bodyweight,
           loadStep: ex.loadStep ?? null,
+          substituted: !!ex.substituted,
           sets: seeded,
           lastSets: lastSets.length > 0 ? lastSets : null,
           lastDate: last?.date ?? null,
         };
       });
     }
+    try { localStorage.setItem("wj_last_location", newLocation); } catch {}
     mutate(prev => [entry, ...prev]);
     setActiveId(entry.id);
     setView("entry");
@@ -1674,8 +1735,9 @@ export default function App() {
 
         <div style={{ padding: "4px 18px 16px" }}>
           {activeMv.programRef && (
-            <div style={{ fontSize: 11, letterSpacing: 2, color: "#9a9a9a", textTransform: "uppercase", marginBottom: 6, fontFamily: SANS }}>
-              {prog?.title} · {activeMv.programRef}
+            <div style={{ fontSize: 11, letterSpacing: 2, color: "#9a9a9a", textTransform: "uppercase", marginBottom: 6, fontFamily: SANS, display: "flex", alignItems: "center", gap: 8 }}>
+              <span>{prog?.title} · {activeMv.programRef}</span>
+              {activeMv.substituted && <span style={{ color: "#f2c94c", letterSpacing: 0.5 }}>· apartment swap</span>}
             </div>
           )}
           {/* CHANGE 3: Editable movement name inline */}
@@ -1918,9 +1980,15 @@ export default function App() {
             onChange={e => updateEntry(activeEntry.id, { customTitle: e.target.value })}
             placeholder="Workout title…" />
           {prog && (
-            <div style={{ display: "flex", gap: 8, marginTop: 8, flexWrap: "wrap" }}>
+            <div style={{ display: "flex", gap: 8, marginTop: 8, flexWrap: "wrap", alignItems: "center" }}>
               <Pill color={color}>Day {activeEntry.programDay}</Pill>
               <Pill color={color}>{prog.tag}</Pill>
+              {!isRest && (
+                <div onClick={() => updateEntry(activeEntry.id, { location: activeEntry.location === "apartment" ? "equinox" : "apartment" })}
+                  style={{ cursor: "pointer", padding: "3px 10px", borderRadius: 999, fontSize: 11, fontWeight: 700, fontFamily: SANS, letterSpacing: 0.5, background: activeEntry.location === "apartment" ? "#f2c94c22" : "#1c1c1c", color: activeEntry.location === "apartment" ? "#f2c94c" : "#9a9a9a", border: `1px solid ${activeEntry.location === "apartment" ? "#f2c94c55" : "#2e2e2e"}` }}>
+                  {LOCATIONS[activeEntry.location ?? "equinox"]?.short ?? "Equinox"} · tap to switch
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -1982,6 +2050,7 @@ export default function App() {
                         <div style={{ fontWeight: 700, fontSize: 15, color: mvDone ? "#e8e8e8" : "#f2f2f2", lineHeight: 1.3, textDecoration: mvDone ? "line-through" : "none", opacity: mvDone ? 0.7 : 1, display: "flex", alignItems: "center", gap: 6 }}>
                           {mv.name || <span style={{ color: "#5c5c5c" }}>Unnamed movement</span>}
                           {isPR && <span style={{ fontSize: 9, fontWeight: 800, color: "#0a0a0a", background: LAKE.ochre, padding: "2px 6px", borderRadius: 4, letterSpacing: 0.5, flexShrink: 0 }}>PR</span>}
+                          {mv.substituted && <span style={{ fontSize: 9, fontWeight: 800, color: "#f2c94c", background: "#f2c94c22", padding: "2px 6px", borderRadius: 4, letterSpacing: 0.5, flexShrink: 0 }}>SWAP</span>}
                         </div>
                         <div style={{ fontSize: 12, color: "#9a9a9a", marginTop: 3 }}>
                           {mv.repsTarget ? `${mv.setsTarget} sets · ${mv.repsTarget} reps` : `${mv.sets.length} sets logged`}
@@ -3927,6 +3996,11 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
                       <div style={{ fontSize: 11, color: "#5c5c5c", fontFamily: SANS, letterSpacing: 1, marginBottom: 3, display: "flex", alignItems: "center", gap: 6 }}>
                         {fmtDate(entry.date)}{prog ? ` · DAY ${entry.programDay}` : ""}
                         {entry.completedAt && <span style={{ color: "#e8e8e8", fontWeight: 800 }}>✓</span>}
+                        {entry.location === "apartment" && (
+                          <span style={{ fontSize: 9, fontWeight: 700, color: "#f2c94c", background: "#f2c94c22", padding: "2px 7px", borderRadius: 4, letterSpacing: 0.5, textTransform: "uppercase" }}>
+                            Apartment
+                          </span>
+                        )}
                         {inProgress && (
                           <span style={{ fontSize: 9, fontWeight: 700, color: "#0a0a0a", background: LAKE.sky, padding: "2px 7px", borderRadius: 4, letterSpacing: 0.5, textTransform: "uppercase" }}>
                             In Progress
@@ -4032,6 +4106,7 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
               </div>
               {newProgramDay && (() => {
                 const last = getLastSession(entries, newProgramDay);
+                const subCount = PROGRAM[newProgramDay].exercises.filter(ex => GYM_SUBS[`${newProgramDay}.${ex.id}`]).length;
                 return (
                   <div style={{ marginTop: 10 }}>
                     <div style={{ fontSize: 12, color: "#5c5c5c", fontFamily: SANS }}>→ {PROGRAM[newProgramDay].title} · {PROGRAM[newProgramDay].exercises.length} exercises pre-loaded</div>
@@ -4040,9 +4115,28 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
                     ) : (
                       <div style={{ fontSize: 12, color: "#5c5c5c", fontFamily: SANS, marginTop: 4 }}>No previous session found · sets will start blank</div>
                     )}
+                    {newLocation !== "equinox" && subCount > 0 && (
+                      <div style={{ fontSize: 12, color: "#f2c94c", fontFamily: SANS, marginTop: 4 }}>⇄ {subCount} exercise{subCount !== 1 ? "s" : ""} swapped for apartment equipment</div>
+                    )}
                   </div>
                 );
               })()}
+            </div>
+            <div style={{ marginBottom: 18 }}>
+              <label style={labelStyle}>Location</label>
+              <div style={{ display: "flex", gap: 8, marginTop: 6 }}>
+                {Object.entries(LOCATIONS).map(([key, loc]) => (
+                  <div key={key} onClick={() => setNewLocation(key)}
+                    style={{ flex: 1, padding: "10px 12px", borderRadius: 10, cursor: "pointer", fontFamily: SANS, fontSize: 13, fontWeight: 700, textAlign: "center", background: newLocation === key ? "#e8e8e8" : "#1c1c1c", color: newLocation === key ? "#131313" : "#9a9a9a" }}>
+                    {loc.label}
+                  </div>
+                ))}
+              </div>
+              {newLocation !== "equinox" && (
+                <div style={{ fontSize: 11, color: "#5c5c5c", fontFamily: SANS, marginTop: 6, lineHeight: 1.4 }}>
+                  Exercises with no apartment-friendly equivalent stay as programmed. Edit any movement name in-session if the swap still doesn't fit.
+                </div>
+              )}
             </div>
             <button onClick={createEntry} style={{ width: "100%", padding: "15px", borderRadius: 14, background: "#e8e8e8", border: "none", color: "#131313", fontSize: 15, fontWeight: 800, cursor: "pointer", fontFamily: SANS }}>
               CREATE SESSION →
