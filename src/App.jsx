@@ -79,80 +79,86 @@ const shadowLg = "0 8px 30px rgba(0,0,0,0.6)";
 // type: "compound" (leave 1–2 RIR) or "isolation" (failure OK on last set)
 // muscle: primary muscle group for weekly volume tracking
 const PROGRAM = {
+  // Restructured Sep 29, 2026: chest and glutes each trained twice per cycle, side
+  // delts up to ~11 sets, longer rest on heavy compounds. Exercise names match the
+  // old program wherever the movement is the same, so history and the progression
+  // engine carry straight over (seeding looks up the name across all days).
   1: {
-    title: "Heavy Squats & Legs",
-    tag: "LEGS",
+    title: "Lower A: Glutes & Hamstrings",
+    tag: "LOWER A",
     color: "#e8e8e8",
     exercises: [
-      { id: "A", name: "Barbell Squat", sets: 4, reps: "8–12", rest: "2m 30s", type: "compound", muscle: "Quads", startWeight: 110 },
-      { id: "B", name: "Leg Press Machine", sets: 2, reps: "6–10", rest: "2m", type: "compound", muscle: "Quads" },
-      { id: "C", name: "Leg Extension Machine", sets: 3, reps: "10–15", rest: "1m", type: "isolation", muscle: "Quads" },
-      { id: "D", name: "DB Walking Lunge", sets: 3, reps: "10 each leg", rest: "1m", type: "compound", muscle: "Glutes" },
-      { id: "E", name: "Seated Calf Raise Machine", sets: 4, reps: "10–15", rest: "1m", type: "isolation", muscle: "Calves" },
-      { id: "F", name: "Hanging Leg Raise", sets: 3, reps: "10–15", rest: "1m", type: "isolation", muscle: "Abs", bodyweight: true, cue: "Posterior pelvic tilt at the top. Curl the pelvis up, don't just lift the legs." },
+      { id: "A", name: "Barbell Hip Thrust", sets: 4, reps: "8–12", rest: "2m 30s", type: "compound", muscle: "Glutes", loadStep: 10, cue: "Glute bridge primer first. Pause 1 second at the top with a posterior pelvic tilt. Load it so 12 is hard." },
+      { id: "B", name: "Romanian Deadlift", sets: 3, reps: "6–10", rest: "2m 30s", type: "compound", muscle: "Hamstrings" },
+      { id: "C", name: "Hack Squat Machine", sets: 3, reps: "8–10", rest: "2m 30s", type: "compound", muscle: "Quads" },
+      { id: "D", name: "DB Bulgarian Split Squat", sets: 3, reps: "8–12 each leg", rest: "1m 30s", type: "compound", muscle: "Glutes", cue: "Long stride, torso leaning forward to bias the glutes." },
+      { id: "E", name: "Seated Leg Curl Machine", sets: 3, reps: "10–15", rest: "1m", type: "isolation", muscle: "Hamstrings" },
+      { id: "F", name: "Standing Calf Raise Machine", sets: 4, reps: "10–15", rest: "1m", type: "isolation", muscle: "Calves" },
     ],
   },
   2: {
-    title: "Heavy Bench & Chest",
-    tag: "PUSH",
+    title: "Upper A: Chest (Heavy)",
+    tag: "UPPER A",
     color: "#f0f0f0",
     exercises: [
-      { id: "A", name: "Smith Machine Bench Press", sets: 4, reps: "8–10", rest: "3m", type: "compound", muscle: "Chest" },
-      { id: "B", name: "DB Incline Chest Press", sets: 4, reps: "8–12", rest: "1m 30s", type: "compound", muscle: "Chest" },
-      { id: "C", name: "Decline Bench Press", sets: 3, reps: "8–12", rest: "1m 30s", type: "compound", muscle: "Chest", startWeight: 120 },
-      { id: "D", name: "Tricep Overhead Extension", sets: 3, reps: "10–15", rest: "1m", type: "isolation", muscle: "Triceps" },
-      { id: "E", name: "Cable Pushdown", sets: 3, reps: "10–15", rest: "1m", type: "isolation", muscle: "Triceps" },
+      { id: "A", name: "Smith Machine Incline Press", sets: 4, reps: "6–10", rest: "3m", type: "compound", muscle: "Chest", cue: "Take the full 3 minutes. Your chest was running out of recovery, not strength." },
+      { id: "B", name: "Smith Machine Bench Press", sets: 3, reps: "6–10", rest: "3m", type: "compound", muscle: "Chest" },
+      { id: "C", name: "Cable Fly", sets: 3, reps: "10–15", rest: "1m 30s", type: "isolation", muscle: "Chest" },
+      { id: "D", name: "DB Lateral Raise", sets: 3, reps: "12–20", rest: "1m", type: "isolation", muscle: "Shoulders" },
+      { id: "E", name: "EZ Bar Curl", sets: 3, reps: "8–12", rest: "1m 30s", type: "isolation", muscle: "Biceps" },
+      { id: "F", name: "Cable Pushdown", sets: 3, reps: "10–15", rest: "1m", type: "isolation", muscle: "Triceps" },
     ],
   },
   3: { title: "Rest Day", tag: "REST", color: "#9a9a9a", exercises: [] },
   4: {
-    title: "Posterior Chain",
+    title: "Pull, Delts & Biceps",
     tag: "PULL",
     color: "#c9c9c9",
     exercises: [
-      { id: "A", name: "Prone Hamstring Curl", sets: 4, reps: "2×10-12, 2×15-20", rest: "1m", type: "isolation", muscle: "Hamstrings" },
-      { id: "B", name: "Romanian Deadlift", sets: 3, reps: "6–10", rest: "1m 30s", type: "compound", muscle: "Hamstrings" },
-      { id: "C", name: "Barbell Hip Thrust", sets: 4, reps: "20–25", rest: "1m", type: "compound", muscle: "Glutes", startWeight: 20, loadStep: 10 },
-      { id: "D", name: "Barbell Bent Over Row", sets: 3, reps: "6–10", rest: "1m 30s", type: "compound", muscle: "Back" },
-      { id: "E", name: "Lat Pulldown (Wide Overhand, Flat Bar)", sets: 3, reps: "8–12", rest: "1m 30s", type: "compound", muscle: "Back", startWeight: 130 },
-      { id: "F", name: "Cable Face Pull", sets: 3, reps: "15–20", rest: "1m", type: "isolation", muscle: "Shoulders" },
+      { id: "A", name: "Lat Pulldown (Wide Overhand, Flat Bar)", sets: 3, reps: "8–12", rest: "2m", type: "compound", muscle: "Back", startWeight: 130 },
+      { id: "B", name: "Barbell Bent Over Row", sets: 3, reps: "6–10", rest: "2m", type: "compound", muscle: "Back" },
+      { id: "C", name: "Seated Cable Row", sets: 2, reps: "10–12", rest: "1m 30s", type: "compound", muscle: "Back" },
+      { id: "D", name: "Cable Lateral Raise", sets: 4, reps: "12–20", rest: "1m", type: "isolation", muscle: "Shoulders" },
+      { id: "E", name: "Reverse Pec Deck", sets: 3, reps: "12–20", rest: "1m", type: "isolation", muscle: "Shoulders" },
+      { id: "F", name: "Incline DB Curl", sets: 3, reps: "10–12", rest: "1m", type: "isolation", muscle: "Biceps" },
+      { id: "G", name: "DB Hammer Curl", sets: 3, reps: "10–12", rest: "1m", type: "isolation", muscle: "Biceps" },
     ],
   },
   5: { title: "Rest Day", tag: "REST", color: "#9a9a9a", exercises: [] },
   6: {
-    title: "Secondary Lower Body",
-    tag: "LEGS",
+    title: "Lower B: Quads & Glutes",
+    tag: "LOWER B",
     color: "#b8b8b8",
     exercises: [
-      { id: "A", name: "Hack Squat Machine", sets: 4, reps: "8–10", rest: "2m 30s", type: "compound", muscle: "Quads" },
-      { id: "B", name: "DB Bulgarian Split Squat", sets: 2, reps: "8–10", rest: "1m", type: "compound", muscle: "Quads" },
-      { id: "C", name: "Lat Pulldown (Neutral-Grip Handles)", sets: 3, reps: "10–12", rest: "1m", type: "compound", muscle: "Back" },
-      { id: "D", name: "Seated Cable Row", sets: 3, reps: "10–12", rest: "1m", type: "compound", muscle: "Back" },
-      { id: "E", name: "EZ Bar Curl", sets: 5, reps: "10–12", rest: "1m", type: "isolation", muscle: "Biceps" },
-      { id: "F", name: "DB Hammer Curl", sets: 4, reps: "10–12", rest: "1m", type: "isolation", muscle: "Biceps" },
-      { id: "G", name: "Standing Calf Raise Machine", sets: 5, reps: "10–15", rest: "1m", type: "isolation", muscle: "Calves" },
-      { id: "H", name: "Seated Leg Curl Machine", sets: 3, reps: "10–15", rest: "1m", type: "isolation", muscle: "Hamstrings" },
-      { id: "I", name: "Ab Wheel Rollout", sets: 3, reps: "8–12", rest: "1m", type: "isolation", muscle: "Abs", bodyweight: true, cue: "Lower back never arches. Brace hard and stop the rollout before the hips sag." },
+      { id: "A", name: "Barbell Squat", sets: 4, reps: "6–10", rest: "3m", type: "compound", muscle: "Quads", startWeight: 110 },
+      { id: "B", name: "Leg Press Machine", sets: 3, reps: "10–15", rest: "2m", type: "compound", muscle: "Glutes", cue: "Feet high and wide on the platform to bias the glutes." },
+      { id: "C", name: "Glute-Bias 45° Back Extension", sets: 3, reps: "12–15", rest: "1m 30s", type: "isolation", muscle: "Glutes", cue: "Round the upper back, drive with the glutes, squeeze at the top. A lighter hip thrust works as a swap." },
+      { id: "D", name: "Leg Extension Machine", sets: 2, reps: "12–15", rest: "1m", type: "isolation", muscle: "Quads" },
+      { id: "E", name: "Hip Abduction Machine", sets: 3, reps: "15–20", rest: "1m", type: "isolation", muscle: "Glutes" },
+      { id: "F", name: "Seated Calf Raise Machine", sets: 4, reps: "10–15", rest: "1m", type: "isolation", muscle: "Calves" },
+      { id: "G", name: "Hanging Leg Raise", sets: 3, reps: "10–15", rest: "1m", type: "isolation", muscle: "Abs", bodyweight: true, cue: "Posterior pelvic tilt at the top. Curl the pelvis up, don't just lift the legs." },
     ],
   },
   7: {
-    title: "Overhead Press & Push",
-    tag: "PUSH",
+    title: "Upper B: Chest, Shoulders & Arms",
+    tag: "UPPER B",
     color: "#ffffff",
     exercises: [
-      { id: "A", name: "DB Shoulder Press", sets: 4, reps: "5–8", rest: "2m", type: "compound", muscle: "Shoulders" },
-      { id: "B", name: "DB Lateral Raise (leaning)", sets: 4, reps: "10–15", rest: "1m", type: "isolation", muscle: "Shoulders" },
-      { id: "C", name: "Smith Machine Incline Press", sets: 4, reps: "8–12", rest: "1m", type: "compound", muscle: "Chest" },
-      { id: "D", name: "Reverse DB Rear Delt Fly", sets: 3, reps: "12–15", rest: "1m", type: "isolation", muscle: "Shoulders" },
-      { id: "E", name: "Weighted Dip Machine", sets: 3, reps: "10–12", rest: "1m", type: "compound", muscle: "Chest" },
-      { id: "F", name: "Cable Pushdown", sets: 3, reps: "12–15", rest: "1m", type: "isolation", muscle: "Triceps" },
-      { id: "G", name: "Overhead Rope Extension", sets: 3, reps: "10–15", rest: "1m", type: "isolation", muscle: "Triceps" },
+      { id: "A", name: "DB Shoulder Press", sets: 3, reps: "6–10", rest: "2m 30s", type: "compound", muscle: "Shoulders" },
+      { id: "B", name: "Decline Bench Press", sets: 3, reps: "8–12", rest: "2m 30s", type: "compound", muscle: "Chest", startWeight: 120, cue: "Flat DB Press is a fine swap if the decline bench is taken." },
+      { id: "C", name: "Weighted Dip Machine", sets: 3, reps: "8–12", rest: "2m", type: "compound", muscle: "Chest" },
+      { id: "D", name: "Pec Deck", sets: 3, reps: "12–15", rest: "1m", type: "isolation", muscle: "Chest" },
+      { id: "E", name: "DB Lateral Raise", sets: 4, reps: "12–20", rest: "1m", type: "isolation", muscle: "Shoulders" },
+      { id: "F", name: "Cable Curl", sets: 3, reps: "10–15", rest: "1m", type: "isolation", muscle: "Biceps" },
+      { id: "G", name: "DB Overhead Tricep Extension", sets: 3, reps: "10–15", rest: "1m", type: "isolation", muscle: "Triceps" },
     ],
   },
 };
 
-// Mesocycle config — RP-style 5-week block then deload
-const MESO_LENGTH = 5; // weeks before deload
+
+// Mesocycle config: 6 training weeks then a deload week (week 7). That's a deload
+// roughly every 5 to 6 eight-day cycles, per the Sep 29, 2026 program review.
+const MESO_LENGTH = 7; // weeks per block, last week is the deload
 const MESO_START = "2026-05-07"; // week 1 anchor (first logged session)
 
 // Start of the current training block (lean bulk, Sep 2026). Exercises with a
@@ -194,18 +200,28 @@ const LOCATIONS = {
   apartment: { label: "Apartment Gym", short: "Apartment" },
 };
 const GYM_SUBS = {
-  // Day 1 — Heavy Squats & Legs
-  "1.A": { name: "DB Goblet Squat", sets: 4, reps: "8–12", rest: "2m 30s", type: "compound", muscle: "Quads" },
-  "1.B": { name: "DB Walking Lunge", sets: 3, reps: "10 each leg", rest: "2m", type: "compound", muscle: "Quads" },
-  // Day 6 — Secondary Lower Body (no Hack Squat at the apartment gym)
-  "6.A": { name: "DB Bulgarian Split Squat", sets: 4, reps: "8–10 each leg", rest: "2m 30s", type: "compound", muscle: "Quads" },
-  // Day 7 — Overhead Press & Push (no cable stack, no dip machine)
-  "7.E": { name: "DB Weighted Dip (bench)", sets: 3, reps: "10–12", rest: "1m", type: "compound", muscle: "Chest" },
-  "7.F": { name: "DB Tricep Kickback", sets: 3, reps: "12–15", rest: "1m", type: "isolation", muscle: "Triceps" },
-  "7.G": { name: "DB Overhead Tricep Extension", sets: 3, reps: "10–15", rest: "1m", type: "isolation", muscle: "Triceps" },
-  // Posterior Chain / Push exercises that use the cable stack elsewhere
-  "4.F": { name: "DB Rear Delt Fly (bent over)", sets: 3, reps: "15–20", rest: "1m", type: "isolation", muscle: "Shoulders" },
+  // Best-guess swaps for the apartment gym (assumes dumbbells, bench, Smith and a
+  // pulldown, but no cable stack, dip machine, pec deck, hack squat, leg press or
+  // hip abduction machine). Keyed to the Sep 29, 2026 program slots.
+  // Day 1: Lower A
+  "1.C": { name: "DB Goblet Squat (heels elevated)", sets: 3, reps: "8–12", rest: "2m", type: "compound", muscle: "Quads" },
+  // Day 2: Upper A
+  "2.C": { name: "DB Fly (flat bench)", sets: 3, reps: "10–15", rest: "1m 30s", type: "isolation", muscle: "Chest" },
+  "2.F": { name: "DB Tricep Kickback", sets: 3, reps: "12–15", rest: "1m", type: "isolation", muscle: "Triceps" },
+  // Day 4: Pull
+  "4.C": { name: "One-Arm DB Row", sets: 2, reps: "10–12", rest: "1m 30s", type: "compound", muscle: "Back" },
+  "4.D": { name: "DB Lateral Raise (leaning)", sets: 4, reps: "12–20", rest: "1m", type: "isolation", muscle: "Shoulders" },
+  "4.E": { name: "DB Rear Delt Fly (bent over)", sets: 3, reps: "12–20", rest: "1m", type: "isolation", muscle: "Shoulders" },
+  // Day 6: Lower B
+  "6.B": { name: "DB Walking Lunge", sets: 3, reps: "10–12 each leg", rest: "2m", type: "compound", muscle: "Glutes", cue: "Long stride, slight forward lean for glutes." },
+  "6.C": { name: "B-Stance DB Hip Thrust", sets: 3, reps: "12–15", rest: "1m 30s", type: "isolation", muscle: "Glutes" },
+  "6.E": { name: "Banded Hip Abduction", sets: 3, reps: "15–25", rest: "1m", type: "isolation", muscle: "Glutes" },
+  // Day 7: Upper B
+  "7.C": { name: "DB Weighted Dip (bench)", sets: 3, reps: "10–12", rest: "1m 30s", type: "compound", muscle: "Chest" },
+  "7.D": { name: "DB Fly (flat bench)", sets: 3, reps: "12–15", rest: "1m", type: "isolation", muscle: "Chest" },
+  "7.F": { name: "DB Supinating Curl", sets: 3, reps: "10–15", rest: "1m", type: "isolation", muscle: "Biceps" },
 };
+
 // Returns the exercise definition to use for this program day + slot id, given
 // a session's location: the substitute if one exists and location is not
 // Equinox, otherwise the normal PROGRAM exercise. Always keeps the original
@@ -218,6 +234,54 @@ function resolveExercise(programDay, exId, location) {
     if (sub) return { ...base, ...sub, id: base.id, substituted: true };
   }
   return base;
+}
+
+// The program definition for a logged movement, but only if it still describes
+// the same exercise. Sessions logged before a program change keep their old slot
+// letters, and without the name check an old "Day 1 slot A" (Barbell Squat) would
+// pick up the new slot A's cue, type and load step (Hip Thrust).
+function programExFor(entry, mv) {
+  if (!entry?.programDay || !mv?.programRef || !mv.name) return null;
+  const ex = resolveExercise(entry.programDay, mv.programRef, entry.location);
+  if (!ex) return null;
+  return ex.name.toLowerCase().trim() === mv.name.toLowerCase().trim() ? ex : null;
+}
+
+// Any current program exercise (Equinox or apartment swap) with this exact name.
+function programExByName(name) {
+  if (!name) return null;
+  const n = name.toLowerCase().trim();
+  for (const [dn, day] of Object.entries(PROGRAM)) {
+    for (const ex of day.exercises) {
+      if (ex.name.toLowerCase().trim() === n) return ex;
+      const sub = GYM_SUBS[`${dn}.${ex.id}`];
+      if (sub && sub.name.toLowerCase().trim() === n) return { ...ex, ...sub };
+    }
+  }
+  return null;
+}
+
+// Older names for the same movement, so seeding can find the history when a
+// program change renames an exercise.
+const NAME_ALIASES = {
+  "DB Lateral Raise": ["DB Lateral Raise (leaning)"],
+  "DB Overhead Tricep Extension": ["Tricep Overhead Extension", "Overhead Rope Extension"],
+};
+
+// Most recent logged instance of a movement by exact name (or alias), on ANY
+// program day. Used when an exercise has moved to a different day, so its weights
+// still carry forward. Only counts movements with at least one logged set.
+function lastMovementByName(entries, name) {
+  if (!name) return null;
+  const names = [name, ...(NAME_ALIASES[name] ?? [])].map(n => n.toLowerCase().trim());
+  const sorted = [...entries].sort((a, b) => b.date.localeCompare(a.date));
+  for (const nm of names) {
+    for (const e of sorted) {
+      const mv = e.movements.find(m => m.name && m.name.toLowerCase().trim() === nm && m.sets.some(s => (s.w !== "" && s.w != null) || (s.r !== "" && s.r != null)));
+      if (mv) return { mv, date: e.date };
+    }
+  }
+  return null;
 }
 
 // ── HELPERS ──────────────────────────────────────────────────────────────────
@@ -432,7 +496,7 @@ function cycleVolume(entries, cycleAnchor, endDate = null) {
     for (const mv of e.movements) {
       let muscle = mv.muscle;
       if (!muscle && e.programDay && mv.programRef) {
-        const progEx = PROGRAM[e.programDay]?.exercises.find(x => x.id === mv.programRef);
+        const progEx = programExFor(e, mv) ?? programExByName(mv.name);
         muscle = progEx?.muscle;
       }
       if (!muscle) continue;
@@ -582,6 +646,20 @@ function movementSessions(entries, mvName, excludeEntryId = null, bodyweight = f
   return out;
 }
 
+// How many working sets need to hit the top of the rep range before an accessory
+// is allowed to add weight. Compounds progress off a single strong top set (one
+// true working set is meaningful signal on a heavy lift), but accessories use
+// double progression: reps first, then load, checked across ALL working sets so
+// one lucky set doesn't drag the load up before the movement is actually ready.
+//
+// Rule: all sets but one need to hit max reps (e.g. 4 sets needs 3, 3 sets needs
+// 2). With only 2 sets there is no room for a miss without losing the signal
+// entirely, so both are required. A single-set accessory just needs that set.
+function accessorySetsNeeded(totalSets) {
+  if (totalSets <= 2) return totalSets;
+  return totalSets - 1;
+}
+
 // Suggest the next session's load/rep action for one movement.
 //
 // Reads back through the FULL history for this movement, not just the last
@@ -616,8 +694,22 @@ function suggestProgression(entries, mvName, repsTarget, type, opts = {}) {
   const topSet = recent.topSet;
   const lastDate = recent.date;
   const range = parseRepRange(repsTarget, topSet.setNum);
-  const hitTopOfRange = range ? topSet.r >= range.max : false;
-  const belowRange = range ? topSet.r < range.min : false;
+  // Compounds: one strong top set is enough signal to add weight.
+  // Accessories/isolation: double progression — require max reps across all but
+  // one working set (both, if there are only two) before load goes up. A single
+  // set under the rep floor is still enough to back off either way; that's a
+  // safety signal, not a "have you earned the jump" signal.
+  let hitTopOfRange, belowRange, accessoryProgressNote = "";
+  if (type === "compound" || !range) {
+    hitTopOfRange = range ? topSet.r >= range.max : false;
+    belowRange = range ? topSet.r < range.min : false;
+  } else {
+    const need = accessorySetsNeeded(recent.sets.length);
+    const atMax = recent.sets.filter(s => s.r >= range.max).length;
+    hitTopOfRange = atMax >= need;
+    belowRange = topSet.r < range.min;
+    accessoryProgressNote = `${atMax} of ${recent.sets.length} sets at ${range.max}+ reps (needed ${need})`;
+  }
   // Per-exercise step override (e.g. hip thrust moves in 10 lb jumps only)
   const bump = loadStep ?? (type === "compound" ? 10 : 5);
   const rl = w => roundLoad(w, type, loadStep);
@@ -687,7 +779,9 @@ function suggestProgression(entries, mvName, repsTarget, type, opts = {}) {
         action: "add_weight",
         weight: rl(topSet.w + bump),
         lastWeight: topSet.w, lastDate,
-        reason: `Last time: ${topSet.r} reps at RIR ${recent.lastSetRIR}, top of range with little left. Add weight.`,
+        reason: type === "compound"
+          ? `Last time: ${topSet.r} reps at RIR ${recent.lastSetRIR}, top of range with little left. Add weight.`
+          : `Last time: ${accessoryProgressNote} at RIR ${recent.lastSetRIR}. Add weight.`,
       };
     }
     if (avgRIR >= 2) {
@@ -700,9 +794,11 @@ function suggestProgression(entries, mvName, repsTarget, type, opts = {}) {
     return {
       action: "hold",
       weight: topSet.w, lastWeight: topSet.w, lastDate,
-      reason: range && !hitTopOfRange
-        ? `Hold ${topSet.w} and work toward ${range.max} reps before adding load.`
-        : `Hold ${topSet.w} and progress reps before adding load.`,
+      reason: !range
+        ? `Hold ${topSet.w} and progress reps before adding load.`
+        : type === "compound"
+          ? (hitTopOfRange ? `Hold ${topSet.w} and progress reps before adding load.` : `Hold ${topSet.w} and work toward ${range.max} reps before adding load.`)
+          : `Hold ${topSet.w}. ${accessoryProgressNote} so far, work toward ${accessorySetsNeeded(recent.sets.length)} before adding load.`,
     };
   }
 
@@ -723,7 +819,9 @@ function suggestProgression(entries, mvName, repsTarget, type, opts = {}) {
       action: "add_weight",
       weight: rl(topSet.w + bump),
       lastWeight: topSet.w, lastDate,
-      reason: `Last time: ${topSet.r} reps at ${topSet.w}, the top of your ${range.min} to ${range.max} range. That earns a jump.${trendNote}`,
+      reason: type === "compound"
+        ? `Last time: ${topSet.r} reps at ${topSet.w}, the top of your ${range.min} to ${range.max} range. That earns a jump.${trendNote}`
+        : `Last time: ${accessoryProgressNote} at ${topSet.w}. That earns a jump.${trendNote}`,
     };
   }
 
@@ -851,7 +949,7 @@ function pushPullBalance(entries) {
     e.movements.forEach(mv => {
       let muscle = mv.muscle;
       if (!muscle && e.programDay && mv.programRef) {
-        const progEx = PROGRAM[e.programDay]?.exercises.find(x => x.id === mv.programRef);
+        const progEx = programExFor(e, mv) ?? programExByName(mv.name);
         muscle = progEx?.muscle;
       }
       const sets = mv.sets.filter(s => s.r).length;
@@ -1059,6 +1157,50 @@ async function downloadCoachPDF(entries, weightLog, mesoInfo, windowDays = 35) {
   doc.save(`coach_report_${todayStr()}.pdf`);
 }
 
+// ── CHECK-INS ────────────────────────────────────────────────────────────────
+// Every 2 weeks from the block start (Mondays: Oct 5, Oct 19, Nov 2, ...), bring
+// the coach report and backup to Claude for review. The check-in that lands in the
+// last two weeks of a block doubles as the full program review before the next one.
+const CHECKIN_ANCHOR = BLOCK_START;
+const CHECKIN_EVERY_DAYS = 14;
+function addDays(dateStr, n) {
+  const d = new Date(dateStr + "T12:00:00");
+  d.setDate(d.getDate() + n);
+  return localDateStr(d);
+}
+function daysBetween(a, b) {
+  return Math.round((new Date(b + "T12:00:00") - new Date(a + "T12:00:00")) / 86400000);
+}
+// Latest scheduled check-in on or before `today` (null before the first one), and
+// the next one after today.
+function checkinSchedule(today) {
+  const elapsed = daysBetween(CHECKIN_ANCHOR, today);
+  const k = Math.floor(Math.max(0, elapsed) / CHECKIN_EVERY_DAYS);
+  const latest = k >= 1 ? addDays(CHECKIN_ANCHOR, k * CHECKIN_EVERY_DAYS) : null;
+  const next = addDays(CHECKIN_ANCHOR, (k + 1) * CHECKIN_EVERY_DAYS);
+  return { latest, next };
+}
+// 7-day average weight ending on `end`, compared with the 7-day average two weeks
+// earlier. Returns the weekly rate of change in lbs, or null without enough data.
+function weightTrend(weightLog, end) {
+  const toLb = w => (w.unit === "kg" ? parseFloat(w.weight) * 2.20462 : parseFloat(w.weight));
+  const avg = (from, to) => {
+    const pts = weightLog.filter(w => w.date >= from && w.date <= to).map(toLb).filter(n => !isNaN(n));
+    return pts.length >= 3 ? pts.reduce((s, n) => s + n, 0) / pts.length : null;
+  };
+  const now = avg(addDays(end, -6), end);
+  const before = avg(addDays(end, -20), addDays(end, -14));
+  if (now == null || before == null) return { now, before, rate: null };
+  return { now, before, rate: (now - before) / 2 };
+}
+// The every-2-weeks calorie rule: target is about +0.5 to +1 lb per week.
+function surplusAdvice(rate) {
+  if (rate == null) return { action: "none", carbs: 0, text: "Not enough weigh-ins to judge the trend. Weigh in at least 3 mornings a week." };
+  if (rate < 0.5) return { action: "add", carbs: 38, text: `Gaining ${rate.toFixed(2)} lb/week, under the +0.5 target. Add 150 kcal of carbs (about 38g) to both day types.` };
+  if (rate > 1) return { action: "remove", carbs: -38, text: `Gaining ${rate.toFixed(2)} lb/week, over the +1 lb ceiling. Take 150 kcal of carbs (about 38g) out of both day types.` };
+  return { action: "hold", carbs: 0, text: `Gaining ${rate.toFixed(2)} lb/week, right in the 0.5 to 1 lb window. Keep the current targets.` };
+}
+
 // ── MESOCYCLE ─────────────────────────────────────────────────────────────────
 function mesocycleWeek(entries, override) {
   // override = { anchorDate, weekAtAnchor } set manually by the user; takes priority
@@ -1115,8 +1257,12 @@ function driveImageUrl(fileId) {
 }
 
 const DEFAULT_MACRO_TARGETS = {
-  training: { p: 220, c: 300, f: 70 }, // ~2,710 kcal, lean bulk (Sep 2026)
-  rest:     { p: 220, c: 200, f: 65 }, // ~2,265 kcal
+  // Revised Sep 29, 2026: protein down to 200g, freed calories to carbs, rest days
+  // raised so the surplus holds every day. Adjust every 2 weeks off the 7-day
+  // average weight (see the check-in card): under +0.5 lb/wk add 150 kcal of carbs,
+  // over +1 lb/wk remove 150.
+  training: { p: 200, c: 330, f: 75 }, // ~2,795 kcal
+  rest:     { p: 200, c: 270, f: 70 }, // ~2,510 kcal
 };
 function macroCals(p, c, f) {
   return Math.round((parseFloat(p)||0) * 4 + (parseFloat(c)||0) * 4 + (parseFloat(f)||0) * 9);
@@ -1215,6 +1361,16 @@ export default function App() {
   // Macro tracking state
   const [macros, setMacros] = useState({});
   const [macroTargets, setMacroTargets] = useState(DEFAULT_MACRO_TARGETS);
+  const [checkinsDone, setCheckinsDone] = useState(() => {
+    try { return JSON.parse(localStorage.getItem("wj_checkins_done") || "[]"); } catch { return []; }
+  });
+  function markCheckinDone(date) {
+    setCheckinsDone(prev => {
+      const next = prev.includes(date) ? prev : [...prev, date];
+      try { localStorage.setItem("wj_checkins_done", JSON.stringify(next)); } catch {}
+      return next;
+    });
+  }
   const [macroDate, setMacroDate] = useState(todayStr());
   const [showFoodModal, setShowFoodModal] = useState(false);
   const [showTargetsModal, setShowTargetsModal] = useState(false);
@@ -1328,6 +1484,15 @@ export default function App() {
         localStorage.setItem("wj_meso", JSON.stringify({ anchorDate: BLOCK_START, weekAtAnchor: 1 }));
         localStorage.setItem("wj_migration_bulk_2026_09", "1");
       }
+      // Sep 29, 2026 program review: new macro targets. Runs once; later manual
+      // edits to targets are never overwritten.
+      if (!localStorage.getItem("wj_migration_macros_2026_09_29")) {
+        localStorage.setItem("wj_macro_targets", JSON.stringify(DEFAULT_MACRO_TARGETS));
+        // Re-pin the block to Week 1 = Sep 21. The block got longer (7 weeks), and an
+        // install still carrying the old June anchor would otherwise land in a deload.
+        localStorage.setItem("wj_meso", JSON.stringify({ anchorDate: BLOCK_START, weekAtAnchor: 1 }));
+        localStorage.setItem("wj_migration_macros_2026_09_29", "1");
+      }
     } catch {}
     Promise.all([loadEntries(), loadWeights()]).then(([e, w]) => {
       setEntries(e);
@@ -1374,10 +1539,34 @@ export default function App() {
   // Is the given date a training day? Auto-detect from workout journal, honoring manual override.
   function detectDayType(dateStr) {
     const day = macros[dateStr];
-    if (day?.dayTypeManual) return day.dayType; // manual override wins
-    const trained = entries.some(e => e.date === dateStr && e.programDay && PROGRAM[e.programDay]?.exercises.length > 0);
-    return trained ? "training" : "rest";
+    const trained = trainedOn(dateStr);
+    // A logged training session always makes it a training day. A manual "rest"
+    // tag set earlier in the day (before the session was logged) was leaving
+    // lifting days on the lower target. Manual overrides still apply to days
+    // with no session, e.g. marking a day training before you get to the gym.
+    if (trained) return "training";
+    if (day?.dayTypeManual) return day.dayType;
+    return "rest";
   }
+  function trainedOn(dateStr) {
+    return entries.some(e => e.date === dateStr && e.programDay && PROGRAM[e.programDay]?.exercises.length > 0
+      && e.movements.some(m => m.sets.some(s => s.r !== "" && s.r != null)));
+  }
+
+  // Keep the stored day type in step with the journal, so history, exports and
+  // averages see lifting days as training days (fixes days like Sep 23 and 25 that
+  // were saved as "rest" before the session was logged).
+  useEffect(() => {
+    if (loading) return;
+    const fixes = Object.keys(macros).filter(d => macros[d]?.dayType !== "training" && trainedOn(d));
+    if (fixes.length === 0) return;
+    setMacros(prev => {
+      const next = { ...prev };
+      for (const d of fixes) next[d] = { ...next[d], dayType: "training", dayTypeManual: false };
+      saveMacrosLS(next);
+      return next;
+    });
+  }, [entries, loading, macros]);
 
   useEffect(() => {
     if (!loading) saveEntries(entries);
@@ -1512,7 +1701,12 @@ export default function App() {
         // Note: matching by programRef alone would wrongly carry Equinox weights onto an
         // apartment substitute (different equipment, different load). Requiring the name
         // to also match keeps the two locations' loads separate for the same slot.
-        const lastMv = last?.movements.find(m => m.programRef === ex.id && m.name && ex.name && m.name.toLowerCase().trim() === ex.name.toLowerCase().trim())
+        const exactSameDay = last?.movements.find(m => m.programRef === ex.id && m.name && ex.name && m.name.toLowerCase().trim() === ex.name.toLowerCase().trim()) ?? null;
+        // Exercise moved days (e.g. hip thrust from Pull day to Lower A): find its most
+        // recent logged instance by exact name, or a known older name, on any day.
+        const crossDay = exactSameDay ? null : lastMovementByName(entries, ex.name);
+        const lastMv = exactSameDay
+          ?? crossDay?.mv
           ?? last?.movements.find(m => {
             if (!m.name || !ex.name) return false;
             const exHasVariant = ex.name.includes(" (");
@@ -1553,7 +1747,7 @@ export default function App() {
           substituted: !!ex.substituted,
           sets: seeded,
           lastSets: lastSets.length > 0 ? lastSets : null,
-          lastDate: last?.date ?? null,
+          lastDate: (crossDay && lastMv === crossDay.mv) ? crossDay.date : (last?.date ?? null),
         };
       });
     }
@@ -1755,7 +1949,7 @@ export default function App() {
             </div>
           )}
           {(() => {
-            const cue = activeMv.cue || PROGRAM[activeEntry.programDay]?.exercises.find(x => x.id === activeMv.programRef)?.cue;
+            const cue = activeMv.cue || programExFor(activeEntry, activeMv)?.cue;
             return cue ? (
               <div style={{ marginTop: 10, padding: "9px 12px", borderRadius: 10, background: "#1c1c1c", fontSize: 12, color: "#c9c9c9", fontFamily: SANS, lineHeight: 1.5 }}>
                 <span style={{ fontSize: 10, letterSpacing: 1.5, color: "#5c5c5c", textTransform: "uppercase", fontWeight: 700, marginRight: 6 }}>Cue</span>
@@ -1785,7 +1979,7 @@ export default function App() {
           const meso = mesocycleWeek(entries, mesoOverride);
           // Read exercise settings from the program so sessions created before a program
           // change still get the right step size, bodyweight handling, and start weight.
-          const progEx = PROGRAM[activeEntry.programDay]?.exercises.find(x => x.id === activeMv.programRef);
+          const progEx = programExFor(activeEntry, activeMv);
           const sug = suggestProgression(
             entries, activeMv.name, activeMv.repsTarget,
             progEx?.type ?? "isolation",
@@ -1870,7 +2064,7 @@ export default function App() {
                 num={i + 1}
                 weight={s.w} reps={s.r} rir={s.rir ?? ""}
                 repsTarget={activeMv.repsTarget ?? null}
-                type={activeMv.type ?? (activeEntry.programDay && activeMv.programRef ? (PROGRAM[activeEntry.programDay]?.exercises.find(x => x.id === activeMv.programRef)?.type ?? "compound") : "compound")}
+                type={activeMv.type ?? (activeEntry.programDay && activeMv.programRef ? (programExFor(activeEntry, activeMv)?.type ?? "compound") : "compound")}
                 isLastSet={i === activeMv.sets.length - 1}
                 done={setDone}
                 color={color}
@@ -2193,7 +2387,7 @@ export default function App() {
     const targetCals = macroCals(targets.p, targets.c, targets.f);
     const totals = dayTotals(day);
     const isToday = macroDate === todayStr();
-    const trainedToday = entries.some(e => e.date === macroDate && e.programDay && PROGRAM[e.programDay]?.exercises.length > 0);
+    const trainedToday = trainedOn(macroDate);
 
     function shiftDate(delta) {
       const d = new Date(macroDate + "T12:00:00");
@@ -2202,6 +2396,7 @@ export default function App() {
       if (next <= todayStr()) setMacroDate(next);
     }
     function toggleDayType() {
+      if (trainedToday) return; // a logged session locks the day to training
       mutateMacros(prev => {
         const d = prev[macroDate] ?? { entries: [] };
         const newType = dType === "training" ? "rest" : "training";
@@ -2507,7 +2702,7 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
               {dType === "training" ? "Training Day" : "Rest Day"}
             </div>
             <div style={{ fontSize: 11, color: C.textDim, fontFamily: SANS, marginTop: 2 }}>
-              {macros[macroDate]?.dayTypeManual ? "Manually set · tap to switch" : trainedToday ? "Auto — session logged today" : "Auto — no session yet · tap to override"}
+              {trainedToday ? "Auto: session logged, locked to training" : macros[macroDate]?.dayTypeManual ? "Manually set · tap to switch" : "Auto: no session yet · tap to override"}
             </div>
           </div>
           <div style={{ textAlign: "right" }}>
@@ -3832,6 +4027,57 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
         </div>
       </div>
 
+      {/* Coach check-in reminder */}
+      {(() => {
+        const today = todayStr();
+        const { latest, next } = checkinSchedule(today);
+        const due = latest && !checkinsDone.includes(latest);
+        const meso = mesocycleWeek(entries, mesoOverride);
+        const blockReview = meso.week >= meso.total - 1;
+        const fmtShort = d => new Date(d + "T12:00:00").toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
+        if (!due) {
+          return (
+            <div style={{ margin: "12px 18px 0", fontSize: 12, color: "#5c5c5c", fontFamily: SANS }}>
+              Next coach check-in with Claude: {fmtShort(next)}
+            </div>
+          );
+        }
+        const trend = weightTrend(weightLog, today);
+        const advice = surplusAdvice(trend.rate);
+        const btn = { flex: 1, padding: "11px 8px", borderRadius: 12, border: "none", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: SANS };
+        return (
+          <div style={{ margin: "12px 18px 4px", padding: "14px 16px", borderRadius: 14, background: "#f2c94c14", border: "1px solid #f2c94c44" }}>
+            <div style={{ fontSize: 11, letterSpacing: 2, color: "#f2c94c", textTransform: "uppercase", fontFamily: SANS, fontWeight: 700, marginBottom: 6 }}>
+              {blockReview ? "Block review due" : "Check-in due"} · {fmtShort(latest)}
+            </div>
+            <div style={{ fontSize: 13, color: "#e8e8e8", fontFamily: SANS, lineHeight: 1.5 }}>
+              {trend.now != null && <div style={{ marginBottom: 4 }}>7-day avg weight: <b>{trend.now.toFixed(1)} lb</b>{trend.before != null ? ` (was ${trend.before.toFixed(1)} two weeks ago)` : ""}</div>}
+              <div>{advice.text}</div>
+              <div style={{ marginTop: 8, color: "#9a9a9a", fontSize: 12 }}>
+                Export the coach report and backup, then send both to Claude in the Bodybuilding project with a line on energy, sleep, digestion and anything that felt off.
+                {blockReview ? " This one is the end-of-block review: bring progress photos too, and we'll plan the next block and deload." : ""}
+              </div>
+            </div>
+            <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+              <button onClick={() => downloadCoachPDF(entries, weightLog, meso)} style={{ ...btn, background: "#1c1c1c", color: "#e8e8e8" }}>Coach PDF</button>
+              <button onClick={() => downloadJSON(entries, weightLog, mesoOverride, cycleAnchor, macros, macroTargets)} style={{ ...btn, background: "#1c1c1c", color: "#e8e8e8" }}>Backup JSON</button>
+            </div>
+            <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+              {(advice.action === "add" || advice.action === "remove") && (
+                <button onClick={() => {
+                  const bump = t => ({ ...t, c: Math.max(0, t.c + advice.carbs) });
+                  saveMacroTargets({ training: bump(macroTargets.training), rest: bump(macroTargets.rest) });
+                  markCheckinDone(latest);
+                }} style={{ ...btn, background: "#f2c94c", color: "#131313" }}>
+                  {advice.action === "add" ? "Add" : "Remove"} 38g carbs & done
+                </button>
+              )}
+              <button onClick={() => markCheckinDone(latest)} style={{ ...btn, background: "#e8e8e8", color: "#131313" }}>Mark done</button>
+            </div>
+          </div>
+        );
+      })()}
+
       {/* Mesocycle banner */}
       {(() => {
         const meso = mesocycleWeek(entries, mesoOverride);
@@ -3926,7 +4172,7 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
                     <div style={{ fontSize: 15, fontWeight: 800, fontFamily: MONO, color: done ? d.color : C.text }}>
                       {done ? "✓" : dn}
                     </div>
-                    <div style={{ fontSize: 8, letterSpacing: 1, color: done ? d.color + "aa" : C.textDim, textTransform: "uppercase", marginTop: 2, fontFamily: SANS }}>{{"1":"LEGS","2":"PUSH","4":"PULL","6":"LEGS II","7":"PUSH II"}[dn] ?? d.tag}</div>
+                    <div style={{ fontSize: 8, letterSpacing: 1, color: done ? d.color + "aa" : C.textDim, textTransform: "uppercase", marginTop: 2, fontFamily: SANS }}>{d.tag}</div>
                   </div>
                 );
               })}
@@ -4099,7 +4345,7 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
                   <div key={dn} onClick={() => setNewProgramDay(Number(dn))} style={{ padding: "8px 12px", borderRadius: 10, cursor: "pointer", fontFamily: SANS, background: newProgramDay === Number(dn) ? d.color : "#1c1c1c", color: newProgramDay === Number(dn) ? "#131313" : d.color, textAlign: "center", minWidth: 56 }}>
                     <div style={{ fontSize: 15, fontWeight: 800 }}>{dn}</div>
                     <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: 0.5, marginTop: 2, opacity: 0.85 }}>
-                      {{"1":"LEGS","2":"PUSH","3":"REST","4":"PULL","5":"REST","6":"LEGS II","7":"PUSH II"}[dn]}
+                      {d.tag}
                     </div>
                   </div>
                 ))}
