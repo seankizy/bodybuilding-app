@@ -2275,7 +2275,7 @@ function AppInner({ onBrief }) {
           {activeMv.programRef && (
             <div style={{ fontSize: 11, letterSpacing: 2, color: "#9a9a9a", textTransform: "uppercase", marginBottom: 6, fontFamily: SANS, display: "flex", alignItems: "center", gap: 8 }}>
               <span>{prog?.title} · {activeMv.programRef}</span>
-              {activeMv.substituted && <span style={{ color: "#f2c94c", letterSpacing: 0.5 }}>· apartment swap</span>}
+              {activeMv.substituted && <span style={{ color: "#ffb3d9", letterSpacing: 0.5 }}>· apartment swap</span>}
             </div>
           )}
           {/* CHANGE 3: Editable movement name inline */}
@@ -2523,7 +2523,7 @@ function AppInner({ onBrief }) {
               <Pill color={color}>{prog.tag}</Pill>
               {!isRest && (
                 <div onClick={() => updateEntry(activeEntry.id, { location: activeEntry.location === "apartment" ? "equinox" : "apartment" })}
-                  style={{ cursor: "pointer", padding: "3px 10px", borderRadius: 999, fontSize: 11, fontWeight: 700, fontFamily: SANS, letterSpacing: 0.5, background: activeEntry.location === "apartment" ? "#f2c94c22" : "#1c1c1c", color: activeEntry.location === "apartment" ? "#f2c94c" : "#9a9a9a", border: `1px solid ${activeEntry.location === "apartment" ? "#f2c94c55" : "#2e2e2e"}` }}>
+                  style={{ cursor: "pointer", padding: "3px 10px", borderRadius: 999, fontSize: 11, fontWeight: 700, fontFamily: SANS, letterSpacing: 0.5, background: activeEntry.location === "apartment" ? "#ffb3d922" : "#1c1c1c", color: activeEntry.location === "apartment" ? "#ffb3d9" : "#9a9a9a", border: `1px solid ${activeEntry.location === "apartment" ? "#ffb3d955" : "#2e2e2e"}` }}>
                   {LOCATIONS[activeEntry.location ?? "equinox"]?.short ?? "Equinox"} · tap to switch
                 </div>
               )}
@@ -2588,7 +2588,7 @@ function AppInner({ onBrief }) {
                         <div style={{ fontWeight: 700, fontSize: 15, color: mvDone ? "#e8e8e8" : "#f2f2f2", lineHeight: 1.3, textDecoration: mvDone ? "line-through" : "none", opacity: mvDone ? 0.7 : 1, display: "flex", alignItems: "center", gap: 6 }}>
                           {mv.name || <span style={{ color: "#5c5c5c" }}>Unnamed movement</span>}
                           {isPR && <span style={{ fontSize: 9, fontWeight: 800, color: "#0a0a0a", background: LAKE.ochre, padding: "2px 6px", borderRadius: 4, letterSpacing: 0.5, flexShrink: 0 }}>PR</span>}
-                          {mv.substituted && <span style={{ fontSize: 9, fontWeight: 800, color: "#f2c94c", background: "#f2c94c22", padding: "2px 6px", borderRadius: 4, letterSpacing: 0.5, flexShrink: 0 }}>SWAP</span>}
+                          {mv.substituted && <span style={{ fontSize: 9, fontWeight: 800, color: "#ffb3d9", background: "#ffb3d922", padding: "2px 6px", borderRadius: 4, letterSpacing: 0.5, flexShrink: 0 }}>SWAP</span>}
                         </div>
                         <div style={{ fontSize: 12, color: "#9a9a9a", marginTop: 3 }}>
                           {mv.repsTarget ? `${mv.setsTarget} sets · ${mv.repsTarget} reps` : `${mv.sets.length} sets logged`}
@@ -4390,8 +4390,8 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
         const advice = surplusAdvice(trend.rate);
         const btn = { flex: 1, padding: "11px 8px", borderRadius: 12, border: "none", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: SANS };
         return (
-          <div style={{ margin: "12px 18px 4px", padding: "14px 16px", borderRadius: 14, background: "#f2c94c14", border: "1px solid #f2c94c44" }}>
-            <div style={{ fontSize: 11, letterSpacing: 2, color: "#f2c94c", textTransform: "uppercase", fontFamily: SANS, fontWeight: 700, marginBottom: 6 }}>
+          <div style={{ margin: "12px 18px 4px", padding: "14px 16px", borderRadius: 14, background: "#ffb3d914", border: "1px solid #ffb3d944" }}>
+            <div style={{ fontSize: 11, letterSpacing: 2, color: "#ffb3d9", textTransform: "uppercase", fontFamily: SANS, fontWeight: 700, marginBottom: 6 }}>
               {blockReview ? "Block review due" : "Check-in due"} · {fmtShort(latest)}
             </div>
             <div style={{ fontSize: 13, color: "#e8e8e8", fontFamily: SANS, lineHeight: 1.5 }}>
@@ -4412,7 +4412,7 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
                   const bump = t => ({ ...t, c: Math.max(0, t.c + advice.carbs) });
                   saveMacroTargets({ training: bump(macroTargets.training), rest: bump(macroTargets.rest) });
                   markCheckinDone(latest);
-                }} style={{ ...btn, background: "#f2c94c", color: "#131313" }}>
+                }} style={{ ...btn, background: "#ffb3d9", color: "#131313" }}>
                   {advice.action === "add" ? "Add" : "Remove"} 38g carbs & done
                 </button>
               )}
@@ -4587,7 +4587,7 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
                         {fmtDate(entry.date)}{prog ? ` · DAY ${entry.programDay}` : ""}
                         {entry.completedAt && <span style={{ color: "#e8e8e8", fontWeight: 800 }}>✓</span>}
                         {entry.location === "apartment" && (
-                          <span style={{ fontSize: 9, fontWeight: 700, color: "#f2c94c", background: "#f2c94c22", padding: "2px 7px", borderRadius: 4, letterSpacing: 0.5, textTransform: "uppercase" }}>
+                          <span style={{ fontSize: 9, fontWeight: 700, color: "#ffb3d9", background: "#ffb3d922", padding: "2px 7px", borderRadius: 4, letterSpacing: 0.5, textTransform: "uppercase" }}>
                             Apartment
                           </span>
                         )}
@@ -4706,7 +4706,7 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
                       <div style={{ fontSize: 12, color: "#5c5c5c", fontFamily: SANS, marginTop: 4 }}>No previous session found · sets will start blank</div>
                     )}
                     {newLocation !== "equinox" && subCount > 0 && (
-                      <div style={{ fontSize: 12, color: "#f2c94c", fontFamily: SANS, marginTop: 4 }}>⇄ {subCount} exercise{subCount !== 1 ? "s" : ""} swapped for apartment equipment</div>
+                      <div style={{ fontSize: 12, color: "#ffb3d9", fontFamily: SANS, marginTop: 4 }}>⇄ {subCount} exercise{subCount !== 1 ? "s" : ""} swapped for apartment equipment</div>
                     )}
                   </div>
                 );
@@ -5078,7 +5078,7 @@ function DailyBrief({ brief, onClose }) {
   const tile = { flex: 1, padding: "12px 10px", borderRadius: 12, background: "#1c1c1c", textAlign: "center" };
   const big = { fontSize: 22, fontWeight: 800, color: "#f2f2f2", fontFamily: SANS, lineHeight: 1.1 };
   const small = { fontSize: 11, color: "#9a9a9a", fontFamily: SANS, marginTop: 4, lineHeight: 1.3 };
-  const gold = "#f2c94c";
+  const gold = "#ffb3d9";
   const { week, session, recovery, upcoming } = brief;
   const wt = week.weight;
   const dateLabel = new Date(brief.today + "T12:00:00").toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
