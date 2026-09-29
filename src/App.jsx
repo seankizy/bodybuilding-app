@@ -93,7 +93,7 @@ const PROGRAM = {
       { id: "C", name: "Hack Squat Machine", sets: 3, reps: "8–10", rest: "2m 30s", type: "compound", muscle: "Quads" },
       { id: "D", name: "DB Bulgarian Split Squat", sets: 3, reps: "8–12 each leg", rest: "1m 30s", type: "compound", muscle: "Glutes", cue: "Long stride, torso leaning forward to bias the glutes." },
       { id: "E", name: "Seated Leg Curl Machine", sets: 3, reps: "10–15", rest: "1m", type: "isolation", muscle: "Hamstrings" },
-      { id: "F", name: "Standing Calf Raise Machine", sets: 4, reps: "10–15", rest: "1m", type: "isolation", muscle: "Calves" },
+      { id: "F", name: "Leg Press Calf Raise", sets: 4, reps: "10–15", rest: "1m", type: "isolation", muscle: "Calves", cue: "Knees straight, full stretch at the bottom, pause at the top." },
     ],
   },
   2: {
@@ -212,7 +212,6 @@ const GYM_SUBS = {
   // DB and barbell lifts) runs as written. Keyed to the Sep 29, 2026 program.
   // Day 1: Lower A
   "1.C": { name: "Smith Machine Squat (feet forward)", sets: 3, reps: "8–10", rest: "2m 30s", type: "compound", muscle: "Quads", cue: "Feet 6 to 12 inches in front of the bar, heels flat or on a plate, torso upright. Closest thing to a hack squat." },
-  "1.F": { name: "Leg Press Calf Raise", sets: 4, reps: "10–15", rest: "1m", type: "isolation", muscle: "Calves", cue: "Knees straight, full stretch at the bottom, pause at the top." },
   // Day 4: Pull
   "4.C": { name: "Low Cable Row (functional trainer)", sets: 2, reps: "10–12", rest: "1m 30s", type: "compound", muscle: "Back", cue: "Low pulley, V bar, chest up, pull to the lower ribs and pause." },
   "4.E": { name: "Cable Reverse Fly (high pulleys)", sets: 3, reps: "12–20", rest: "1m", type: "isolation", muscle: "Shoulders", cue: "Cross the cables, arms slightly bent, sweep out and back at shoulder height." },
@@ -276,19 +275,27 @@ function programExByName(name) {
 const NAME_ALIASES = {
   "DB Lateral Raise": ["DB Lateral Raise (leaning)"],
   "DB Overhead Tricep Extension": ["Tricep Overhead Extension", "Overhead Rope Extension"],
+  "Leg Press Calf Raise": ["Standing Calf Raise Machine"],
 };
 
 // Most recent logged instance of a movement by exact name (or alias), on ANY
 // program day. Used when an exercise has moved to a different day, so its weights
 // still carry forward. Only counts movements with at least one logged set.
-function lastMovementByName(entries, name) {
+// When a location is given, history from that same gym wins; only if there is none
+// does it fall back to the other gym (machines differ, so same-gym numbers are the
+// trustworthy ones).
+function lastMovementByName(entries, name, location = null) {
   if (!name) return null;
   const names = [name, ...(NAME_ALIASES[name] ?? [])].map(n => n.toLowerCase().trim());
   const sorted = [...entries].sort((a, b) => b.date.localeCompare(a.date));
-  for (const nm of names) {
-    for (const e of sorted) {
-      const mv = e.movements.find(m => m.name && m.name.toLowerCase().trim() === nm && m.sets.some(s => (s.w !== "" && s.w != null) || (s.r !== "" && s.r != null)));
-      if (mv) return { mv, date: e.date };
+  const passes = location ? [e => (e.location ?? "equinox") === location, () => true] : [() => true];
+  for (const ok of passes) {
+    for (const nm of names) {
+      for (const e of sorted) {
+        if (!ok(e)) continue;
+        const mv = e.movements.find(m => m.name && m.name.toLowerCase().trim() === nm && m.sets.some(s => (s.w !== "" && s.w != null) || (s.r !== "" && s.r != null)));
+        if (mv) return { mv, date: e.date, location: e.location ?? "equinox" };
+      }
     }
   }
   return null;
@@ -452,10 +459,15 @@ function isMacroOnlyBackup(parsed) {
   return dateKeys.length > 0;
 }
 
-function getLastSession(entries, programDay) {
-  return [...entries]
+function getLastSession(entries, programDay, location = null) {
+  const days = [...entries]
     .filter(e => e.programDay === programDay)
-    .sort((a, b) => b.date.localeCompare(a.date))[0] ?? null;
+    .sort((a, b) => b.date.localeCompare(a.date));
+  if (location) {
+    const same = days.find(e => (e.location ?? "equinox") === location);
+    if (same) return same;
+  }
+  return days[0] ?? null;
 }
 
 // ── RIR FEEDBACK (movement-type aware) ────────────────────────────────────────
@@ -622,15 +634,16 @@ function roundLoad(weight, type, stepOverride = null) {
 // Every past session of one movement, newest first, with its sets parsed and
 // summarized. Used by the progression engine so it can look back through the
 // whole history rather than only at the single most recent session.
-function movementSessions(entries, mvName, excludeEntryId = null, bodyweight = false) {
+function movementSessions(entries, mvName, excludeEntryId = null, bodyweight = false, location = null) {
   if (!mvName) return [];
+  const wanted = [mvName, ...(NAME_ALIASES[mvName] ?? [])].map(n => n.toLowerCase().trim());
   const out = [];
   const sorted = [...entries]
     .filter(e => e.id !== excludeEntryId)
     .sort((a, b) => b.date.localeCompare(a.date));
   for (const e of sorted) {
     for (const mv of e.movements) {
-      if (!mv.name || mv.name.toLowerCase() !== mvName.toLowerCase()) continue;
+      if (!mv.name || !wanted.includes(mv.name.toLowerCase().trim())) continue;
       const sets = mv.sets
         .map((s, i) => ({
           // Bodyweight movements are usually logged with a blank weight; count them as 0.
@@ -644,6 +657,7 @@ function movementSessions(entries, mvName, excludeEntryId = null, bodyweight = f
       const withRIR = sets.filter(s => s.rir !== null && !isNaN(s.rir));
       out.push({
         date: e.date,
+        location: e.location ?? "equinox",
         sets,
         topSet: sets.reduce((a, b) => (b.w > a.w ? b : a)),
         totalReps: sets.reduce((n, s) => n + s.r, 0),
@@ -652,6 +666,15 @@ function movementSessions(entries, mvName, excludeEntryId = null, bodyweight = f
         hasRIR: withRIR.length > 0,
       });
     }
+  }
+  // Same-gym history is the only reliable basis for progression: the same lift can
+  // feel very different on another gym's machine. With no history at this gym yet,
+  // fall back to the other gym's sessions but flag it so the engine calibrates
+  // instead of prescribing a jump.
+  if (location) {
+    const same = out.filter(s => s.location === location);
+    if (same.length) return same;
+    if (out.length) out.crossGym = true;
   }
   return out;
 }
@@ -682,7 +705,7 @@ function accessorySetsNeeded(totalSets) {
 function suggestProgression(entries, mvName, repsTarget, type, opts = {}) {
   const {
     isDeloadWeek = false, excludeEntryId = null,
-    loadStep = null, bodyweight = false, startWeight = null,
+    loadStep = null, bodyweight = false, startWeight = null, location = null,
   } = opts;
 
   // Block starting weight takes priority until the movement is logged once in the
@@ -697,7 +720,7 @@ function suggestProgression(entries, mvName, repsTarget, type, opts = {}) {
     };
   }
 
-  const sessions = movementSessions(entries, mvName, excludeEntryId, bodyweight);
+  const sessions = movementSessions(entries, mvName, excludeEntryId, bodyweight, location);
   if (sessions.length === 0) return null;
 
   const recent = sessions[0];
@@ -728,6 +751,18 @@ function suggestProgression(entries, mvName, repsTarget, type, opts = {}) {
   // back to dropping one full step whenever rounding erases the cut.
   const stepSize = loadStep ?? (type === "compound" ? 5 : 2.5);
   const down = (w, pct) => { const eased = rl(w * pct); return eased < w ? eased : Math.max(0, w - stepSize); };
+
+  // First time at this gym for this movement: the other gym's numbers are only a
+  // starting guess. Hold, calibrate, and let this gym's own log drive next week.
+  if (sessions.crossGym && !bodyweight && !isDeloadWeek && topSet.w > 0) {
+    const from = LOCATIONS[recent.location]?.short ?? "the other gym";
+    const here = LOCATIONS[location]?.short ?? "this gym";
+    return {
+      action: "hold", calibrate: true,
+      weight: topSet.w, lastWeight: topSet.w, lastDate,
+      reason: `First time on ${here}'s machine. Last logged at ${from}: ${topSet.w} x ${topSet.r}. Machines differ, so use that only as a starting point. Pick the load that lands you in ${repsTarget} with 1 to 2 reps in reserve, log it exactly as the stack reads, and from next time on the suggestion comes from ${here}'s own numbers.`,
+    };
+  }
 
   // Bodyweight movements (ab work etc.) progress by reps and control, never load.
   if (bodyweight) {
@@ -1416,8 +1451,8 @@ function todayPlan(entries, today) {
   if (today >= due) return { kind: "train", day: pos, overdue: daysBetween(due, today) };
   return { kind: "rest", day: pos, due };
 }
-function briefLift(entries, ex, isDeload) {
-  const last = lastMovementByName(entries, ex.name);
+function briefLift(entries, ex, isDeload, location = null) {
+  const last = lastMovementByName(entries, ex.name, location);
   let top = null;
   if (last) {
     const sets = last.mv.sets
@@ -1427,13 +1462,14 @@ function briefLift(entries, ex, isDeload) {
   }
   const range = parseRepRange(ex.reps);
   const sug = suggestProgression(entries, ex.name, ex.reps, ex.type, {
-    isDeloadWeek: isDeload, loadStep: ex.loadStep ?? null, bodyweight: !!ex.bodyweight, startWeight: ex.startWeight ?? null,
+    isDeloadWeek: isDeload, loadStep: ex.loadStep ?? null, bodyweight: !!ex.bodyweight, startWeight: ex.startWeight ?? null, location,
   });
   const w = sug?.weight;
   let target;
   if (!sug) target = top ? "Match it, then add a rep" : "No history yet. Find a working weight.";
   else if (sug.action === "add_weight") target = `Go up to ${w}, aim for ${range?.min ?? ""}+ reps`;
   else if (sug.action === "add_reps") target = w > 0 ? `Stay at ${w}, beat ${top?.r ?? ""} reps` : `Beat ${top?.r ?? ""} reps`;
+  else if (sug.calibrate) target = `New machine here. Start near ${w}, find the load that fits ${ex.reps}`;
   else if (sug.action === "hold") target = w > 0 ? `Stay at ${w}, build toward ${range?.max ?? ""} reps` : `Build toward ${range?.max ?? ""} reps`;
   else if (sug.action === "back_off") target = `Ease back to ${w}`;
   else if (sug.action === "deload") target = w > 0 ? `Deload week, use ${w}` : "Deload week, 2 easy sets";
@@ -1462,7 +1498,7 @@ function buildDailyBrief({ entries, weightLog, macros, macroTargets, mesoOverrid
       overdue: plan.overdue, isDeload,
       totalSets: exs.reduce((s, ex) => s + ex.sets, 0),
       muscles: [...new Set(exs.map(ex => ex.muscle).filter(Boolean))],
-      exercises: exs.map(ex => briefLift(entries, ex, isDeload)),
+      exercises: exs.map(ex => briefLift(entries, ex, isDeload, location)),
     };
   } else {
     headline = briefPick(BRIEF_REST_LINES, dayIndex);
@@ -1478,7 +1514,7 @@ function buildDailyBrief({ entries, weightLog, macros, macroTargets, mesoOverrid
       day: plan.day, title: PROGRAM[plan.day].title,
       when: away <= 1 ? "Tomorrow" : `In ${away} days`,
       isDeload,
-      lifts: exercisesFor(plan.day).slice(0, 2).map(ex => briefLift(entries, ex, isDeload)),
+      lifts: exercisesFor(plan.day).slice(0, 2).map(ex => briefLift(entries, ex, isDeload, location)),
     };
   }
 
@@ -2030,7 +2066,7 @@ function AppInner({ onBrief }) {
     entry.customTitle = prog ? prog.title : "";
     entry.location = newLocation;
     if (prog) {
-      const last = getLastSession(entries, newProgramDay);
+      const last = getLastSession(entries, newProgramDay, newLocation);
       // Resolve each slot to either its normal Equinox exercise or, when this session
       // is flagged for the apartment gym, its GYM_SUBS substitute. The resolved list
       // still has one entry per PROGRAM slot id, so slot letters and programRef never
@@ -2048,7 +2084,7 @@ function AppInner({ onBrief }) {
         const exactSameDay = last?.movements.find(m => m.programRef === ex.id && m.name && ex.name && m.name.toLowerCase().trim() === ex.name.toLowerCase().trim()) ?? null;
         // Exercise moved days (e.g. hip thrust from Pull day to Lower A): find its most
         // recent logged instance by exact name, or a known older name, on any day.
-        const crossDay = exactSameDay ? null : lastMovementByName(entries, ex.name);
+        const crossDay = exactSameDay ? null : lastMovementByName(entries, ex.name, newLocation);
         const lastMv = exactSameDay
           ?? crossDay?.mv
           ?? last?.movements.find(m => {
@@ -2092,6 +2128,7 @@ function AppInner({ onBrief }) {
           sets: seeded,
           lastSets: lastSets.length > 0 ? lastSets : null,
           lastDate: (crossDay && lastMv === crossDay.mv) ? crossDay.date : (last?.date ?? null),
+          lastLocation: (crossDay && lastMv === crossDay.mv) ? crossDay.location : (last?.location ?? "equinox"),
         };
       });
     }
@@ -2306,7 +2343,7 @@ function AppInner({ onBrief }) {
         {activeMv.lastSets && activeMv.lastDate && (
           <div style={{ margin: "0 18px 14px", padding: "10px 14px", borderRadius: 12, background: "#131313" }}>
             <div style={{ fontSize: 10, letterSpacing: 2, color: "#5c5c5c", textTransform: "uppercase", fontFamily: SANS, marginBottom: 6 }}>
-              Last session · {fmtDate(activeMv.lastDate)}
+              Last session · {fmtDate(activeMv.lastDate)}{activeMv.lastLocation ? ` · ${LOCATIONS[activeMv.lastLocation]?.short ?? ""}` : ""}
             </div>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
               {activeMv.lastSets.map((s, i) => (
@@ -2332,12 +2369,13 @@ function AppInner({ onBrief }) {
               loadStep: progEx?.loadStep ?? activeMv.loadStep ?? null,
               bodyweight: !!(progEx?.bodyweight ?? activeMv.bodyweight),
               startWeight: progEx?.startWeight ?? null,
+              location: activeEntry.location ?? "equinox",
             }
           );
           if (!sug) return null;
           const LABEL = {
             add_weight: "Add weight", add_reps: "Chase reps",
-            hold: "Hold steady", back_off: "Ease off", deload: "Deload",
+            hold: sug.calibrate ? "Calibrate" : "Hold steady", back_off: "Ease off", deload: "Deload",
             block_start: "Block start",
           };
           // Emphasize only when the suggestion is a real change from last time
@@ -4390,8 +4428,8 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
         const advice = surplusAdvice(trend.rate);
         const btn = { flex: 1, padding: "11px 8px", borderRadius: 12, border: "none", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: SANS };
         return (
-          <div style={{ margin: "12px 18px 4px", padding: "14px 16px", borderRadius: 14, background: "#ffb3d914", border: "1px solid #ffb3d944" }}>
-            <div style={{ fontSize: 11, letterSpacing: 2, color: "#ffb3d9", textTransform: "uppercase", fontFamily: SANS, fontWeight: 700, marginBottom: 6 }}>
+          <div style={{ margin: "12px 18px 4px", padding: "14px 16px", borderRadius: 14, background: "#ff3fc814", border: "1px solid #ff3fc844" }}>
+            <div style={{ fontSize: 11, letterSpacing: 2, color: "#ff3fc8", textTransform: "uppercase", fontFamily: SANS, fontWeight: 700, marginBottom: 6 }}>
               {blockReview ? "Block review due" : "Check-in due"} · {fmtShort(latest)}
             </div>
             <div style={{ fontSize: 13, color: "#e8e8e8", fontFamily: SANS, lineHeight: 1.5 }}>
@@ -4412,7 +4450,7 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
                   const bump = t => ({ ...t, c: Math.max(0, t.c + advice.carbs) });
                   saveMacroTargets({ training: bump(macroTargets.training), rest: bump(macroTargets.rest) });
                   markCheckinDone(latest);
-                }} style={{ ...btn, background: "#ffb3d9", color: "#131313" }}>
+                }} style={{ ...btn, background: "#ff3fc8", color: "#131313" }}>
                   {advice.action === "add" ? "Add" : "Remove"} 38g carbs & done
                 </button>
               )}
@@ -4587,7 +4625,7 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
                         {fmtDate(entry.date)}{prog ? ` · DAY ${entry.programDay}` : ""}
                         {entry.completedAt && <span style={{ color: "#e8e8e8", fontWeight: 800 }}>✓</span>}
                         {entry.location === "apartment" && (
-                          <span style={{ fontSize: 9, fontWeight: 700, color: "#ffb3d9", background: "#ffb3d922", padding: "2px 7px", borderRadius: 4, letterSpacing: 0.5, textTransform: "uppercase" }}>
+                          <span style={{ fontSize: 9, fontWeight: 700, color: "#ff3fc8", background: "#ff3fc822", padding: "2px 7px", borderRadius: 4, letterSpacing: 0.5, textTransform: "uppercase" }}>
                             Apartment
                           </span>
                         )}
@@ -4706,7 +4744,7 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
                       <div style={{ fontSize: 12, color: "#5c5c5c", fontFamily: SANS, marginTop: 4 }}>No previous session found · sets will start blank</div>
                     )}
                     {newLocation !== "equinox" && subCount > 0 && (
-                      <div style={{ fontSize: 12, color: "#ffb3d9", fontFamily: SANS, marginTop: 4 }}>⇄ {subCount} exercise{subCount !== 1 ? "s" : ""} swapped for apartment equipment</div>
+                      <div style={{ fontSize: 12, color: "#ff3fc8", fontFamily: SANS, marginTop: 4 }}>⇄ {subCount} exercise{subCount !== 1 ? "s" : ""} swapped for apartment equipment</div>
                     )}
                   </div>
                 );
@@ -5078,7 +5116,7 @@ function DailyBrief({ brief, onClose }) {
   const tile = { flex: 1, padding: "12px 10px", borderRadius: 12, background: "#1c1c1c", textAlign: "center" };
   const big = { fontSize: 22, fontWeight: 800, color: "#f2f2f2", fontFamily: SANS, lineHeight: 1.1 };
   const small = { fontSize: 11, color: "#9a9a9a", fontFamily: SANS, marginTop: 4, lineHeight: 1.3 };
-  const gold = "#ffb3d9";
+  const gold = "#ff3fc8";
   const { week, session, recovery, upcoming } = brief;
   const wt = week.weight;
   const dateLabel = new Date(brief.today + "T12:00:00").toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
