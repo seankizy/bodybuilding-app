@@ -182,8 +182,15 @@ function loggedSince(entries, mvName, sinceDate) {
 
 // ── TRAINING LOCATIONS ─────────────────────────────────────────────────────
 // Sean trains at two spots: Equinox (full equipment, the default the PROGRAM
-// above is written for) and his apartment building's gym (limited equipment,
-// no Hack Squat, no cable stack, no dip machine, no leg press). Rather than
+// above is written for) and his apartment building's gym (ARC). The apartment
+// gym has a Smith machine (also usable as a free barbell cage), barbell, hex
+// bar, dumbbell rack, flat and adjustable benches, a preacher bench, a dual
+// adjustable cable trainer (rope, V bar, D handles, EZ bar), a lat pulldown, a
+// seated chest press, a leg press with calf raise, a leg extension and curl
+// machine, an assisted dip and pull-up machine, a captain's chair, pull-up bars,
+// kettlebells, suspension straps, ab wheels and cardio. It has no hack squat,
+// pec deck, hip abduction machine, standing or seated calf machine, or 45 degree
+// back extension. Rather than
 // hand-editing the session every time, a session can be flagged with a
 // `location`, and GYM_SUBS below swaps in an apartment-friendly version of
 // any exercise that needs one, keyed by program day + the exercise's slot id
@@ -200,27 +207,25 @@ const LOCATIONS = {
   apartment: { label: "Apartment Gym", short: "Apartment" },
 };
 const GYM_SUBS = {
-  // Best-guess swaps for the apartment gym (assumes dumbbells, bench, Smith and a
-  // pulldown, but no cable stack, dip machine, pec deck, hack squat, leg press or
-  // hip abduction machine). Keyed to the Sep 29, 2026 program slots.
+  // Only slots the apartment gym cannot do as programmed are listed. Everything
+  // else (cable work, leg press, leg extension and curl, lat pulldown, EZ bar,
+  // DB and barbell lifts) runs as written. Keyed to the Sep 29, 2026 program.
   // Day 1: Lower A
-  "1.C": { name: "DB Goblet Squat (heels elevated)", sets: 3, reps: "8–12", rest: "2m", type: "compound", muscle: "Quads" },
-  // Day 2: Upper A
-  "2.C": { name: "DB Fly (flat bench)", sets: 3, reps: "10–15", rest: "1m 30s", type: "isolation", muscle: "Chest" },
-  "2.F": { name: "DB Tricep Kickback", sets: 3, reps: "12–15", rest: "1m", type: "isolation", muscle: "Triceps" },
+  "1.C": { name: "Smith Machine Squat (feet forward)", sets: 3, reps: "8–10", rest: "2m 30s", type: "compound", muscle: "Quads", cue: "Feet 6 to 12 inches in front of the bar, heels flat or on a plate, torso upright. Closest thing to a hack squat." },
+  "1.F": { name: "Leg Press Calf Raise", sets: 4, reps: "10–15", rest: "1m", type: "isolation", muscle: "Calves", cue: "Knees straight, full stretch at the bottom, pause at the top." },
   // Day 4: Pull
-  "4.C": { name: "One-Arm DB Row", sets: 2, reps: "10–12", rest: "1m 30s", type: "compound", muscle: "Back" },
-  "4.D": { name: "DB Lateral Raise (leaning)", sets: 4, reps: "12–20", rest: "1m", type: "isolation", muscle: "Shoulders" },
-  "4.E": { name: "DB Rear Delt Fly (bent over)", sets: 3, reps: "12–20", rest: "1m", type: "isolation", muscle: "Shoulders" },
+  "4.C": { name: "Low Cable Row (functional trainer)", sets: 2, reps: "10–12", rest: "1m 30s", type: "compound", muscle: "Back", cue: "Low pulley, V bar, chest up, pull to the lower ribs and pause." },
+  "4.E": { name: "Cable Reverse Fly (high pulleys)", sets: 3, reps: "12–20", rest: "1m", type: "isolation", muscle: "Shoulders", cue: "Cross the cables, arms slightly bent, sweep out and back at shoulder height." },
   // Day 6: Lower B
-  "6.B": { name: "DB Walking Lunge", sets: 3, reps: "10–12 each leg", rest: "2m", type: "compound", muscle: "Glutes", cue: "Long stride, slight forward lean for glutes." },
-  "6.C": { name: "B-Stance DB Hip Thrust", sets: 3, reps: "12–15", rest: "1m 30s", type: "isolation", muscle: "Glutes" },
-  "6.E": { name: "Banded Hip Abduction", sets: 3, reps: "15–25", rest: "1m", type: "isolation", muscle: "Glutes" },
+  "6.C": { name: "Cable Pull-Through (rope)", sets: 3, reps: "12–15", rest: "1m 30s", type: "isolation", muscle: "Glutes", cue: "Low pulley, rope between the legs, hinge back, then squeeze the glutes to stand." },
+  "6.E": { name: "Cable Hip Abduction (ankle strap)", sets: 3, reps: "15–20", rest: "1m", type: "isolation", muscle: "Glutes", cue: "Low pulley, hold the frame, lift the leg out to the side without leaning. Needs an ankle strap." },
+  "6.F": { name: "Seated DB Calf Raise (on bench)", sets: 4, reps: "10–15", rest: "1m", type: "isolation", muscle: "Calves", cue: "Dumbbell across the knees, toes on a plate, full stretch and pause. Bent knees keep the soleus working." },
   // Day 7: Upper B
-  "7.C": { name: "DB Weighted Dip (bench)", sets: 3, reps: "10–12", rest: "1m 30s", type: "compound", muscle: "Chest" },
-  "7.D": { name: "DB Fly (flat bench)", sets: 3, reps: "12–15", rest: "1m", type: "isolation", muscle: "Chest" },
-  "7.F": { name: "DB Supinating Curl", sets: 3, reps: "10–15", rest: "1m", type: "isolation", muscle: "Biceps" },
+  "7.B": { name: "Flat DB Press", sets: 3, reps: "8–12", rest: "2m 30s", type: "compound", muscle: "Chest" },
+  "7.C": { name: "Captain's Chair Dip (weighted)", sets: 3, reps: "8–12", rest: "2m", type: "compound", muscle: "Chest", cue: "Lean the torso forward for chest. Squeeze a dumbbell between the feet to add load." },
+  "7.D": { name: "Cable Crossover Fly", sets: 3, reps: "12–15", rest: "1m", type: "isolation", muscle: "Chest", cue: "Pulleys at shoulder height, slight forward lean, hands meet in front of the chest." },
 };
+
 
 // Returns the exercise definition to use for this program day + slot id, given
 // a session's location: the substitute if one exists and location is not
@@ -231,7 +236,12 @@ function resolveExercise(programDay, exId, location) {
   if (!base) return null;
   if (location && location !== "equinox") {
     const sub = GYM_SUBS[`${programDay}.${exId}`];
-    if (sub) return { ...base, ...sub, id: base.id, substituted: true };
+    if (sub) {
+      // Start from the slot but clear the Equinox exercise's own starting weight,
+      // load step, bodyweight flag and cue, so a swapped exercise never inherits
+      // them (a DB press should not start at the decline bench's 120 lb).
+      return { ...base, startWeight: undefined, loadStep: undefined, bodyweight: false, cue: "", ...sub, id: base.id, substituted: true };
+    }
   }
   return base;
 }
