@@ -705,7 +705,7 @@ function accessorySetsNeeded(totalSets) {
 function suggestProgression(entries, mvName, repsTarget, type, opts = {}) {
   const {
     isDeloadWeek = false, excludeEntryId = null,
-    loadStep = null, bodyweight = false, startWeight = null, location = null,
+    loadStep = null, bodyweight = false, startWeight = null, location = null, setsTarget = null,
   } = opts;
 
   // Block starting weight takes priority until the movement is logged once in the
@@ -732,16 +732,20 @@ function suggestProgression(entries, mvName, repsTarget, type, opts = {}) {
   // one working set (both, if there are only two) before load goes up. A single
   // set under the rep floor is still enough to back off either way; that's a
   // safety signal, not a "have you earned the jump" signal.
-  let hitTopOfRange, belowRange, accessoryProgressNote = "";
+  let hitTopOfRange, belowRange, accessoryProgressNote = "", accessoryNeed = 0;
   if (type === "compound" || !range) {
     hitTopOfRange = range ? topSet.r >= range.max : false;
     belowRange = range ? topSet.r < range.min : false;
   } else {
-    const need = accessorySetsNeeded(recent.sets.length);
+    // The bar is set by today's prescription (e.g. 3 working sets), not by however
+    // many sets happened to be logged last time (extra sets do not raise the bar).
+    const prescribed = setsTarget && setsTarget > 0 ? setsTarget : recent.sets.length;
+    const need = accessorySetsNeeded(prescribed);
+    accessoryNeed = need;
     const atMax = recent.sets.filter(s => s.r >= range.max).length;
     hitTopOfRange = atMax >= need;
     belowRange = topSet.r < range.min;
-    accessoryProgressNote = `${atMax} of ${recent.sets.length} sets at ${range.max}+ reps (needed ${need})`;
+    accessoryProgressNote = `${atMax} of ${recent.sets.length} sets logged at ${range.max}+ reps (need ${need} of your ${prescribed})`;
   }
   // Per-exercise step override (e.g. hip thrust moves in 10 lb jumps only)
   const bump = loadStep ?? (type === "compound" ? 10 : 5);
@@ -843,7 +847,7 @@ function suggestProgression(entries, mvName, repsTarget, type, opts = {}) {
         ? `Hold ${topSet.w} and progress reps before adding load.`
         : type === "compound"
           ? (hitTopOfRange ? `Hold ${topSet.w} and progress reps before adding load.` : `Hold ${topSet.w} and work toward ${range.max} reps before adding load.`)
-          : `Hold ${topSet.w}. ${accessoryProgressNote} so far, work toward ${accessorySetsNeeded(recent.sets.length)} before adding load.`,
+          : `Hold ${topSet.w}. ${accessoryProgressNote} so far, work toward ${accessoryNeed} before adding load.`,
     };
   }
 
@@ -1462,7 +1466,7 @@ function briefLift(entries, ex, isDeload, location = null) {
   }
   const range = parseRepRange(ex.reps);
   const sug = suggestProgression(entries, ex.name, ex.reps, ex.type, {
-    isDeloadWeek: isDeload, loadStep: ex.loadStep ?? null, bodyweight: !!ex.bodyweight, startWeight: ex.startWeight ?? null, location,
+    isDeloadWeek: isDeload, loadStep: ex.loadStep ?? null, bodyweight: !!ex.bodyweight, startWeight: ex.startWeight ?? null, location, setsTarget: ex.sets ?? null,
   });
   const w = sug?.weight;
   let target;
@@ -2370,6 +2374,7 @@ function AppInner({ onBrief }) {
               bodyweight: !!(progEx?.bodyweight ?? activeMv.bodyweight),
               startWeight: progEx?.startWeight ?? null,
               location: activeEntry.location ?? "equinox",
+              setsTarget: progEx?.sets ?? activeMv.setsTarget ?? null,
             }
           );
           if (!sug) return null;
@@ -3043,18 +3048,77 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
       }
     }
 
-    const macroBar = (label, val, target, barColor) => {
-      const pct = Math.min(100, target > 0 ? (val / target) * 100 : 0);
+    // All tracks share one grams scale: the track width is target / largest target,
+    // so carbs is full width and protein and fat are visibly shorter. The empty gap
+    // on the right of each fill is what is left to eat. The "left" amount sits in the
+    // row above the bar so a short bar never has to carry text.
+    const macroBar = (label, val, target, barColor, scaleMax) => {
       const over = val > target;
+      const left = Math.max(0, target - val);
+      const trackPct = scaleMax > 0 ? Math.min(100, (target / scaleMax) * 100) : 100;
+      const fillPct = Math.min(100, target > 0 ? (val / target) * 100 : 0);
       return (
         <div key={label} style={{ marginBottom: 12 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-            <span style={{ fontSize: 12, color: C.textMid, fontFamily: SANS, fontWeight: 600 }}>{label}</span>
-            <span style={{ fontSize: 12, fontFamily: MONO, color: over ? C.red : barColor }}>{val}g / {target}g</span>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 5 }}>
+            <span style={{ fontSize: 12, color: C.textMid, fontFamily: SANS, fontWeight: 600 }}>
+              {label} <span style={{ fontFamily: MONO, fontWeight: 400, color: over ? C.red : C.textDim }}>{Math.round(val)} / {target}g</span>
+            </span>
+            <span style={{ fontSize: 12, fontFamily: MONO, fontWeight: 700, color: over ? C.red : barColor }}>
+              {over ? `${Math.round(val - target)}g over` : `${Math.round(left)}g left`}
+            </span>
           </div>
-          <div style={{ height: 8, borderRadius: 4, background: C.surface2, overflow: "hidden" }}>
-            <div style={{ width: `${pct}%`, height: "100%", background: over ? C.red : barColor, borderRadius: 4, transition: "width 0.3s" }} />
+          <div style={{ width: `${trackPct}%`, height: 10, borderRadius: 5, background: C.surface2, overflow: "hidden" }}>
+            <div style={{ width: `${fillPct}%`, height: "100%", background: over ? C.red : barColor, borderRadius: 5, transition: "width 0.3s" }} />
           </div>
+        </div>
+      );
+    };
+
+    // Calories left, split by macro: each segment is the kcal still to come from that
+    // macro (protein and carbs 4 per gram, fat 9). Grams inside the segments, kcal under.
+    const remainingSplit = () => {
+      const rem = [
+        { key: "Protein", g: Math.max(0, targets.p - totals.p), kcal: Math.max(0, targets.p - totals.p) * 4, color: LAKE.forest },
+        { key: "Carbs", g: Math.max(0, targets.c - totals.c), kcal: Math.max(0, targets.c - totals.c) * 4, color: LAKE.ochre },
+        { key: "Fat", g: Math.max(0, targets.f - totals.f), kcal: Math.max(0, targets.f - totals.f) * 9, color: LAKE.peak },
+      ];
+      const sumKcal = rem.reduce((n, r) => n + r.kcal, 0);
+      const calLeft = targetCals - totals.cal;
+      return (
+        <div style={{ marginTop: 6, paddingTop: 14, borderTop: `1px solid ${C.surface2}` }}>
+          <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 10 }}>
+            <span style={{ fontSize: 12, color: C.textMid, fontFamily: SANS, fontWeight: 600 }}>Left to eat</span>
+            <span style={{ fontFamily: MONO, fontSize: 13, fontWeight: 700, color: calLeft < 0 ? C.red : C.text }}>
+              {calLeft < 0 ? `${Math.abs(calLeft)} kcal over` : `${calLeft} kcal left`}
+            </span>
+          </div>
+          {sumKcal <= 0 ? (
+            <div style={{ fontSize: 12, color: C.textDim, fontFamily: SANS }}>All three macro targets are hit.</div>
+          ) : (
+            <>
+              <div style={{ display: "flex", gap: 2, height: 30, borderRadius: 8, overflow: "hidden" }}>
+                {rem.filter(r => r.kcal > 0).map(r => (
+                  <div key={r.key} style={{ flex: r.kcal, minWidth: 0, background: r.color, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, fontFamily: MONO, color: "#0a0a0a", whiteSpace: "nowrap" }}>
+                    {r.kcal / sumKcal > 0.12 ? `${Math.round(r.g)}g` : ""}
+                  </div>
+                ))}
+              </div>
+              <div style={{ display: "flex", gap: 2, marginTop: 6 }}>
+                {rem.filter(r => r.kcal > 0).map(r => (
+                  <div key={r.key} style={{ flex: r.kcal, minWidth: 0, textAlign: "center", fontSize: 10, fontFamily: MONO, color: C.textDim, whiteSpace: "nowrap" }}>
+                    {r.kcal / sumKcal > 0.12 ? `${Math.round(r.kcal)} kcal` : `${Math.round(r.kcal)}`}
+                  </div>
+                ))}
+              </div>
+              <div style={{ display: "flex", gap: 2, marginTop: 2 }}>
+                {rem.filter(r => r.kcal > 0).map(r => (
+                  <div key={r.key} style={{ flex: r.kcal, minWidth: 0, textAlign: "center", fontSize: 10, fontFamily: SANS, color: C.textDim, whiteSpace: "nowrap" }}>
+                    {r.kcal / sumKcal > 0.12 ? r.key : r.key[0]}
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
         </div>
       );
     };
@@ -3097,7 +3161,7 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
           </div>
         </div>
 
-        {/* Calorie summary + macro bars */}
+        {/* Calorie summary, macro tracks on one shared grams scale, then calories left split by macro */}
         <div style={{ margin: "10px 18px", padding: "16px", borderRadius: 18, background: C.surface, boxShadow: shadow }}>
           <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 14 }}>
             <span style={{ fontSize: 13, fontWeight: 700, color: C.text, fontFamily: SANS }}>Calories</span>
@@ -3106,15 +3170,17 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
               <span style={{ fontSize: 13, color: C.textDim }}> / {targetCals}</span>
             </span>
           </div>
-          <div style={{ height: 10, borderRadius: 5, background: C.surface2, overflow: "hidden", marginBottom: 16 }}>
-            <div style={{ width: `${Math.min(100, targetCals > 0 ? (totals.cal / targetCals) * 100 : 0)}%`, height: "100%", background: totals.cal > targetCals ? C.red : `linear-gradient(90deg, ${LAKE.sky}aa, ${LAKE.sky})`, borderRadius: 5, transition: "width 0.3s" }} />
-          </div>
-          {macroBar("Protein", totals.p, targets.p, LAKE.forest)}
-          {macroBar("Carbs", totals.c, targets.c, LAKE.ochre)}
-          {macroBar("Fat", totals.f, targets.f, LAKE.peak)}
-          <div style={{ fontSize: 11, color: C.textDim, fontFamily: SANS, marginTop: 4 }}>
-            Remaining: {Math.max(0, targets.p - totals.p)}p · {Math.max(0, targets.c - totals.c)}c · {Math.max(0, targets.f - totals.f)}f · {Math.max(0, targetCals - totals.cal)} kcal
-          </div>
+          {(() => {
+            const scaleMax = Math.max(targets.p, targets.c, targets.f);
+            return (
+              <>
+                {macroBar("Protein", totals.p, targets.p, LAKE.forest, scaleMax)}
+                {macroBar("Carbs", totals.c, targets.c, LAKE.ochre, scaleMax)}
+                {macroBar("Fat", totals.f, targets.f, LAKE.peak, scaleMax)}
+              </>
+            );
+          })()}
+          {remainingSplit()}
         </div>
 
         <div style={{ display: "flex", gap: 10, padding: "0 18px 8px" }}>
