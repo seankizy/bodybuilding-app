@@ -170,14 +170,43 @@ const BLOCK_START = "2026-09-21";
 // True if this movement already has a logged working set on or after `sinceDate`.
 function loggedSince(entries, mvName, sinceDate) {
   if (!mvName) return false;
-  const target = mvName.toLowerCase().trim();
+  const target = nameKey(mvName);
   return entries.some(e =>
     e.date >= sinceDate &&
     e.movements.some(m =>
-      m.name && m.name.toLowerCase().trim() === target &&
+      m.name && nameKey(m.name) === target &&
       m.sets.some(s => s.w !== "" && s.w != null && s.r !== "" && s.r != null)
     )
   );
+}
+
+// ── COACH CHECK-IN, OCT 5 2026 ──────────────────────────────────────────────
+// One-time weight targets for the next session of each movement, from the coach's
+// review of the first full cycle on the new program. Each applies until that
+// movement is logged on or after COACH_SINCE, then the normal engine takes over.
+const COACH_SINCE = "2026-10-05";
+const COACH_TARGETS = {
+  "Smith Machine Incline Press": { weight: 135, note: "Coach: start all sets at 135. RIR 4, 3 and 2 on the first three sets last time means they were too light, and chest is the top priority." },
+  "Cable Fly": { weight: 20, note: "Coach: use 20 on every set. 20 x 13 hit RIR 0 while 15 x 15 sat at RIR 4." },
+  "Barbell Squat": { weight: 120, note: "Coach: go to 120. Three of your four sets at 115 had RIR 2 or more." },
+  "Barbell Hip Thrust": { weight: 135, note: "Coach: all three working sets at 135, aim for 12 reps, then go to 145 next time. Keep the 65 and 115 sets as warm-ups." },
+  "DB Lateral Raise": { weight: 17.5, note: "Coach: 15 x 20 at RIR 3 says you can move up. Use 17.5, or 20 if 17.5 feels easy." },
+};
+// Advisory notes shown on the suggestion card until the movement is logged again.
+const COACH_NOTES = {
+  "Lat Pulldown (Wide Overhand, Flat Bar)": "Coach: if you hit 12 on the first set again, move to 135 or 140.",
+  "Barbell Bent Over Row": "Coach: the dip to 6 reps on set 2 last time looked like a rest or setup issue, not strength. Take the full rest and set up the same way every set.",
+  "Smith Machine Bench Press": "Coach: 175 has sat at 8 to 9 reps for two weeks because it follows four heavy incline sets. Bench and incline now swap order each cycle, so this is the cycle to go bench first when it shows up first.",
+};
+// Upper A alternates which press goes first each cycle. Starting with the next Upper A
+// after the check-in, the Smith bench press leads, then incline leads, and so on.
+function coachOrder(day, exercises, entries) {
+  if (day !== 2 || exercises.length < 2) return exercises;
+  const n = entries.filter(e => e.programDay === 2 && e.date >= COACH_SINCE).length;
+  if (n % 2 !== 0) return exercises;
+  const out = [...exercises];
+  [out[0], out[1]] = [out[1], out[0]];
+  return out;
 }
 
 // ── TRAINING LOCATIONS ─────────────────────────────────────────────────────
@@ -253,7 +282,7 @@ function programExFor(entry, mv) {
   if (!entry?.programDay || !mv?.programRef || !mv.name) return null;
   const ex = resolveExercise(entry.programDay, mv.programRef, entry.location);
   if (!ex) return null;
-  return ex.name.toLowerCase().trim() === mv.name.toLowerCase().trim() ? ex : null;
+  return nameKey(ex.name) === nameKey(mv.name) ? ex : null;
 }
 
 // Any current program exercise (Equinox or apartment swap) with this exact name.
@@ -275,8 +304,295 @@ function programExByName(name) {
 const NAME_ALIASES = {
   "DB Lateral Raise": ["DB Lateral Raise (leaning)"],
   "DB Overhead Tricep Extension": ["Tricep Overhead Extension", "Overhead Rope Extension"],
-  "Leg Press Calf Raise": ["Standing Calf Raise Machine"],
 };
+
+
+// ── EXERCISE LIBRARY ────────────────────────────────────────────────────────
+// One official name per exercise. History, last-session weights, PRs and the
+// progression engine all match on the OFFICIAL name, so a typed variant such as
+// "Seated Calf Raise" resolves to "Seated Calf Raise Machine" instead of starting a
+// second history. The library is built from the program, the apartment swaps, the
+// extras below and any custom exercises added in the app.
+const MUSCLES = ["Chest", "Back", "Shoulders", "Biceps", "Triceps", "Quads", "Hamstrings", "Glutes", "Calves", "Abs"];
+const exKey = s => String(s ?? "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+
+// Other names people type or older builds used, keyed by the official name.
+const LIB_ALIASES = {
+  "Seated Calf Raise Machine": ["Seated Calf Raise", "Seated Calf Raises", "Seated Calf Machine", "Seated Calf"],
+  "Standing Calf Raise Machine": ["Standing Calf Raise", "Standing Calf Raises", "Standing Calf Machine"],
+  "Leg Press Calf Raise": ["Leg Press Calf Raises", "Calf Raise on Leg Press"],
+  "Leg Press Machine": ["Leg Press"],
+  "Hack Squat Machine": ["Hack Squat"],
+  "Seated Leg Curl Machine": ["Seated Leg Curl", "Leg Curl"],
+  "Leg Extension Machine": ["Leg Extension"],
+  "Hip Abduction Machine": ["Hip Abduction"],
+  "Lat Pulldown (Wide Overhand, Flat Bar)": ["Lat Pulldown", "Wide Lat Pulldown", "Wide Grip Lat Pulldown"],
+  "Barbell Bent Over Row": ["Barbell Row", "Bent Over Row"],
+  "Smith Machine Incline Press": ["Smith Incline Press", "Smith Incline", "Incline Smith Press"],
+  "Smith Machine Bench Press": ["Smith Bench Press", "Smith Flat Bench", "Smith Bench"],
+  "EZ Bar Curl": ["EZ Curl", "EZ Bar Curls"],
+  "Cable Pushdown": ["Tricep Pushdown", "Triceps Pushdown", "Cable Tricep Pushdown"],
+  "Decline Bench Press": ["Decline Bench"],
+  "Weighted Dip Machine": ["Dip Machine"],
+  "Pec Deck": ["Pec Deck Machine"],
+};
+
+// Sensible alternatives that are not in the program itself. Each carries its own
+// defaults, used when it is picked from a swap menu or created by typing its name.
+const EXERCISE_EXTRAS = [
+  { name: "Standing Calf Raise Machine", muscle: "Calves", type: "isolation", sets: 4, reps: "10–15", rest: "1m" },
+  { name: "Smith Machine Calf Raise", muscle: "Calves", type: "isolation", sets: 4, reps: "10–15", rest: "1m" },
+  { name: "Smith Machine Hip Thrust", muscle: "Glutes", type: "compound", sets: 4, reps: "8–12", rest: "2m 30s", loadStep: 10 },
+  { name: "Hip Thrust Machine", muscle: "Glutes", type: "compound", sets: 4, reps: "8–12", rest: "2m 30s", loadStep: 10 },
+  { name: "Dumbbell Romanian Deadlift", muscle: "Hamstrings", type: "compound", sets: 3, reps: "8–12", rest: "2m" },
+  { name: "Smith Machine Romanian Deadlift", muscle: "Hamstrings", type: "compound", sets: 3, reps: "6–10", rest: "2m 30s" },
+  { name: "Hex Bar Deadlift", muscle: "Hamstrings", type: "compound", sets: 3, reps: "5–8", rest: "3m" },
+  { name: "Dumbbell Goblet Squat", muscle: "Quads", type: "compound", sets: 3, reps: "8–12", rest: "2m" },
+  { name: "Dumbbell Walking Lunge", muscle: "Glutes", type: "compound", sets: 3, reps: "8–12 each leg", rest: "1m 30s" },
+  { name: "Smith Machine Split Squat", muscle: "Glutes", type: "compound", sets: 3, reps: "8–12 each leg", rest: "1m 30s" },
+  { name: "Lying Leg Curl Machine", muscle: "Hamstrings", type: "isolation", sets: 3, reps: "10–15", rest: "1m" },
+  { name: "Nordic Hamstring Curl", muscle: "Hamstrings", type: "isolation", sets: 3, reps: "5–10", rest: "1m 30s", bodyweight: true },
+  { name: "Incline Dumbbell Press", muscle: "Chest", type: "compound", sets: 4, reps: "6–10", rest: "3m" },
+  { name: "Incline Barbell Press", muscle: "Chest", type: "compound", sets: 4, reps: "6–10", rest: "3m" },
+  { name: "Incline Chest Press Machine", muscle: "Chest", type: "compound", sets: 4, reps: "8–12", rest: "2m 30s" },
+  { name: "Barbell Bench Press", muscle: "Chest", type: "compound", sets: 3, reps: "6–10", rest: "3m" },
+  { name: "Chest Press Machine", muscle: "Chest", type: "compound", sets: 3, reps: "8–12", rest: "2m 30s" },
+  { name: "Decline Dumbbell Press", muscle: "Chest", type: "compound", sets: 3, reps: "8–12", rest: "2m 30s" },
+  { name: "Dumbbell Fly", muscle: "Chest", type: "isolation", sets: 3, reps: "10–15", rest: "1m 30s" },
+  { name: "Machine Lateral Raise", muscle: "Shoulders", type: "isolation", sets: 3, reps: "12–20", rest: "1m" },
+  { name: "Barbell Curl", muscle: "Biceps", type: "isolation", sets: 3, reps: "8–12", rest: "1m 30s" },
+  { name: "Preacher Curl (EZ Bar)", muscle: "Biceps", type: "isolation", sets: 3, reps: "8–12", rest: "1m 30s" },
+  { name: "DB Curl", muscle: "Biceps", type: "isolation", sets: 3, reps: "8–12", rest: "1m" },
+  { name: "Cable Rope Hammer Curl", muscle: "Biceps", type: "isolation", sets: 3, reps: "10–12", rest: "1m" },
+  { name: "Rope Pushdown", muscle: "Triceps", type: "isolation", sets: 3, reps: "10–15", rest: "1m" },
+  { name: "Overhead Cable Tricep Extension", muscle: "Triceps", type: "isolation", sets: 3, reps: "10–15", rest: "1m" },
+  { name: "Skull Crusher (EZ Bar)", muscle: "Triceps", type: "isolation", sets: 3, reps: "8–12", rest: "1m 30s" },
+  { name: "Close-Grip Lat Pulldown", muscle: "Back", type: "compound", sets: 3, reps: "8–12", rest: "2m" },
+  { name: "Neutral-Grip Lat Pulldown", muscle: "Back", type: "compound", sets: 3, reps: "8–12", rest: "2m" },
+  { name: "Assisted Pull-Up", muscle: "Back", type: "compound", sets: 3, reps: "6–10", rest: "2m" },
+  { name: "Chest-Supported Row (Machine)", muscle: "Back", type: "compound", sets: 3, reps: "8–12", rest: "2m" },
+  { name: "Dumbbell Row", muscle: "Back", type: "compound", sets: 3, reps: "8–12 each arm", rest: "1m 30s" },
+  { name: "T-Bar Row", muscle: "Back", type: "compound", sets: 3, reps: "6–10", rest: "2m" },
+  { name: "Rear Delt DB Fly (Bent-Over)", muscle: "Shoulders", type: "isolation", sets: 3, reps: "12–20", rest: "1m" },
+  { name: "Front Squat", muscle: "Quads", type: "compound", sets: 4, reps: "6–10", rest: "3m" },
+  { name: "Banded Lateral Walk", muscle: "Glutes", type: "isolation", sets: 3, reps: "15–20", rest: "1m" },
+  { name: "Captain's Chair Leg Raise", muscle: "Abs", type: "isolation", sets: 3, reps: "10–15", rest: "1m", bodyweight: true },
+  { name: "Cable Crunch", muscle: "Abs", type: "isolation", sets: 3, reps: "10–15", rest: "1m" },
+  { name: "Ab Wheel Rollout", muscle: "Abs", type: "isolation", sets: 3, reps: "8–12", rest: "1m", bodyweight: true },
+  { name: "Smith Machine Shoulder Press", muscle: "Shoulders", type: "compound", sets: 3, reps: "6–10", rest: "2m 30s" },
+  { name: "Barbell Overhead Press", muscle: "Shoulders", type: "compound", sets: 3, reps: "6–10", rest: "2m 30s" },
+  { name: "Machine Shoulder Press", muscle: "Shoulders", type: "compound", sets: 3, reps: "8–12", rest: "2m" },
+  { name: "Assisted Dip Machine", muscle: "Chest", type: "compound", sets: 3, reps: "8–12", rest: "2m" },
+];
+
+// Which exercises make sense in each program slot ("day.slot"). The slot's own
+// programmed exercise is always offered first, then these.
+const SLOT_ALTERNATIVES = {
+  "1.A": ["Smith Machine Hip Thrust", "Hip Thrust Machine", "Cable Pull-Through (rope)"],
+  "1.B": ["Dumbbell Romanian Deadlift", "Smith Machine Romanian Deadlift", "Hex Bar Deadlift"],
+  "1.C": ["Smith Machine Squat (feet forward)", "Leg Press Machine", "Dumbbell Goblet Squat"],
+  "1.D": ["Dumbbell Walking Lunge", "Smith Machine Split Squat"],
+  "1.E": ["Lying Leg Curl Machine", "Nordic Hamstring Curl"],
+  "1.F": ["Leg Press Calf Raise", "Seated Calf Raise Machine", "Standing Calf Raise Machine", "Smith Machine Calf Raise", "Seated DB Calf Raise (on bench)"],
+  "2.A": ["Incline Dumbbell Press", "Incline Barbell Press", "Incline Chest Press Machine"],
+  "2.B": ["Barbell Bench Press", "Flat DB Press", "Chest Press Machine"],
+  "2.C": ["Pec Deck", "Cable Crossover Fly (high to low)", "Dumbbell Fly"],
+  "2.D": ["Cable Lateral Raise", "Machine Lateral Raise"],
+  "2.E": ["Barbell Curl", "Preacher Curl (EZ Bar)", "DB Curl", "Cable Curl"],
+  "2.F": ["Rope Pushdown", "Overhead Cable Tricep Extension", "Skull Crusher (EZ Bar)"],
+  "4.A": ["Close-Grip Lat Pulldown", "Neutral-Grip Lat Pulldown", "Assisted Pull-Up"],
+  "4.B": ["Chest-Supported Row (Machine)", "Dumbbell Row", "T-Bar Row"],
+  "4.C": ["Low Cable Row (functional trainer)", "Chest-Supported Row (Machine)", "Dumbbell Row"],
+  "4.D": ["DB Lateral Raise", "Machine Lateral Raise"],
+  "4.E": ["Cable Reverse Fly (high pulleys)", "Rear Delt DB Fly (Bent-Over)"],
+  "4.F": ["DB Curl", "Preacher Curl (EZ Bar)", "Cable Curl"],
+  "4.G": ["Cable Rope Hammer Curl", "DB Curl"],
+  "6.A": ["Smith Machine Squat (feet forward)", "Hack Squat Machine", "Leg Press Machine", "Front Squat"],
+  "6.B": ["Hack Squat Machine", "Smith Machine Squat (feet forward)"],
+  "6.C": ["Cable Pull-Through (rope)", "Smith Machine Hip Thrust"],
+  "6.D": [],
+  "6.E": ["Cable Hip Abduction (ankle strap)", "Banded Lateral Walk"],
+  "6.F": ["Seated DB Calf Raise (on bench)", "Standing Calf Raise Machine", "Leg Press Calf Raise"],
+  "6.G": ["Captain's Chair Leg Raise", "Cable Crunch", "Ab Wheel Rollout"],
+  "7.A": ["Smith Machine Shoulder Press", "Barbell Overhead Press", "Machine Shoulder Press"],
+  "7.B": ["Flat DB Press", "Smith Machine Bench Press", "Decline Dumbbell Press"],
+  "7.C": ["Captain's Chair Dip (weighted)", "Assisted Dip Machine"],
+  "7.D": ["Cable Crossover Fly", "Cable Fly", "Dumbbell Fly"],
+  "7.E": ["Cable Lateral Raise", "Machine Lateral Raise"],
+  "7.F": ["EZ Bar Curl", "DB Curl", "Preacher Curl (EZ Bar)"],
+  "7.G": ["Overhead Cable Tricep Extension", "Cable Pushdown", "Rope Pushdown"],
+};
+// One extra not otherwise defined: the cable crossover variant for chest day.
+EXERCISE_EXTRAS.push({ name: "Cable Crossover Fly (high to low)", muscle: "Chest", type: "isolation", sets: 3, reps: "10–15", rest: "1m 30s" });
+
+function loadCustomExercises() {
+  try {
+    const a = JSON.parse(localStorage.getItem("wj_custom_exercises") || "[]");
+    return Array.isArray(a) ? a.filter(x => x && typeof x.name === "string" && x.name.trim()) : [];
+  } catch { return []; }
+}
+let CUSTOM_EXERCISES = loadCustomExercises();
+let LIB_CACHE = null;
+function buildLibrary() {
+  const map = new Map();
+  const add = ex => {
+    const key = exKey(ex.name);
+    if (!key || map.has(key)) return;
+    const { id: _id, startWeight, ...rest } = ex;
+    map.set(key, { sets: 3, reps: "10–12", rest: "1m 30s", type: "isolation", muscle: "", ...rest, ...(startWeight != null ? { startWeight } : {}) });
+  };
+  Object.values(PROGRAM).forEach(d => d.exercises.forEach(add));
+  Object.values(GYM_SUBS).forEach(add);
+  EXERCISE_EXTRAS.forEach(add);
+  CUSTOM_EXERCISES.forEach(add);
+  const index = new Map();
+  map.forEach((ex, key) => index.set(key, ex.name));
+  const addAliases = table => {
+    for (const [official, alts] of Object.entries(table)) {
+      const offKey = exKey(official);
+      const target = map.has(offKey) ? map.get(offKey).name : null;
+      if (!target) continue;
+      alts.forEach(a => { const k2 = exKey(a); if (k2 && !index.has(k2)) index.set(k2, target); });
+    }
+  };
+  addAliases(NAME_ALIASES);
+  addAliases(LIB_ALIASES);
+  LIB_CACHE = { map, index, list: [...map.values()] };
+  return LIB_CACHE;
+}
+function lib() { return LIB_CACHE ?? buildLibrary(); }
+// The official name for anything typed or stored; unknown names come back trimmed.
+function canonName(raw) {
+  const t = String(raw ?? "").trim();
+  if (!t) return t;
+  return lib().index.get(exKey(t)) ?? t;
+}
+function nameKey(n) { return exKey(canonName(n)); }
+function libFind(name) { return lib().map.get(nameKey(name)) ?? null; }
+// Library matches for what someone is typing: whole-phrase hits first, then
+// exercises containing most of the words.
+function searchLibrary(q, limit = 6) {
+  const qk = exKey(q);
+  if (!qk) return [];
+  const toks = qk.split(" ").filter(t => t.length > 1);
+  const out = [];
+  for (const ex of lib().list) {
+    const k = exKey(ex.name);
+    let score = 0;
+    if (k === qk) score = 1000;
+    else if (k.includes(qk) || qk.includes(k)) score = 100;
+    else if (toks.length) {
+      const hit = toks.filter(t => k.includes(t)).length;
+      if (hit / toks.length >= 0.6) score = 10 * hit / toks.length;
+    }
+    if (score > 0) out.push({ ex, score });
+  }
+  const canon = lib().index.get(qk);
+  if (canon) { const hit = out.find(o => o.ex.name === canon); if (hit) hit.score = 2000; }
+  return out.sort((a, b) => b.score - a.score || a.ex.name.localeCompare(b.ex.name)).slice(0, limit).map(o => o.ex);
+}
+function addCustomExercise(ex) {
+  const name = ex.name.trim();
+  if (!name || libFind(name)) return libFind(name) ?? null;
+  CUSTOM_EXERCISES = [...CUSTOM_EXERCISES, { sets: 3, reps: "10–12", rest: "1m 30s", type: "isolation", muscle: "", ...ex, name }];
+  try { localStorage.setItem("wj_custom_exercises", JSON.stringify(CUSTOM_EXERCISES)); } catch {}
+  buildLibrary();
+  return libFind(name);
+}
+// Alternatives for one slot of a session: its programmed exercise first, then the
+// slot's list. A movement outside the program falls back to the same muscle.
+function slotAlternatives(entry, mv) {
+  const out = [];
+  const seen = new Set([nameKey(mv.name)]);
+  const push = name => {
+    const ex = libFind(name);
+    if (ex && !seen.has(exKey(ex.name))) { seen.add(exKey(ex.name)); out.push(ex); }
+  };
+  if (entry?.programDay && mv?.programRef) {
+    const base = resolveExercise(entry.programDay, mv.programRef, entry.location);
+    if (base) push(base.name);
+    (SLOT_ALTERNATIVES[`${entry.programDay}.${mv.programRef}`] ?? []).forEach(push);
+  } else {
+    const muscle = mv?.muscle || libFind(mv?.name)?.muscle;
+    if (muscle) lib().list.filter(e => e.muscle === muscle).slice(0, 8).forEach(e => push(e.name));
+  }
+  return out;
+}
+
+const SWAP_REASONS = ["Machine taken", "Not at this gym", "Preference"];
+function setIsLogged(st) { return !!st && st.r !== "" && st.r != null; }
+// Pure: the movement `m` of `entry` turned into library exercise `ex`. The slot keeps
+// its prescription (sets, reps, rest); the exercise supplies type, muscle, cue and load
+// step. Logged sets are never touched; unlogged ones are reseeded from this exercise's
+// own history at this gym, so a swap never inherits another machine's weights.
+function buildSwappedMovement(m, entry, entries, ex, reason) {
+  const loc = entry.location ?? "equinox";
+  const hasSlot = !!(m.programRef && entry.programDay);
+  const base = hasSlot ? resolveExercise(entry.programDay, m.programRef, loc) : null;
+  const setsTarget = hasSlot ? (m.setsTarget ?? base?.sets ?? ex.sets) : ex.sets;
+  const repsTarget = hasSlot ? (m.repsTarget ?? base?.reps ?? ex.reps) : ex.reps;
+  const rest = hasSlot ? (m.rest ?? base?.rest ?? ex.rest) : ex.rest;
+  const others = entries.filter(e => e.id !== entry.id);
+  const hist = lastMovementByName(others, ex.name, loc);
+  const histSets = hist?.mv.sets ?? [];
+  const useCoach = !!COACH_TARGETS[ex.name] && !loggedSince(others, ex.name, COACH_SINCE);
+  const useStart = ex.startWeight != null && !loggedSince(others, ex.name, BLOCK_START);
+  const seed = i => ({
+    w: useCoach ? String(COACH_TARGETS[ex.name].weight) : useStart ? String(ex.startWeight) : (histSets[i]?.w ?? ""),
+    r: (useCoach || useStart) ? "" : (histSets[i]?.r ?? ""),
+    rir: "",
+  });
+  const kept = (m.sets ?? []).filter(setIsLogged);
+  const total = Math.max(setsTarget || 0, kept.length);
+  const sets = [];
+  for (let i = 0; i < total; i++) {
+    const cur = m.sets?.[i];
+    sets.push(setIsLogged(cur) ? cur : seed(i));
+  }
+  const backToBase = !!base && nameKey(ex.name) === nameKey(base.name);
+  return {
+    ...m,
+    name: ex.name,
+    setsTarget, repsTarget, rest,
+    type: ex.type ?? "isolation",
+    muscle: ex.muscle ?? "",
+    cue: ex.cue ?? "",
+    bodyweight: !!ex.bodyweight,
+    loadStep: ex.loadStep ?? null,
+    substituted: backToBase ? !!base.substituted : false,
+    swappedFrom: backToBase ? null : (m.swappedFrom ?? base?.name ?? m.name ?? null),
+    swapReason: backToBase ? null : (reason ?? null),
+    sets,
+    lastSets: histSets.length > 0 ? histSets : null,
+    lastDate: hist?.date ?? null,
+    lastLocation: hist?.location ?? null,
+  };
+}
+// One-time clean-up: every stored movement name becomes its official name (exact
+// normalized and alias matches only), and recent sessions get their "last session"
+// box rebuilt from history before that session, so a renamed lift picks up its numbers.
+function migrateNames(entries, recentCutoff) {
+  let changed = false;
+  const out = entries.map(e => ({ ...e, movements: (e.movements ?? []).map(m => {
+    const c = canonName(m.name);
+    if (c !== m.name) { changed = true; return { ...m, name: c }; }
+    return m;
+  }) }));
+  const res = out.map(e => {
+    if (e.date < recentCutoff) return e;
+    const prior = out.filter(o => o.date < e.date);
+    return { ...e, movements: e.movements.map(m => {
+      if (!m.name) return m;
+      const h = lastMovementByName(prior, m.name, e.location ?? "equinox");
+      if (!h) return m;
+      const same = JSON.stringify(m.lastSets ?? null) === JSON.stringify(h.mv.sets) && m.lastDate === h.date;
+      if (same) return m;
+      changed = true;
+      return { ...m, lastSets: h.mv.sets, lastDate: h.date, lastLocation: h.location };
+    }) };
+  });
+  return { entries: res, changed };
+}
 
 // Most recent logged instance of a movement by exact name (or alias), on ANY
 // program day. Used when an exercise has moved to a different day, so its weights
@@ -286,16 +602,14 @@ const NAME_ALIASES = {
 // trustworthy ones).
 function lastMovementByName(entries, name, location = null) {
   if (!name) return null;
-  const names = [name, ...(NAME_ALIASES[name] ?? [])].map(n => n.toLowerCase().trim());
+  const want = nameKey(name);
   const sorted = [...entries].sort((a, b) => b.date.localeCompare(a.date));
   const passes = location ? [e => (e.location ?? "equinox") === location, () => true] : [() => true];
   for (const ok of passes) {
-    for (const nm of names) {
-      for (const e of sorted) {
-        if (!ok(e)) continue;
-        const mv = e.movements.find(m => m.name && m.name.toLowerCase().trim() === nm && m.sets.some(s => (s.w !== "" && s.w != null) || (s.r !== "" && s.r != null)));
-        if (mv) return { mv, date: e.date, location: e.location ?? "equinox" };
-      }
+    for (const e of sorted) {
+      if (!ok(e)) continue;
+      const mv = e.movements.find(m => m.name && nameKey(m.name) === want && m.sets.some(s => (s.w !== "" && s.w != null) || (s.r !== "" && s.r != null)));
+      if (mv) return { mv, date: e.date, location: e.location ?? "equinox" };
     }
   }
   return null;
@@ -636,14 +950,14 @@ function roundLoad(weight, type, stepOverride = null) {
 // whole history rather than only at the single most recent session.
 function movementSessions(entries, mvName, excludeEntryId = null, bodyweight = false, location = null) {
   if (!mvName) return [];
-  const wanted = [mvName, ...(NAME_ALIASES[mvName] ?? [])].map(n => n.toLowerCase().trim());
+  const want = nameKey(mvName);
   const out = [];
   const sorted = [...entries]
     .filter(e => e.id !== excludeEntryId)
     .sort((a, b) => b.date.localeCompare(a.date));
   for (const e of sorted) {
     for (const mv of e.movements) {
-      if (!mv.name || !wanted.includes(mv.name.toLowerCase().trim())) continue;
+      if (!mv.name || nameKey(mv.name) !== want) continue;
       const sets = mv.sets
         .map((s, i) => ({
           // Bodyweight movements are usually logged with a blank weight; count them as 0.
@@ -707,6 +1021,12 @@ function suggestProgression(entries, mvName, repsTarget, type, opts = {}) {
     isDeloadWeek = false, excludeEntryId = null,
     loadStep = null, bodyweight = false, startWeight = null, location = null, setsTarget = null,
   } = opts;
+
+  // Coach's one-time target for the next session (see COACH_TARGETS).
+  const coachT = COACH_TARGETS[canonName(mvName)];
+  if (coachT && !loggedSince(entries.filter(e => e.id !== excludeEntryId), mvName, COACH_SINCE)) {
+    return { action: "coach", weight: coachT.weight, lastWeight: null, lastDate: null, reason: coachT.note };
+  }
 
   // Block starting weight takes priority until the movement is logged once in the
   // current block, so the card agrees with the weight that was pre-filled.
@@ -1242,12 +1562,14 @@ function weightTrend(weightLog, end) {
   if (now == null || before == null) return { now, before, rate: null };
   return { now, before, rate: (now - before) / 2 };
 }
-// The every-2-weeks calorie rule: target is about +0.5 to +1 lb per week.
+// The every-2-weeks calorie rule: target is about +0.5 lb per week (coach, Oct 5).
 function surplusAdvice(rate) {
   if (rate == null) return { action: "none", carbs: 0, text: "Not enough weigh-ins to judge the trend. Weigh in at least 3 mornings a week." };
-  if (rate < 0.5) return { action: "add", carbs: 38, text: `Gaining ${rate.toFixed(2)} lb/week, under the +0.5 target. Add 150 kcal of carbs (about 38g) to both day types.` };
-  if (rate > 1) return { action: "remove", carbs: -38, text: `Gaining ${rate.toFixed(2)} lb/week, over the +1 lb ceiling. Take 150 kcal of carbs (about 38g) out of both day types.` };
-  return { action: "hold", carbs: 0, text: `Gaining ${rate.toFixed(2)} lb/week, right in the 0.5 to 1 lb window. Keep the current targets.` };
+  // Coach (Oct 5): aim for about +0.5 lb/week, judged on the 7-day average, not single
+  // weigh-ins. A band of 0.25 to 0.75 counts as on target.
+  if (rate < 0.25) return { action: "add", carbs: 38, text: `Gaining ${rate.toFixed(2)} lb/week, under the +0.5 target. Add 150 kcal of carbs (about 38g) to both day types.` };
+  if (rate > 0.75) return { action: "remove", carbs: -38, text: `Gaining ${rate.toFixed(2)} lb/week, over the +0.5 target. Take 150 kcal of carbs (about 38g) out of both day types.` };
+  return { action: "hold", carbs: 0, text: `Gaining ${rate.toFixed(2)} lb/week, right around the +0.5 lb target. Keep the current targets.` };
 }
 
 // ── DAILY BRIEF ──────────────────────────────────────────────────────────────
@@ -1473,6 +1795,7 @@ function briefLift(entries, ex, isDeload, location = null) {
   if (!sug) target = top ? "Match it, then add a rep" : "No history yet. Find a working weight.";
   else if (sug.action === "add_weight") target = `Go up to ${w}, aim for ${range?.min ?? ""}+ reps`;
   else if (sug.action === "add_reps") target = w > 0 ? `Stay at ${w}, beat ${top?.r ?? ""} reps` : `Beat ${top?.r ?? ""} reps`;
+  else if (sug.action === "coach") target = `Coach target: ${w}. ${COACH_TARGETS[ex.name]?.note.replace(/^Coach: /, "") ?? ""}`;
   else if (sug.calibrate) target = `New machine here. Start near ${w}, find the load that fits ${ex.reps}`;
   else if (sug.action === "hold") target = w > 0 ? `Stay at ${w}, build toward ${range?.max ?? ""} reps` : `Build toward ${range?.max ?? ""} reps`;
   else if (sug.action === "back_off") target = `Ease back to ${w}`;
@@ -1491,7 +1814,7 @@ function buildDailyBrief({ entries, weightLog, macros, macroTargets, mesoOverrid
   const plan = todayPlan(entries, today);
   const quote = briefPick(BRIEF_QUOTES, dayIndex);
   const isDeload = mesocycleWeek(entries, mesoOverride).isDeload;
-  const exercisesFor = day => PROGRAM[day].exercises.map(ex => resolveExercise(day, ex.id, location) ?? ex);
+  const exercisesFor = day => coachOrder(day, PROGRAM[day].exercises.map(ex => resolveExercise(day, ex.id, location) ?? ex), entries);
 
   let headline, session = null, recovery = null, upcoming = null;
   if (plan.kind === "train") {
@@ -1607,8 +1930,8 @@ function driveImageUrl(fileId) {
 const DEFAULT_MACRO_TARGETS = {
   // Revised Sep 29, 2026: protein down to 200g, freed calories to carbs, rest days
   // raised so the surplus holds every day. Adjust every 2 weeks off the 7-day
-  // average weight (see the check-in card): under +0.5 lb/wk add 150 kcal of carbs,
-  // over +1 lb/wk remove 150.
+  // average weight (see the check-in card): under +0.25 lb/wk add 150 kcal of carbs,
+  // over +0.75 lb/wk remove 150.
   training: { p: 200, c: 330, f: 75 }, // ~2,795 kcal
   rest:     { p: 200, c: 270, f: 70 }, // ~2,510 kcal
 };
@@ -1709,6 +2032,8 @@ function AppInner({ onBrief }) {
   const [activeId, setActiveId] = useState(null);
   const [activeMvId, setActiveMvId] = useState(null);
   const [showNewModal, setShowNewModal] = useState(false);
+  const [showSwap, setShowSwap] = useState(false);
+  const nameAtFocus = useRef("");
   const [newDate, setNewDate] = useState(todayStr());
   const [newProgramDay, setNewProgramDay] = useState(null);
   const [newLocation, setNewLocation] = useState(() => {
@@ -1859,7 +2184,16 @@ function AppInner({ onBrief }) {
         localStorage.setItem("wj_migration_macros_2026_09_29", "1");
       }
     } catch {}
-    Promise.all([loadEntries(), loadWeights()]).then(([e, w]) => {
+    Promise.all([loadEntries(), loadWeights()]).then(([e0, w]) => {
+      let e = e0;
+      try {
+        if (!localStorage.getItem("wj_migration_names_2026_10_08")) {
+          const cutoff = localDateStr(new Date(Date.now() - 2 * 86400000));
+          const r = migrateNames(e0, cutoff);
+          if (r.changed) { e = r.entries; saveEntries(e); }
+          localStorage.setItem("wj_migration_names_2026_10_08", "1");
+        }
+      } catch {}
       setEntries(e);
       setWeightLog(w);
       setLoading(false);
@@ -2076,7 +2410,7 @@ function AppInner({ onBrief }) {
       // still has one entry per PROGRAM slot id, so slot letters and programRef never
       // shift between locations.
       const resolvedExercises = prog.exercises.map(ex => resolveExercise(newProgramDay, ex.id, newLocation) ?? ex);
-      entry.movements = resolvedExercises.map(ex => {
+      entry.movements = coachOrder(newProgramDay, resolvedExercises, entries).map(ex => {
         // Match by programRef first (the normal case); if that fails, fall back to matching
         // by exercise name. This handles sessions where a movement's programRef is missing
         // or null (e.g. it was manually renamed/re-added at some point and lost its slot
@@ -2085,7 +2419,7 @@ function AppInner({ onBrief }) {
         // Note: matching by programRef alone would wrongly carry Equinox weights onto an
         // apartment substitute (different equipment, different load). Requiring the name
         // to also match keeps the two locations' loads separate for the same slot.
-        const exactSameDay = last?.movements.find(m => m.programRef === ex.id && m.name && ex.name && m.name.toLowerCase().trim() === ex.name.toLowerCase().trim()) ?? null;
+        const exactSameDay = last?.movements.find(m => m.programRef === ex.id && m.name && ex.name && nameKey(m.name) === nameKey(ex.name)) ?? null;
         // Exercise moved days (e.g. hip thrust from Pull day to Lower A): find its most
         // recent logged instance by exact name, or a known older name, on any day.
         const crossDay = exactSameDay ? null : lastMovementByName(entries, ex.name, newLocation);
@@ -2111,9 +2445,11 @@ function AppInner({ onBrief }) {
         // the current block. Reps start blank since last block's reps were at a
         // different load and would be misleading.
         const useStartWeight = ex.startWeight != null && !loggedSince(entries, ex.name, BLOCK_START);
+        const coachT = COACH_TARGETS[ex.name];
+        const useCoach = !!coachT && !loggedSince(entries, ex.name, COACH_SINCE);
         const seeded = Array.from({ length: ex.sets }, (_, i) => ({
-          w: useStartWeight ? String(ex.startWeight) : (lastSets[i]?.w ?? ""),
-          r: useStartWeight ? "" : (lastSets[i]?.r ?? ""),
+          w: useCoach ? String(coachT.weight) : useStartWeight ? String(ex.startWeight) : (lastSets[i]?.w ?? ""),
+          r: (useCoach || useStartWeight) ? "" : (lastSets[i]?.r ?? ""),
           rir: "",
         }));
         return {
@@ -2166,6 +2502,26 @@ function AppInner({ onBrief }) {
     mutate(prev => prev.map(e => e.id === entryId
       ? { ...e, movements: e.movements.map(m => m.id === mvId ? { ...m, ...patch } : m) }
       : e));
+  }
+  function swapMovementTo(entryId, mvId, ex, reason) {
+    mutate(prev => {
+      const entry = prev.find(e => e.id === entryId);
+      if (!entry) return prev;
+      return prev.map(e => e.id === entryId
+        ? { ...e, movements: e.movements.map(m => m.id === mvId ? buildSwappedMovement(m, entry, prev, ex, reason) : m) }
+        : e);
+    });
+    setShowSwap(false);
+  }
+  // Leaving the name box: a typed name that is in the library becomes its official
+  // name and takes that exercise's history; an unknown name just refreshes history.
+  function finishNameEdit(entry, mv) {
+    const typed = (mv.name ?? "").trim();
+    if (!typed || typed === nameAtFocus.current.trim()) return;
+    const ex = libFind(typed);
+    if (ex) { swapMovementTo(entry.id, mv.id, ex, "Renamed"); return; }
+    const h = lastMovementByName(entries.filter(e => e.id !== entry.id), typed, entry.location ?? "equinox");
+    if (h) updateMovement(entry.id, mv.id, { lastSets: h.mv.sets, lastDate: h.date, lastLocation: h.location });
   }
   function deleteMovement(entryId, mvId) {
     mutate(prev => prev.map(e => e.id === entryId
@@ -2323,9 +2679,34 @@ function AppInner({ onBrief }) {
           <input
             style={bigInput}
             value={activeMv.name}
+            onFocus={() => { nameAtFocus.current = activeMv.name ?? ""; }}
+            onBlur={() => finishNameEdit(activeEntry, activeMv)}
             onChange={e => updateMovement(activeEntry.id, activeMv.id, { name: e.target.value })}
             placeholder="Movement name…"
           />
+          {activeMv.swappedFrom && (
+            <div style={{ marginTop: 6, fontSize: 11, color: "#ffb3d9", fontFamily: SANS, letterSpacing: 0.3 }}>
+              swapped from {activeMv.swappedFrom}{activeMv.swapReason && activeMv.swapReason !== "Renamed" ? ` (${activeMv.swapReason.toLowerCase()})` : ""}
+            </div>
+          )}
+          {(() => {
+            const t = (activeMv.name ?? "").trim();
+            if (t.length < 3 || libFind(t)) return null;
+            const sg = searchLibrary(t, 3);
+            if (!sg.length) return null;
+            return (
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 8 }}>
+                {sg.map(ex => (
+                  <button key={ex.name} onMouseDown={e => e.preventDefault()} onClick={() => swapMovementTo(activeEntry.id, activeMv.id, ex, "Renamed")}
+                    style={{ ...btnStyle("#2e2e2e", "#e8e8e8"), padding: "5px 10px", fontSize: 11, fontWeight: 700 }}>{ex.name}</button>
+                ))}
+              </div>
+            );
+          })()}
+          <button onClick={() => setShowSwap(true)}
+            style={{ ...btnStyle("#2e2e2e", color), padding: "6px 12px", fontSize: 12, fontWeight: 800, marginTop: 10 }}>⇄ Swap exercise</button>
+          {showSwap && <SwapSheet entry={activeEntry} mv={activeMv} color={color} onClose={() => setShowSwap(false)}
+            onPick={(ex, reason) => swapMovementTo(activeEntry.id, activeMv.id, ex, reason)} />}
           {activeMv.repsTarget && (
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 8 }}>
               <Pill color={color}>{activeMv.setsTarget} sets</Pill>
@@ -2367,7 +2748,7 @@ function AppInner({ onBrief }) {
           const progEx = programExFor(activeEntry, activeMv);
           const sug = suggestProgression(
             entries, activeMv.name, activeMv.repsTarget,
-            progEx?.type ?? "isolation",
+            progEx?.type ?? activeMv.type ?? "isolation",
             {
               isDeloadWeek: meso.isDeload, excludeEntryId: activeEntry.id,
               loadStep: progEx?.loadStep ?? activeMv.loadStep ?? null,
@@ -2381,10 +2762,10 @@ function AppInner({ onBrief }) {
           const LABEL = {
             add_weight: "Add weight", add_reps: "Chase reps",
             hold: sug.calibrate ? "Calibrate" : "Hold steady", back_off: "Ease off", deload: "Deload",
-            block_start: "Block start",
+            block_start: "Block start", coach: "Coach target",
           };
           // Emphasize only when the suggestion is a real change from last time
-          const isChange = sug.action === "add_weight" || sug.action === "back_off" || sug.action === "deload" || sug.action === "block_start";
+          const isChange = sug.action === "add_weight" || sug.action === "back_off" || sug.action === "deload" || sug.action === "block_start" || sug.action === "coach";
           const accent = isChange ? LAKE.sky : "#5c5c5c";
           const alreadyApplied = activeMv.sets.length > 0 && String(activeMv.sets[0].w) === String(sug.weight);
           return (
@@ -2402,6 +2783,11 @@ function AppInner({ onBrief }) {
               <div style={{ fontSize: 11, color: "#9a9a9a", fontFamily: SANS, lineHeight: 1.5 }}>
                 {sug.reason}
               </div>
+              {COACH_NOTES[canonName(activeMv.name)] && sug.action !== "coach" && !loggedSince(entries.filter(e => e.id !== activeEntry.id), activeMv.name, COACH_SINCE) && (
+                <div style={{ fontSize: 11, color: "#ff3fc8", fontFamily: SANS, lineHeight: 1.5, marginTop: 6 }}>
+                  {COACH_NOTES[canonName(activeMv.name)]}
+                </div>
+              )}
               {sug.weight > 0 && !alreadyApplied && (
                 <button
                   onClick={() => {
@@ -5307,6 +5693,59 @@ function BackBtn({ onClick, label }) {
 }
 function SectionLabel({ children }) {
   return <div style={{ padding: "16px 18px 6px", fontSize: 11, letterSpacing: 2, color: "#5c5c5c", textTransform: "uppercase", fontFamily: SANS, fontWeight: 700 }}>{children}</div>;
+}
+function SwapSheet({ entry, mv, color, onPick, onClose }) {
+  const [q, setQ] = useState("");
+  const [reason, setReason] = useState(SWAP_REASONS[0]);
+  const [muscle, setMuscle] = useState("");
+  const alts = slotAlternatives(entry, mv);
+  const typed = q.trim();
+  const found = typed ? searchLibrary(typed, 8) : [];
+  const list = typed ? found : alts;
+  const exact = typed && libFind(typed);
+  const row = (ex, tag) => (
+    <div key={ex.name} onClick={() => onPick(ex, reason)}
+      style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, padding: "12px 14px", borderRadius: 12, background: "#1c1c1c", marginBottom: 8, cursor: "pointer" }}>
+      <div style={{ minWidth: 0 }}>
+        <div style={{ fontSize: 15, fontWeight: 700, color: "#f2f2f2", fontFamily: SANS }}>{ex.name}</div>
+        <div style={{ fontSize: 11, color: "#9a9a9a", fontFamily: SANS, marginTop: 2 }}>{ex.muscle || "Custom"} · {ex.type ?? "isolation"}</div>
+      </div>
+      {tag && <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: 0.5, color: "#0a0a0a", background: color, padding: "2px 7px", borderRadius: 4, flexShrink: 0 }}>{tag}</span>}
+    </div>
+  );
+  const baseName = (entry?.programDay && mv?.programRef) ? resolveExercise(entry.programDay, mv.programRef, entry.location)?.name : null;
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.75)", display: "flex", alignItems: "flex-end", zIndex: 120 }} onClick={onClose}>
+      <div style={{ background: "#131313", width: "100%", maxHeight: "85vh", overflowY: "auto", borderRadius: "24px 24px 0 0", padding: "20px 18px 40px", boxSizing: "border-box" }} onClick={e => e.stopPropagation()}>
+        <div style={{ width: 36, height: 4, borderRadius: 2, background: "#5c5c5c", margin: "0 auto 16px" }} />
+        <div style={{ fontSize: 18, fontWeight: 800, color: "#f2f2f2", fontFamily: SANS, marginBottom: 12 }}>Swap exercise</div>
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 12 }}>
+          {SWAP_REASONS.map(r => (
+            <button key={r} onClick={() => setReason(r)}
+              style={{ ...btnStyle(reason === r ? color : "#2e2e2e", reason === r ? "#131313" : "#9a9a9a"), padding: "6px 12px", fontSize: 12, fontWeight: 700 }}>{r}</button>
+          ))}
+        </div>
+        <input value={q} onChange={e => setQ(e.target.value)} placeholder="Search all exercises…"
+          style={{ width: "100%", boxSizing: "border-box", background: "#1c1c1c", border: "1px solid #2e2e2e", borderRadius: 10, padding: "11px 12px", fontSize: 15, color: "#f2f2f2", outline: "none", fontFamily: SANS, marginBottom: 12 }} />
+        {!typed && alts.length > 0 && <div style={{ fontSize: 10, letterSpacing: 2, color: "#5c5c5c", textTransform: "uppercase", fontFamily: SANS, marginBottom: 8 }}>Options for this slot</div>}
+        {list.map(ex => row(ex, baseName && nameKey(ex.name) === nameKey(baseName) ? "PROGRAMMED" : null))}
+        {typed && list.length === 0 && <div style={{ fontSize: 13, color: "#9a9a9a", fontFamily: SANS, marginBottom: 10 }}>No match in the library.</div>}
+        {typed && !exact && (
+          <div style={{ padding: "12px 14px", borderRadius: 12, background: "#1c1c1c", border: `1px dashed ${color}66` }}>
+            <div style={{ fontSize: 14, fontWeight: 700, color: "#f2f2f2", fontFamily: SANS, marginBottom: 8 }}>Create "{typed}" as new exercise</div>
+            <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 10 }}>
+              {MUSCLES.map(m => (
+                <button key={m} onClick={() => setMuscle(muscle === m ? "" : m)}
+                  style={{ ...btnStyle(muscle === m ? color : "#2e2e2e", muscle === m ? "#131313" : "#9a9a9a"), padding: "5px 10px", fontSize: 11, fontWeight: 700 }}>{m}</button>
+              ))}
+            </div>
+            <button onClick={() => { const ex = addCustomExercise({ name: typed, muscle: muscle || mv?.muscle || "", type: "isolation" }); if (ex) onPick(ex, reason); }}
+              style={{ ...btnStyle(color, "#131313"), padding: "9px 16px", fontSize: 13, fontWeight: 800 }}>Create and use</button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
 }
 function Pill({ color, children }) {
   return <span style={{ padding: "5px 13px", borderRadius: 20, background: color + "2a", fontSize: 12, fontWeight: 600, color, fontFamily: SANS, letterSpacing: 0.2 }}>{children}</span>;
