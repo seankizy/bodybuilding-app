@@ -260,6 +260,27 @@ const GYM_SUBS = {
 // Equinox, otherwise the normal PROGRAM exercise. Always keeps the original
 // `id` (slot letter) so programRef never changes between locations.
 function resolveExercise(programDay, exId, location) {
+  const r = resolveExerciseRaw(programDay, exId, location);
+  // A set count you accepted from a set-count suggestion replaces the program's,
+  // but only while the slot still holds the exercise it was accepted for.
+  const ov = r ? setOverrides()[`${programDay}.${exId}`] : null;
+  if (ov && exKey(ov.name) === exKey(r.name)) return { ...r, sets: ov.sets, programSets: r.sets };
+  return r;
+}
+let SET_OVERRIDES = null;
+function setOverrides() {
+  if (!SET_OVERRIDES) {
+    try { SET_OVERRIDES = JSON.parse(localStorage.getItem("wj_set_overrides") || "{}") || {}; } catch { SET_OVERRIDES = {}; }
+  }
+  return SET_OVERRIDES;
+}
+function saveSetOverride(slotKey, name, sets) {
+  const o = { ...setOverrides() };
+  if (sets == null) delete o[slotKey]; else o[slotKey] = { name, sets };
+  SET_OVERRIDES = o;
+  try { localStorage.setItem("wj_set_overrides", JSON.stringify(o)); } catch {}
+}
+function resolveExerciseRaw(programDay, exId, location) {
   const base = PROGRAM[programDay]?.exercises.find(x => x.id === exId);
   if (!base) return null;
   if (location && location !== "equinox") {
@@ -907,7 +928,7 @@ function movementHistory(entries, mvName) {
   const results = [];
   [...entries].sort((a, b) => a.date.localeCompare(b.date)).forEach(e => {
     e.movements.forEach(mv => {
-      if (mv.name.toLowerCase() === mvName.toLowerCase()) {
+      if (mv.name && nameKey(mv.name) === nameKey(mvName)) {
         const best = bestSetForMovement(mv);
         if (best) results.push({ date: e.date, ...best });
       }
@@ -1143,14 +1164,21 @@ function suggestProgression(entries, mvName, repsTarget, type, opts = {}) {
         reason: `Last time: ${topSet.r} reps at RIR ${recent.lastSetRIR}, under the ${range.min} to ${range.max} target. Ease the load and rebuild reps.`,
       };
     }
-    if (hitTopOfRange && avgRIR <= 1) {
+    // Top of the range earns the jump whatever the RIR: reps left in the tank at
+    // the top of the range only means the load is even more clearly too light.
+    if (hitTopOfRange) {
+      const over = range ? Math.max(...recent.sets.map(x => x.r)) - range.max : 0;
+      const tail = avgRIR <= 1
+        ? " Add weight."
+        : ` That was with about ${avgRIR.toFixed(1)} reps left per set, so the load is light. Add weight.`;
+      const overNote = over >= 2 ? ` You went ${over} past the ${range.max} rep ceiling.` : "";
       return {
         action: "add_weight",
         weight: rl(topSet.w + bump),
         lastWeight: topSet.w, lastDate,
-        reason: type === "compound"
-          ? `Last time: ${topSet.r} reps at RIR ${recent.lastSetRIR}, top of range with little left. Add weight.`
-          : `Last time: ${accessoryProgressNote} at RIR ${recent.lastSetRIR}. Add weight.`,
+        reason: (type === "compound"
+          ? `Last time: ${topSet.r} reps at RIR ${recent.lastSetRIR}, top of range.`
+          : `Last time: ${accessoryProgressNote}.`) + overNote + tail,
       };
     }
     if (avgRIR >= 2) {
@@ -1258,7 +1286,8 @@ function isNewPR(entry, mv, allEntries) {
   const best = bestSetForMovement(mv);
   if (!best) return false;
   const prevEntries = allEntries.filter(e => e.date < entry.date);
-  const prevBest = movementHistory(prevEntries, mv.name).slice(-1)[0];
+  const prior = movementHistory(prevEntries, mv.name);
+  const prevBest = prior.length ? prior.reduce((a, b) => (b.e1rm > a.e1rm ? b : a)) : null;
   return !prevBest || best.e1rm > prevBest.e1rm;
 }
 
@@ -1289,6 +1318,139 @@ function detailedPRForMovement(entry, mv, allEntries) {
     repDelta: best.r - priorBest.r,
     e1rmDelta: best.e1rm - priorBest.e1rm,
   };
+}
+
+
+// ── SMART COACHING: plateaus, set counts, recovery, PR forecast ─────────────
+// Strength score for one parsed session (movementSessions shape): best estimated
+// 1RM across its sets, RIR included. Bodyweight work with no added load scores by reps.
+function sessionScore(sess) {
+  let best = 0;
+  for (const st of sess.sets) {
+    const v = st.w > 0 ? st.w * (1 + (st.r + (st.rir ?? 0)) / 30) : st.r;
+    if (v > best) best = v;
+  }
+  return best;
+}
+// Deload-week sessions are light on purpose; they never count toward a stall or a
+// set-count change.
+function isDeloadDate(date) {
+  const d = daysBetween(BLOCK_START, date);
+  if (d < 0) return false;
+  return Math.floor(d / 7) % MESO_LENGTH === MESO_LENGTH - 1;
+}
+function workingSessions(entries, mvName, o = {}) {
+  const all = movementSessions(entries, mvName, o.excludeEntryId ?? null, !!o.bodyweight, o.location ?? null);
+  const out = all.filter(x => x.date >= BLOCK_START && !isDeloadDate(x.date));
+  out.crossGym = !!all.crossGym;
+  return out;
+}
+const PLATEAU_SESSIONS = 3;
+// A lift has stalled when its last 3 or more sessions at this gym (this block, no
+// deload weeks) failed to beat its best. The fix depends on how hard those sets were.
+function detectPlateau(entries, mvName, o = {}) {
+  if (o.isDeloadWeek) return null;
+  const sess = workingSessions(entries, mvName, o);
+  if (sess.crossGym || sess.length < PLATEAU_SESSIONS + 1) return null;
+  const chrono = [...sess].reverse();
+  let best = -1, bestIdx = 0;
+  chrono.forEach((x, i) => { const v = sessionScore(x); if (v > best + 0.5) { best = v; bestIdx = i; } });
+  const n = chrono.length - 1 - bestIdx;
+  if (n < PLATEAU_SESSIONS) return null;
+  const stalled = chrono.slice(bestIdx + 1);
+  const rirs = stalled.map(x => x.avgRIR).filter(v => v != null);
+  const avgRIR = rirs.length ? rirs.reduce((a, b) => a + b, 0) / rirs.length : null;
+  const top = sess[0].topSet.w;
+  let alt = null;
+  if (o.entry && o.mv) alt = slotAlternatives(o.entry, o.mv)[0]?.name ?? null;
+  let kind, fix, weight = null;
+  if (avgRIR != null && avgRIR <= 0.75) {
+    kind = "reset";
+    weight = top > 0 ? roundLoad(top * 0.9, o.type ?? "isolation", o.loadStep ?? null) : null;
+    fix = weight
+      ? `You are grinding every set (average RIR ${avgRIR.toFixed(1)}). Drop to ${weight} for one session, build reps back up, then climb past ${top}.`
+      : `You are grinding every set (average RIR ${avgRIR.toFixed(1)}). Do one easier session, stop 2 reps short, then push again.`;
+  } else if (avgRIR != null && avgRIR >= 2) {
+    kind = "push";
+    fix = `Your sets end with about ${avgRIR.toFixed(1)} reps left. Take the last set to RIR 0 or 1 before changing anything else.`;
+  } else if (n >= 5 && alt) {
+    kind = "swap";
+    fix = `${n} sessions without a new best. Swap to ${alt} for the rest of the block; a new angle restarts progress.`;
+  } else {
+    kind = "reps";
+    fix = top > 0
+      ? `Stay at ${top} and add one rep to a single set each session. Small wins break a stall.${avgRIR == null ? " Log RIR so the app can tell fatigue from effort." : ""}`
+      : `Add one rep to a single set each session. Small wins break a stall.`;
+  }
+  return { sessions: n, since: chrono[bestIdx].date, best: Math.round(best), kind, fix, weight };
+}
+// Proposes one more or one fewer working set, from the last two sessions at this gym.
+//   add: every prescribed set done, the final set still ended at RIR 2+, and reps
+//        held up from first set to last (the muscle can recover from more)
+//   cut: the final set fell under the rep floor or lost 30%+ of the first set's reps,
+//        at RIR 0 (that set is fatigue, not growth)
+function suggestSetCount(entries, mvName, o = {}) {
+  const target = o.setsTarget;
+  if (o.isDeloadWeek || !target) return null;
+  const range = parseRepRange(o.repsTarget);
+  if (!range) return null;
+  const sess = workingSessions(entries, mvName, o);
+  if (sess.crossGym || sess.length < 2) return null;
+  const last2 = sess.slice(0, 2);
+  const fin = x => x.sets[x.sets.length - 1];
+  const drop = x => { const a = x.sets[0].r, b = fin(x).r; return a > 0 ? (a - b) / a : 0; };
+  const easy = last2.every(x => x.sets.length >= target && fin(x).rir != null && fin(x).rir >= 2 && drop(x) <= 0.1 && fin(x).r >= range.min);
+  if (easy && target < 5) {
+    return { dir: "add", to: target + 1, reason: `Your last set ended at RIR ${fin(last2[0]).rir} with reps holding steady, two sessions running. You can recover from one more set.` };
+  }
+  const hard = last2.every(x => x.sets.length === target && (fin(x).rir == null || fin(x).rir <= 0) && (fin(x).r < range.min || drop(x) >= 0.3));
+  if (hard && target > 2) {
+    return { dir: "cut", to: target - 1, reason: `Your last set has fallen apart two sessions running (${fin(last2[0]).r} reps vs ${last2[0].sets[0].r} on set 1). Drop it and put that effort into the sets that count.` };
+  }
+  return null;
+}
+// Recovery check-in at the start of a session: sleep and soreness, one tap each.
+const READINESS_SLEEP = [["poor", "Poor"], ["ok", "OK"], ["good", "Good"]];
+const READINESS_SORE = [["very", "Very sore"], ["some", "A bit"], ["none", "Fresh"]];
+function readinessLevel(r) {
+  if (!r || !r.sleep || !r.soreness) return null;
+  const pts = ({ poor: 2, ok: 1, good: 0 })[r.sleep] + ({ very: 2, some: 1, none: 0 })[r.soreness];
+  return pts >= 3 ? "low" : pts === 2 ? "moderate" : "good";
+}
+const READINESS_TEXT = {
+  good: "Recovered. Chase every jump the app suggests.",
+  moderate: "Partly recovered. Hold your weights today; no new jumps.",
+  low: "Under-recovered. Hold your weights and skip the last set of each accessory.",
+};
+// A low or moderate check-in turns any weight jump into a hold at last time's load.
+function applyReadiness(sug, level) {
+  if (!sug || !level || level === "good" || sug.action !== "add_weight") return sug;
+  return {
+    ...sug,
+    action: sug.lastWeight > 0 ? "hold" : "add_reps",
+    weight: sug.lastWeight,
+    readiness: level,
+    reason: sug.lastWeight > 0
+      ? `You earned a jump, but recovery is ${level} today. Match ${sug.lastWeight} and take the jump next session.`
+      : `You earned more load, but recovery is ${level} today. Match last time and take the jump next session.`,
+  };
+}
+// The fewest reps at `weight` (assuming RIR 1) that beat the all-time best estimated
+// 1RM. Returned only when it is within reach: no more than 2 reps past the range top.
+function prForecast(entries, mvName, weight, repsTarget, excludeEntryId = null) {
+  const w = parseFloat(weight);
+  if (!mvName || !(w > 0)) return null;
+  const hist = movementHistory(entries.filter(e => e.id !== excludeEntryId), mvName);
+  if (hist.length < 2) return null;
+  const best = hist.reduce((a, b) => (b.e1rm > a.e1rm ? b : a));
+  const range = parseRepRange(repsTarget);
+  const cap = (range?.max ?? 12) + 2;
+  for (let r = 1; r <= cap; r++) {
+    if (estimateOneRM(w, r, 1) > best.e1rm) {
+      return { weight: w, reps: r, best: best.e1rm, bestW: best.w, bestR: best.r, bestDate: best.date };
+    }
+  }
+  return null;
 }
 
 // Collect all PRs achieved across every movement in a completed session
@@ -1802,7 +1964,11 @@ function briefLift(entries, ex, isDeload, location = null) {
   else if (sug.action === "deload") target = w > 0 ? `Deload week, use ${w}` : "Deload week, 2 easy sets";
   else if (sug.action === "block_start") target = `Start at ${w}, log RIR every set`;
   else target = "Match it, then add a rep";
+  const plateau = detectPlateau(entries, ex.name, { bodyweight: !!ex.bodyweight, location, isDeloadWeek: isDeload, type: ex.type, loadStep: ex.loadStep ?? null });
+  const pr = !isDeload && sug?.action !== "back_off" ? prForecast(entries, ex.name, w ?? top?.w, ex.reps) : null;
   return {
+    plateau: plateau ? `Stalled ${plateau.sessions} sessions. ${plateau.fix}` : null,
+    pr: pr ? `PR in reach: ${pr.weight} x ${pr.reps} beats your best (${pr.bestW} x ${pr.bestR})` : null,
     name: ex.name, sets: ex.sets, reps: ex.reps, rest: ex.rest, muscle: ex.muscle,
     last: top ? ((top.w || 0) > 0 ? `${top.w} x ${top.r}` : `${top.r} reps`) : null,
     lastDate: last?.date ?? null,
@@ -2746,7 +2912,7 @@ function AppInner({ onBrief }) {
           // Read exercise settings from the program so sessions created before a program
           // change still get the right step size, bodyweight handling, and start weight.
           const progEx = programExFor(activeEntry, activeMv);
-          const sug = suggestProgression(
+          const sug0 = suggestProgression(
             entries, activeMv.name, activeMv.repsTarget,
             progEx?.type ?? activeMv.type ?? "isolation",
             {
@@ -2755,9 +2921,10 @@ function AppInner({ onBrief }) {
               bodyweight: !!(progEx?.bodyweight ?? activeMv.bodyweight),
               startWeight: progEx?.startWeight ?? null,
               location: activeEntry.location ?? "equinox",
-              setsTarget: progEx?.sets ?? activeMv.setsTarget ?? null,
+              setsTarget: activeMv.setsTarget ?? progEx?.sets ?? null,
             }
           );
+          const sug = applyReadiness(sug0, readinessLevel(activeEntry.readiness));
           if (!sug) return null;
           const LABEL = {
             add_weight: "Add weight", add_reps: "Chase reps",
@@ -2799,6 +2966,62 @@ function AppInner({ onBrief }) {
                 </button>
               )}
             </div>
+          );
+        })()}
+
+        {/* Smart coaching: PR forecast, plateau, set count. Advisory only. */}
+        {(() => {
+          const meso = mesocycleWeek(entries, mesoOverride);
+          const progEx = programExFor(activeEntry, activeMv);
+          const o = {
+            excludeEntryId: activeEntry.id, location: activeEntry.location ?? "equinox",
+            bodyweight: !!(progEx?.bodyweight ?? activeMv.bodyweight), isDeloadWeek: meso.isDeload,
+            type: progEx?.type ?? activeMv.type ?? "isolation", loadStep: progEx?.loadStep ?? activeMv.loadStep ?? null,
+            repsTarget: activeMv.repsTarget, setsTarget: activeMv.setsTarget ?? progEx?.sets ?? null,
+            entry: activeEntry, mv: activeMv,
+          };
+          const plateau = detectPlateau(entries, activeMv.name, o);
+          const setSug = suggestSetCount(entries, activeMv.name, o);
+          const firstW = activeMv.sets.find(st => parseFloat(st.w) > 0)?.w;
+          const pr = meso.isDeload ? null : prForecast(entries, activeMv.name, firstW, activeMv.repsTarget, activeEntry.id);
+          const level = readinessLevel(activeEntry.readiness);
+          const slotKey = activeEntry.programDay && activeMv.programRef ? `${activeEntry.programDay}.${activeMv.programRef}` : null;
+          const card = (accent, label, body, extra) => (
+            <div style={{ margin: "0 18px 14px", padding: "12px 14px", borderRadius: 12, background: accent + "14" }}>
+              <div style={{ fontSize: 10, letterSpacing: 2, color: accent, textTransform: "uppercase", fontFamily: SANS, fontWeight: 700, marginBottom: 6 }}>{label}</div>
+              <div style={{ fontSize: 12, color: "#c9c9c9", fontFamily: SANS, lineHeight: 1.5 }}>{body}</div>
+              {extra}
+            </div>
+          );
+          const applySets = (to, forward) => {
+            const logged = st => st.r !== "" && st.r != null;
+            let sets = [...activeMv.sets];
+            if (to > sets.length) while (sets.length < to) sets.push({ w: sets.at(-1)?.w ?? "", r: "", rir: "" });
+            else while (sets.length > to && !logged(sets.at(-1))) sets.pop();
+            updateMovement(activeEntry.id, activeMv.id, { setsTarget: to, sets });
+            if (forward && slotKey && progEx) saveSetOverride(slotKey, activeMv.name, to === (progEx.programSets ?? -1) ? null : to);
+          };
+          const smallBtn = (txt, onClick, filled) => (
+            <button onClick={onClick} style={{ ...btnStyle(filled ? "#ffb3d9" : "#2e2e2e", filled ? "#131313" : "#e8e8e8"), padding: "7px 12px", fontSize: 12, fontWeight: 800, marginTop: 10, marginRight: 8 }}>{txt}</button>
+          );
+          return (
+            <>
+              {level && level !== "good" && card("#ffb3d9", `Recovery · ${level}`, READINESS_TEXT[level])}
+              {pr && card("#e8e8e8", "PR in reach", `${pr.weight} × ${pr.reps} beats your best ever (${pr.bestW} × ${pr.bestR}, ${fmtDate(pr.bestDate)}).`)}
+              {plateau && card("#ff3fc8", `Stalled · ${plateau.sessions} sessions`, `No new best since ${fmtDate(plateau.since)}. ${plateau.fix}`,
+                plateau.kind === "reset" && plateau.weight ? smallBtn(`Use ${plateau.weight} today`, () => updateMovement(activeEntry.id, activeMv.id, { sets: activeMv.sets.map(st => (st.r !== "" && st.r != null) ? st : { ...st, w: String(plateau.weight) }) }), true) : null)}
+              {setSug && card("#ffb3d9", setSug.dir === "add" ? `Add a set · ${setSug.to} sets` : `Drop a set · ${setSug.to} sets`, setSug.reason,
+                <div>
+                  {smallBtn("Today only", () => applySets(setSug.to, false), false)}
+                  {slotKey && progEx && smallBtn("From now on", () => applySets(setSug.to, true), true)}
+                </div>)}
+              {progEx?.programSets != null && progEx.programSets !== progEx.sets && (
+                <div style={{ margin: "-6px 18px 14px", fontSize: 11, color: "#9a9a9a", fontFamily: SANS }}>
+                  You set this slot to {progEx.sets} sets (program: {progEx.programSets}).{" "}
+                  <span onClick={() => { saveSetOverride(slotKey, activeMv.name, null); applySets(progEx.programSets, false); }} style={{ color: "#ffb3d9", cursor: "pointer", fontWeight: 700 }}>Reset to program</span>
+                </div>
+              )}
+            </>
           );
         })()}
 
@@ -2959,6 +3182,31 @@ function AppInner({ onBrief }) {
             </div>
           )}
         </div>
+
+        {prog && !isRest && (() => {
+          const r = activeEntry.readiness ?? {};
+          const level = readinessLevel(r);
+          const setR = (k, v) => updateEntry(activeEntry.id, { readiness: { ...r, [k]: r[k] === v ? null : v } });
+          const row = (label, k, opts) => (
+            <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
+              <div style={{ width: 64, fontSize: 12, color: "#9a9a9a", fontFamily: SANS }}>{label}</div>
+              {opts.map(([v, t]) => (
+                <button key={v} onClick={() => setR(k, v)}
+                  style={{ ...btnStyle(r[k] === v ? color : "#1c1c1c", r[k] === v ? "#131313" : "#9a9a9a"), flex: 1, padding: "8px 0", fontSize: 12, fontWeight: 700 }}>{t}</button>
+              ))}
+            </div>
+          );
+          return (
+            <>
+              <SectionLabel>Recovery Check-in</SectionLabel>
+              <div style={{ margin: "0 18px 6px" }}>
+                {row("Sleep", "sleep", READINESS_SLEEP)}
+                {row("Soreness", "soreness", READINESS_SORE)}
+                {level && <div style={{ fontSize: 12, color: level === "good" ? "#c9c9c9" : "#ffb3d9", fontFamily: SANS, lineHeight: 1.5, marginTop: 2 }}>{READINESS_TEXT[level]}</div>}
+              </div>
+            </>
+          );
+        })()}
 
         <SectionLabel>Session Notes</SectionLabel>
         <textarea style={noteArea} value={activeEntry.note}
@@ -5586,6 +5834,8 @@ function DailyBrief({ brief, onClose }) {
         {l.rest ? ` · Rest ${l.rest}` : ""}
       </div>
       <div style={{ fontSize: 13, fontWeight: 700, color: gold, fontFamily: SANS, marginTop: 3 }}>{l.target}</div>
+      {l.pr && <div style={{ fontSize: 12, fontWeight: 700, color: "#f2f2f2", fontFamily: SANS, marginTop: 3 }}>{l.pr}</div>}
+      {l.plateau && <div style={{ fontSize: 12, color: "#ffb3d9", fontFamily: SANS, marginTop: 3, lineHeight: 1.4 }}>{l.plateau}</div>}
     </div>
   );
   const bullet = (lead, text) => (
