@@ -718,6 +718,69 @@ async function saveWeights(weights) {
   try { localStorage.setItem("wj_weights", JSON.stringify(weights)); } catch {}
 }
 
+// ── SERVER CALLS ──────────────────────────────────────────────────────────────
+// AI and Drive calls go through /api/* on Vercel so no key ever ships to the browser.
+// The server checks a passcode you enter once on this phone (APP_PASSCODE env var).
+function getPasscode() {
+  let code = "";
+  try { code = localStorage.getItem("wj_passcode") || ""; } catch {}
+  if (!code) {
+    code = (window.prompt("Enter your app passcode to use AI and photos") || "").trim();
+    if (code) { try { localStorage.setItem("wj_passcode", code); } catch {} }
+  }
+  return code;
+}
+// A wrong passcode is forgotten so the app asks again next time.
+async function apiFetch(url, opts) {
+  const resp = await fetch(url, opts);
+  if (resp.status === 401) { try { localStorage.removeItem("wj_passcode"); } catch {} }
+  return resp;
+}
+function appHeaders() {
+  return { "Content-Type": "application/json", "x-app-passcode": getPasscode() };
+}
+
+// ── BACKUP ────────────────────────────────────────────────────────────────────
+// On iPhone this opens the share sheet, so you can save straight to Google Drive or Files.
+async function saveBackupFile(payload) {
+  const name = `workout_backup_${todayStr()}.json`;
+  const json = JSON.stringify(payload, null, 2);
+  try {
+    const file = new File([json], name, { type: "application/json" });
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      await navigator.share({ files: [file], title: "Workout Journal backup" });
+      try { localStorage.setItem("wj_last_backup", new Date().toISOString()); } catch {}
+      return true;
+    }
+  } catch (e) {
+    if (e?.name === "AbortError") return false; // user closed the share sheet
+  }
+  const url = URL.createObjectURL(new Blob([json], { type: "application/json" }));
+  const a = document.createElement("a");
+  a.href = url; a.download = name; a.click();
+  URL.revokeObjectURL(url);
+  try { localStorage.setItem("wj_last_backup", new Date().toISOString()); } catch {}
+  return true;
+}
+function backupFromStorage() {
+  const read = (k, fallback) => { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : fallback; } catch { return fallback; } };
+  let cycleAnchor = null;
+  try { cycleAnchor = localStorage.getItem("wj_cycle_anchor"); } catch {}
+  return {
+    version: 4, exportedAt: new Date().toISOString(),
+    entries: read("wj_entries", []), weights: read("wj_weights", []),
+    mesoOverride: read("wj_meso", null), cycleAnchor,
+    macros: read("wj_macros", {}), macroTargets: read("wj_macro_targets", DEFAULT_MACRO_TARGETS),
+  };
+}
+function daysSinceBackup() {
+  try {
+    const last = localStorage.getItem("wj_last_backup");
+    if (!last) return Infinity;
+    return (Date.now() - new Date(last).getTime()) / 86400000;
+  } catch { return Infinity; }
+}
+
 // ── CSV EXPORT ────────────────────────────────────────────────────────────────
 function buildCSV(entries, weights) {
   const rows = [["TYPE","DATE","PROGRAM_DAY","WORKOUT_TITLE","EXERCISE","SET","WEIGHT_LBS","REPS","RIR","SESSION_NOTE","MOVEMENT_NOTE"]];
@@ -759,13 +822,7 @@ function downloadCSV(entries, weights) {
 }
 function downloadJSON(entries, weights, mesoOverride, cycleAnchor, macros, macroTargets) {
   const payload = { version: 4, exportedAt: new Date().toISOString(), entries, weights, mesoOverride: mesoOverride ?? null, cycleAnchor: cycleAnchor ?? null, macros: macros ?? {}, macroTargets: macroTargets ?? DEFAULT_MACRO_TARGETS };
-  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `workout_backup_${todayStr()}.json`;
-  a.click();
-  URL.revokeObjectURL(url);
+  return saveBackupFile(payload);
 }
 function readJSONBackup(file) {
   return new Promise((resolve, reject) => {
@@ -2065,32 +2122,17 @@ function mesocycleWeek(entries, override) {
 // ── PROGRESS PHOTOS (Google Drive, public read-only API) ─────────────────────
 // Folder must be link-shared ("anyone with the link can view") for this to work
 // without OAuth — confirmed already shared as of this build.
-const DRIVE_PHOTOS_FOLDER_ID = "1RMrOwwsTqX0_wHiPfxjbgCJxz5tdNCwX";
-const DRIVE_API_BASE = "https://www.googleapis.com/drive/v3";
 
 async function driveListPhotos() {
-  const apiKey = import.meta.env?.VITE_GOOGLE_DRIVE_API_KEY;
-  if (!apiKey) throw new Error("Progress Photos needs VITE_GOOGLE_DRIVE_API_KEY set in Vercel env vars.");
-  const q = encodeURIComponent(`'${DRIVE_PHOTOS_FOLDER_ID}' in parents and mimeType contains 'image/' and trashed = false`);
-  const fields = encodeURIComponent("files(id,name,createdTime,thumbnailLink)");
-  const url = `${DRIVE_API_BASE}/files?q=${q}&fields=${fields}&pageSize=1000&key=${apiKey}`;
-  const resp = await fetch(url);
+  const resp = await apiFetch("/api/photos", { headers: appHeaders() });
   if (!resp.ok) {
     const body = await resp.json().catch(() => null);
-    throw new Error(body?.error?.message || `Drive API error (${resp.status})`);
+    throw new Error(body?.error?.message || `Photos error (${resp.status})`);
   }
   const data = await resp.json();
-  return (data.files ?? []).map(f => ({
-    id: f.id,
-    name: f.name,
-    date: (f.createdTime || "").slice(0, 10),
-    thumbnailLink: f.thumbnailLink,
-  })).sort((a, b) => b.date.localeCompare(a.date));
-}
-
-function driveImageUrl(fileId) {
-  const apiKey = import.meta.env?.VITE_GOOGLE_DRIVE_API_KEY;
-  return `${DRIVE_API_BASE}/files/${fileId}?alt=media&key=${apiKey}`;
+  const k = encodeURIComponent(getPasscode());
+  // <img> tags can't send headers, so thumbnails carry the passcode in the URL (same origin only).
+  return (data.files || []).map(f => ({ ...f, thumb: `/api/photos?id=${encodeURIComponent(f.id)}&thumb=1&k=${k}` }));
 }
 
 const DEFAULT_MACRO_TARGETS = {
@@ -2182,6 +2224,7 @@ export default function App() {
   return (
     <>
       <AppInner onBrief={setBrief} />
+      <BackupNudge />
       {brief && (
         <DailyBrief brief={brief} onClose={() => {
           try { localStorage.setItem("wj_brief_seen", brief.today); } catch {}
@@ -2189,6 +2232,37 @@ export default function App() {
         }} />
       )}
     </>
+  );
+}
+
+function BackupNudge() {
+  const [show, setShow] = useState(false);
+  useEffect(() => {
+    const check = () => {
+      let snoozed = null, hasData = false;
+      try {
+        snoozed = localStorage.getItem("wj_backup_snooze");
+        hasData = (JSON.parse(localStorage.getItem("wj_entries") || "[]") || []).length > 0;
+      } catch {}
+      setShow(hasData && daysSinceBackup() >= 7 && snoozed !== todayStr());
+    };
+    check();
+    const onVis = () => { if (document.visibilityState === "visible") check(); };
+    document.addEventListener("visibilitychange", onVis);
+    return () => document.removeEventListener("visibilitychange", onVis);
+  }, []);
+  if (!show) return null;
+  const days = daysSinceBackup();
+  return (
+    <div style={{ position: "fixed", top: "calc(env(safe-area-inset-top) + 10px)", left: "50%", transform: "translateX(-50%)", width: "calc(100% - 36px)", maxWidth: 394, background: "#1c1c1c", borderRadius: 14, padding: "10px 14px", display: "flex", alignItems: "center", gap: 10, zIndex: 60, boxShadow: `0 4px 24px rgba(0,0,0,0.5), 0 0 0 1px ${LAKE.sky}33`, fontFamily: SANS }}>
+      <div style={{ flex: 1, fontSize: 12, color: "#e8e8e8" }}>
+        {days === Infinity ? "Your journal has never been backed up." : `Last backup ${Math.floor(days)} days ago.`} Save a copy to Drive.
+      </div>
+      <button onClick={async () => { if (await saveBackupFile(backupFromStorage())) setShow(false); }} style={{ padding: "7px 12px", borderRadius: 10, border: "none", background: LAKE.sky, color: "#080c0a", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: SANS }}>Back up</button>
+      <button onClick={() => { try { localStorage.setItem("wj_backup_snooze", todayStr()); } catch {} setShow(false); }} style={{ width: 26, height: 26, borderRadius: 8, background: "#2a2a2a", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <X size={13} color="#9a9a9a" strokeWidth={2.5} />
+      </button>
+    </div>
   );
 }
 
@@ -3487,12 +3561,10 @@ function AppInner({ onBrief }) {
       if (!foodPhoto) return;
       setAiLoading(true); setAiError("");
       try {
-        const apiKey = import.meta.env?.VITE_ANTHROPIC_API_KEY;
-        if (!apiKey) throw new Error("AI logging needs VITE_ANTHROPIC_API_KEY set in Vercel env vars.");
         const base64Data = foodPhoto.dataUrl.split(",")[1];
-        const resp = await fetch("https://api.anthropic.com/v1/messages", {
+        const resp = await apiFetch("/api/claude", {
           method: "POST",
-          headers: { "Content-Type": "application/json", "x-api-key": apiKey, "anthropic-version": "2023-06-01", "anthropic-dangerous-direct-browser-access": "true" },
+          headers: appHeaders(),
           body: JSON.stringify({
             model: "claude-sonnet-4-5",
             max_tokens: 3000,
@@ -3590,11 +3662,9 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
       if (!aiDescription.trim()) return;
       setAiLoading(true); setAiError("");
       try {
-        const apiKey = import.meta.env?.VITE_ANTHROPIC_API_KEY;
-        if (!apiKey) throw new Error("AI logging needs VITE_ANTHROPIC_API_KEY set in Vercel env vars.");
-        const resp = await fetch("https://api.anthropic.com/v1/messages", {
+        const resp = await apiFetch("/api/claude", {
           method: "POST",
-          headers: { "Content-Type": "application/json", "x-api-key": apiKey, "anthropic-version": "2023-06-01", "anthropic-dangerous-direct-browser-access": "true" },
+          headers: appHeaders(),
           body: JSON.stringify({
             model: "claude-sonnet-4-5",
             max_tokens: 3000,
@@ -4449,9 +4519,7 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
         setLoadError("");
         (async () => {
           try {
-            const apiKey = import.meta.env?.VITE_GOOGLE_DRIVE_API_KEY;
-            if (!apiKey) throw new Error("Missing Drive API key");
-            const resp = await fetch(`${DRIVE_API_BASE}/files/${fileId}?alt=media&key=${apiKey}`);
+            const resp = await apiFetch(`/api/photos?id=${encodeURIComponent(fileId)}`, { headers: appHeaders() });
             if (!resp.ok) throw new Error(`Drive fetch failed (${resp.status})`);
             const blob = await resp.blob();
             if (cancelled) return;
@@ -4672,7 +4740,7 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
                         if (photoPickerSlot === "A") setPhotoSlotA(photo); else setPhotoSlotB(photo);
                         setPhotoPickerSlot(null);
                       }} style={{ flexShrink: 0, width: 90, height: 120, borderRadius: 10, overflow: "hidden", cursor: "pointer", background: C.surface2 }}>
-                        <img src={photo.thumbnailLink || driveImageUrl(photo.id)} alt={photo.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                        <img src={photo.thumb} alt={photo.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                       </div>
                     ))}
                   </div>
@@ -5533,16 +5601,14 @@ function MacroChefModal({ remaining, onResult, onClose }) {
     if (!input.trim()) return;
     setLoading(true); setError(""); setResponse(null); setParsedMeal(null);
     try {
-      const apiKey = import.meta.env?.VITE_ANTHROPIC_API_KEY;
-      if (!apiKey) throw new Error("Macro Chef needs VITE_ANTHROPIC_API_KEY set in Vercel env vars.");
       const macroTarget = `${Math.round(remaining.calories)} kcal, ${Math.round(remaining.protein)}g protein, ${Math.round(remaining.carbs)}g carbs, ${Math.round(remaining.fat)}g fat`;
       const prompt = mode === "kitchen"
         ? `I need to hit these remaining macros today: ${macroTarget}. I have these ingredients available: ${input}. Suggest a meal or meals I can make that gets me as close as possible to those targets. Be practical and specific with quantities.`
         : `I'm at ${restaurant || "a restaurant"} and need to hit these remaining macros today: ${macroTarget}. ${input ? `Menu context or preferences: ${input}.` : ""} Suggest specific menu items or ordering strategies to hit my targets as closely as possible.`;
 
-      const res = await fetch("https://api.anthropic.com/v1/messages", {
+      const res = await apiFetch("/api/claude", {
         method: "POST",
-        headers: { "Content-Type": "application/json", "x-api-key": apiKey, "anthropic-version": "2023-06-01", "anthropic-dangerous-direct-browser-access": "true" },
+        headers: appHeaders(),
         body: JSON.stringify({
           model: "claude-sonnet-4-5", max_tokens: 1200,
           system: `You are a nutrition-focused personal chef. Give practical, specific meal suggestions that hit macro targets.
