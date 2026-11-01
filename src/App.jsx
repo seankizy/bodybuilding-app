@@ -2381,6 +2381,7 @@ function AppInner({ onBrief }) {
   const [drivePhotosLoading, setDrivePhotosLoading] = useState(false);
   const [photoSlotA, setPhotoSlotA] = useState(null); // selected photo object for left slot
   const [photoSlotB, setPhotoSlotB] = useState(null); // selected photo object for right slot
+  const [photoCompareMode, setPhotoCompareMode] = useState("side"); // "side" | "slider"
   const [photoPickerSlot, setPhotoPickerSlot] = useState(null); // "A" | "B" | null — which slot is being picked
   const [dismissedResumeIds, setDismissedResumeIds] = useState(() => {
     try { return JSON.parse(localStorage.getItem("wj_dismissed_resume") || "[]"); } catch { return []; }
@@ -4813,6 +4814,7 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
               <div style={{ textAlign: "center", marginTop: 8, fontSize: 13, fontWeight: 700, color: C.text, fontFamily: SANS }}>
                 {fmtDate(photo.date)}
               </div>
+              <PhotoWeightCaption weightLog={weightLog} date={photo.date} />
               <button onClick={onPick} style={{
                 display: "block", width: "100%", marginTop: 8, padding: "10px", borderRadius: 10,
                 background: LAKE.sky + "22", border: "none", cursor: "pointer",
@@ -4848,10 +4850,39 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
           )}
           {!drivePhotosLoading && !drivePhotosError && drivePhotos && (
             <>
-              <div style={{ display: "flex", gap: 12, marginBottom: 20 }}>
-                <PhotoSlot label="Slot A" photo={photoSlotA} onPick={() => setPhotoPickerSlot("A")} />
-                <PhotoSlot label="Slot B" photo={photoSlotB} onPick={() => setPhotoPickerSlot("B")} />
-              </div>
+              {photoSlotA && photoSlotB && (
+                <div style={{ display: "flex", gap: 6, padding: 4, borderRadius: 12, background: C.surface2, marginBottom: 14 }}>
+                  {[["side", "Side by side"], ["slider", "Slider"]].map(([m, label]) => (
+                    <button key={m} onClick={() => setPhotoCompareMode(m)} style={{
+                      flex: 1, padding: "10px", borderRadius: 9, border: "none", cursor: "pointer", fontFamily: SANS, fontSize: 13, fontWeight: 700,
+                      background: photoCompareMode === m ? C.accent : "transparent", color: photoCompareMode === m ? "#0a0a0a" : C.textMid,
+                    }}>{label}</button>
+                  ))}
+                </div>
+              )}
+              {photoSlotA && photoSlotB && photoCompareMode === "slider" ? (
+                <div style={{ marginBottom: 20 }}>
+                  <SliderCompare a={photoSlotA} b={photoSlotB} />
+                  <div style={{ display: "flex", gap: 12, marginTop: 10 }}>
+                    {[["A", photoSlotA], ["B", photoSlotB]].map(([slot, ph]) => (
+                      <div key={slot} style={{ flex: 1, textAlign: "center" }}>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: C.text, fontFamily: SANS }}>{slot} · {fmtDate(ph.date)}</div>
+                        <PhotoWeightCaption weightLog={weightLog} date={ph.date} />
+                        <button onClick={() => setPhotoPickerSlot(slot)} style={{
+                          display: "block", width: "100%", marginTop: 8, padding: "10px", borderRadius: 10,
+                          background: LAKE.sky + "22", border: "none", cursor: "pointer",
+                          fontSize: 12, fontWeight: 700, color: LAKE.sky, fontFamily: SANS,
+                        }}>Change {slot}</button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div style={{ display: "flex", gap: 12, marginBottom: 20 }}>
+                  <PhotoSlot label="Slot A" photo={photoSlotA} onPick={() => setPhotoPickerSlot("A")} />
+                  <PhotoSlot label="Slot B" photo={photoSlotB} onPick={() => setPhotoPickerSlot("B")} />
+                </div>
+              )}
               {photoSlotA && photoSlotB && (
                 <div style={{ textAlign: "center", padding: "12px 16px", borderRadius: 12, background: C.surface2, fontSize: 12, color: C.textMid, fontFamily: SANS }}>
                   {fmtDate(photoSlotA.date)} → {fmtDate(photoSlotB.date)}
@@ -6251,6 +6282,88 @@ function DailyBrief({ brief, onClose }) {
           {brief.kind === "train" ? "LET'S GO" : "GOT IT"}
         </button>
       </div>
+    </div>
+  );
+}
+
+// ── PHOTO COMPARE HELPERS ────────────────────────────────────────────────────
+// Body weight logged nearest to a photo date (either side), for the compare captions.
+function nearestWeight(weightLog, date) {
+  let best = null;
+  for (const w of weightLog ?? []) {
+    if (isNaN(parseFloat(w.weight))) continue;
+    const off = Math.abs(daysBetween(w.date, date));
+    if (!best || off < best.daysOff) best = { weight: w.weight, unit: w.unit || "lbs", date: w.date, daysOff: off };
+  }
+  return best;
+}
+function PhotoWeightCaption({ weightLog, date }) {
+  const nw = nearestWeight(weightLog, date);
+  return (
+    <div style={{ textAlign: "center", marginTop: 3, fontSize: 12, color: C.textMid, fontFamily: SANS }}>
+      {nw ? (
+        <>
+          <span style={{ fontFamily: MONO, fontWeight: 700, color: C.text }}>{nw.weight} {nw.unit}</span>
+          <span style={{ color: C.textDim }}>{nw.daysOff === 0 ? " · same day" : ` · weighed ${fmtDate(nw.date)}`}</span>
+        </>
+      ) : <span style={{ color: C.textDim }}>No weigh-in logged</span>}
+    </div>
+  );
+}
+// Loads a Drive photo through the same passcode-protected /api/photos route the
+// zoomable viewer uses, and returns a blob URL (revoked on change/unmount).
+function usePhotoBlob(fileId) {
+  const [url, setUrl] = useState(null);
+  useEffect(() => {
+    let cancelled = false, local = null;
+    setUrl(null);
+    if (!fileId) return;
+    (async () => {
+      try {
+        const resp = await apiFetch(`/api/photos?id=${encodeURIComponent(fileId)}`, { headers: appHeaders() });
+        if (!resp.ok) return;
+        const blob = await resp.blob();
+        if (cancelled) return;
+        local = URL.createObjectURL(blob);
+        setUrl(local);
+      } catch {}
+    })();
+    return () => { cancelled = true; if (local) URL.revokeObjectURL(local); };
+  }, [fileId]);
+  return url;
+}
+// Two photos stacked; drag anywhere on the image to move the divider. A shows on
+// the left of the divider, B on the right.
+function SliderCompare({ a, b }) {
+  const urlA = usePhotoBlob(a?.id), urlB = usePhotoBlob(b?.id);
+  const [pos, setPos] = useState(50);
+  const boxRef = useRef(null);
+  const dragging = useRef(false);
+  const setFromX = clientX => {
+    const r = boxRef.current?.getBoundingClientRect();
+    if (!r || r.width === 0) return;
+    setPos(Math.max(0, Math.min(100, ((clientX - r.left) / r.width) * 100)));
+  };
+  const img = { position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", pointerEvents: "none" };
+  const tag = { position: "absolute", top: 10, padding: "3px 8px", borderRadius: 6, background: "rgba(0,0,0,0.6)", color: "#f2f2f2", fontSize: 11, fontWeight: 800, fontFamily: SANS, letterSpacing: 0.5 };
+  return (
+    <div ref={boxRef}
+      onPointerDown={e => { dragging.current = true; try { e.currentTarget.setPointerCapture(e.pointerId); } catch {} setFromX(e.clientX); }}
+      onPointerMove={e => { if (dragging.current) setFromX(e.clientX); }}
+      onPointerUp={() => { dragging.current = false; }}
+      onPointerCancel={() => { dragging.current = false; }}
+      style={{ position: "relative", aspectRatio: "3/4", borderRadius: 16, overflow: "hidden", background: C.surface2, touchAction: "none", userSelect: "none", WebkitUserSelect: "none", cursor: "ew-resize" }}>
+      {urlB && <img src={urlB} alt="B" draggable={false} style={img} />}
+      {urlA && <img src={urlA} alt="A" draggable={false} style={{ ...img, clipPath: `inset(0 ${100 - pos}% 0 0)`, WebkitClipPath: `inset(0 ${100 - pos}% 0 0)` }} />}
+      {(!urlA || !urlB) && (
+        <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, color: C.textDim, fontFamily: SANS }}>Loading…</div>
+      )}
+      <div style={{ position: "absolute", top: 0, bottom: 0, left: `${pos}%`, width: 2, marginLeft: -1, background: "#f2f2f2", boxShadow: "0 0 6px rgba(0,0,0,0.6)", pointerEvents: "none" }} />
+      <div style={{ position: "absolute", top: "50%", left: `${pos}%`, width: 34, height: 34, marginLeft: -17, marginTop: -17, borderRadius: 17, background: "#f2f2f2", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 2px 10px rgba(0,0,0,0.5)", pointerEvents: "none" }}>
+        <ChevronLeft size={14} color="#0a0a0a" strokeWidth={2.6} /><ChevronRight size={14} color="#0a0a0a" strokeWidth={2.6} />
+      </div>
+      <div style={{ ...tag, left: 10 }}>A · {fmtDate(a.date)}</div>
+      <div style={{ ...tag, right: 10 }}>B · {fmtDate(b.date)}</div>
     </div>
   );
 }
