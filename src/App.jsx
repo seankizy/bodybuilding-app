@@ -66,11 +66,13 @@ const C = {
   textMid: "#9a9a9a",
   textDim: "#5c5c5c",
   accent: LAKE.sky,      // near-white — primary interactive
-  amber: LAKE.ochre,     // light gray — warnings, deload
+  // Status hues (Nov 2026): the base stays black/gray with a near-white accent, but
+  // status needs a real color so success, warnings and alerts read at a glance.
+  amber: "#e0a83a",      // warnings, high volume, deload
   blue: LAKE.peak,       // mid-gray — secondary info
-  green: LAKE.forest,    // white — success, PRs, in-range
-  teal: LAKE.lake,       // light gray — volume productive
-  red: "#e05a4d",        // keep red as the single non-grayscale accent for true alerts
+  green: "#4cc38a",      // success, PRs, in-range
+  teal: "#4cc38a",       // productive volume (same green as the "green band")
+  red: "#e05a4d",        // over MRV, true alerts
 };
 const shadow = "0 2px 12px rgba(0,0,0,0.5), 0 1px 3px rgba(0,0,0,0.4)";
 const shadowLg = "0 8px 30px rgba(0,0,0,0.6)";
@@ -869,17 +871,17 @@ function rirFeedback(rir, type, isLastSet) {
   const r = parseInt(rir);
   if (isNaN(r)) return null;
   if (type === "compound") {
-    if (r === 0) return { color: "#e05a4d", msg: "⚠ Leave 1–2 in tank on compounds" };
-    if (r <= 2) return { color: "#ffffff", msg: "✓ Ideal effort" };
-    return { color: "#c9c9c9", msg: "↑ Push a bit harder" };
+    if (r === 0) return { color: C.red, msg: "⚠ Leave 1–2 in tank on compounds" };
+    if (r <= 2) return { color: C.green, msg: "✓ Ideal effort" };
+    return { color: C.amber, msg: "↑ Push a bit harder" };
   } else {
     // isolation
     if (isLastSet) {
-      if (r <= 1) return { color: "#ffffff", msg: "✓ Failure earned here" };
-      return { color: "#c9c9c9", msg: "↑ Push closer to failure" };
+      if (r <= 1) return { color: C.green, msg: "✓ Failure earned here" };
+      return { color: C.amber, msg: "↑ Push closer to failure" };
     }
-    if (r <= 2) return { color: "#ffffff", msg: "✓ Good effort" };
-    return { color: "#c9c9c9", msg: "↑ A little harder" };
+    if (r <= 2) return { color: C.green, msg: "✓ Good effort" };
+    return { color: C.amber, msg: "↑ A little harder" };
   }
 }
 
@@ -3338,7 +3340,7 @@ function AppInner({ onBrief }) {
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ fontWeight: 700, fontSize: 15, color: mvDone ? "#e8e8e8" : "#f2f2f2", lineHeight: 1.3, textDecoration: mvDone ? "line-through" : "none", opacity: mvDone ? 0.7 : 1, display: "flex", alignItems: "center", gap: 6 }}>
                           {mv.name || <span style={{ color: "#5c5c5c" }}>Unnamed movement</span>}
-                          {isPR && <span style={{ fontSize: 9, fontWeight: 800, color: "#0a0a0a", background: LAKE.ochre, padding: "2px 6px", borderRadius: 4, letterSpacing: 0.5, flexShrink: 0 }}>PR</span>}
+                          {isPR && <span style={{ fontSize: 9, fontWeight: 800, color: "#0a0a0a", background: C.green, padding: "2px 6px", borderRadius: 4, letterSpacing: 0.5, flexShrink: 0 }}>PR</span>}
                           {mv.substituted && <span style={{ fontSize: 9, fontWeight: 800, color: "#ffb3d9", background: "#ffb3d922", padding: "2px 6px", borderRadius: 4, letterSpacing: 0.5, flexShrink: 0 }}>SWAP</span>}
                         </div>
                         <div style={{ fontSize: 12, color: "#9a9a9a", marginTop: 3 }}>
@@ -4233,9 +4235,9 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
           const meso = mesocycleWeek(entries, mesoOverride);
           if (!meso.isDeload) return null;
           return (
-            <div style={{ margin: "12px 18px 4px", padding: "14px 16px", borderRadius: 14, background: "#e8e8e81a" }}>
-              <div style={{ fontSize: 13, fontWeight: 700, color: C.accent, marginBottom: 8, display: "flex", alignItems: "center", gap: 6 }}>
-                <Flame size={14} color={C.accent} strokeWidth={2} /> Deload Week — Volume Targets
+            <div style={{ margin: "12px 18px 4px", padding: "14px 16px", borderRadius: 14, background: C.amber + "14" }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: C.amber, marginBottom: 8, display: "flex", alignItems: "center", gap: 6 }}>
+                <Flame size={14} color={C.amber} strokeWidth={2} /> Deload Week: Volume Targets
               </div>
               {Object.entries(VOLUME_LANDMARKS).map(([muscle, lm]) => (
                 <div key={muscle} style={{ display: "flex", justifyContent: "space-between", padding: "5px 0", borderBottom: `1px solid ${C.lineSoft}` }}>
@@ -4419,7 +4421,7 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
                   </div>
                   <div style={{ textAlign: "center" }}>
                     <div style={{ fontSize: 9, color: C.textDim, letterSpacing: 1, textTransform: "uppercase", fontFamily: SANS }}>Best</div>
-                    <div style={{ fontSize: 16, fontWeight: 800, color: LAKE.lake, fontFamily: MONO }}>{Math.max(...history.map(h => h.e1rm))}kg</div>
+                    <div style={{ fontSize: 16, fontWeight: 800, color: C.green, fontFamily: MONO }}>{Math.max(...history.map(h => h.e1rm))}lbs</div>
                   </div>
                   <div style={{ textAlign: "center" }}>
                     <div style={{ fontSize: 9, color: C.textDim, letterSpacing: 1, textTransform: "uppercase", fontFamily: SANS }}>Sessions</div>
@@ -4427,7 +4429,7 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
                   </div>
                   <div style={{ textAlign: "center" }}>
                     <div style={{ fontSize: 9, color: C.textDim, letterSpacing: 1, textTransform: "uppercase", fontFamily: SANS }}>Change</div>
-                    <div style={{ fontSize: 16, fontWeight: 800, color: history[history.length-1].e1rm >= history[0].e1rm ? C.accent : C.red, fontFamily: MONO }}>
+                    <div style={{ fontSize: 16, fontWeight: 800, color: history[history.length-1].e1rm >= history[0].e1rm ? C.green : C.red, fontFamily: MONO }}>
                       {history[history.length-1].e1rm >= history[0].e1rm ? "+" : ""}{history[history.length-1].e1rm - history[0].e1rm}lbs
                     </div>
                   </div>
@@ -4444,13 +4446,13 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
               <div style={{ fontSize: 13, color: C.textDim, fontFamily: SANS }}>Log some sets to see PRs</div>
             ) : Object.entries(prs).sort((a, b) => b[1].maxE1RM - a[1].maxE1RM).map(([name, pr]) => (
               <div key={name} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 0", borderBottom: `1px solid ${C.lineSoft}` }}>
-                <Trophy size={14} color={C.accent} strokeWidth={2} style={{ flexShrink: 0 }} />
+                <Trophy size={14} color={C.green} strokeWidth={2} style={{ flexShrink: 0 }} />
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 13, fontWeight: 600, color: C.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{name}</div>
                   <div style={{ fontSize: 11, color: C.textDim, fontFamily: SANS, marginTop: 2 }}>{pr.date} · {pr.maxWeight}lbs × {pr.reps}</div>
                 </div>
                 <div style={{ textAlign: "right", flexShrink: 0 }}>
-                  <div style={{ fontSize: 16, fontWeight: 800, color: C.accent, fontFamily: MONO }}>~{pr.maxE1RM}lbs</div>
+                  <div style={{ fontSize: 16, fontWeight: 800, color: C.green, fontFamily: MONO }}>~{pr.maxE1RM}lbs</div>
                   <div style={{ fontSize: 9, color: C.textDim, fontFamily: SANS }}>e1RM</div>
                 </div>
               </div>
@@ -5233,13 +5235,13 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
         const meso = mesocycleWeek(entries, mesoOverride);
         const dimColor = "#e8e8e8";
         return (
-          <div onClick={() => setShowMesoEdit(true)} style={{ margin: "12px 18px 4px", padding: "14px 16px", borderRadius: 14, background: meso.isDeload ? "#e8e8e81a" : "#1c1c1c", cursor: "pointer" }}>
+          <div onClick={() => setShowMesoEdit(true)} style={{ margin: "12px 18px 4px", padding: "14px 16px", borderRadius: 14, background: meso.isDeload ? C.amber + "1a" : "#1c1c1c", cursor: "pointer" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
               <div style={{ fontSize: 11, letterSpacing: 2, color: dimColor, textTransform: "uppercase", fontFamily: SANS, fontWeight: 700 }}>
                 <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}><Flame size={13} strokeWidth={2.2} /> Mesocycle {meso.cycle} · Week {meso.week} of {meso.total}</span>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ fontSize: 11, color: "#5c5c5c", fontFamily: SANS }}>{meso.isDeload ? "DELOAD" : "ACCUMULATION"}</span>
+                <span style={{ fontSize: 11, color: meso.isDeload ? C.amber : "#5c5c5c", fontFamily: SANS, fontWeight: meso.isDeload ? 700 : 400 }}>{meso.isDeload ? "DELOAD" : "ACCUMULATION"}</span>
                 <Pencil size={12} color="#5c5c5c" strokeWidth={2} />
               </div>
             </div>
@@ -5248,13 +5250,13 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
                 const wk = i + 1;
                 const isCurrent = wk === meso.week;
                 return (
-                  <div key={i} style={{ flex: 1, height: 6, borderRadius: 3, background: isCurrent ? "#e8e8e8" : wk < meso.week ? "#1c1c1c" : "#2e2e2e" }} />
+                  <div key={i} style={{ flex: 1, height: 6, borderRadius: 3, background: isCurrent ? (meso.isDeload ? C.amber : "#e8e8e8") : wk < meso.week ? "#1c1c1c" : "#2e2e2e" }} />
                 );
               })}
             </div>
             {meso.isDeload && (
-              <div style={{ fontSize: 12, color: "#e8e8e8", fontFamily: SANS, marginTop: 8 }}>
-                Deload week — drop volume ~50%, keep weights, leave 3–4 RIR
+              <div style={{ fontSize: 12, color: C.amber, fontFamily: SANS, marginTop: 8 }}>
+                Deload week: drop volume ~50%, keep weights, leave 3–4 RIR
               </div>
             )}
             {!meso.isDeload && meso.week >= 3 && (
@@ -5300,7 +5302,7 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
             <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 12 }}>
               <div style={{ fontSize: 12, fontWeight: 700, color: C.textMid, letterSpacing: 0.5, textTransform: "uppercase", fontFamily: SANS }}>This Cycle</div>
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <div style={{ fontSize: 12, fontFamily: MONO, color: doneCount === trainingDays.length ? LAKE.forest : C.textMid }}>
+                <div style={{ fontSize: 12, fontFamily: MONO, color: doneCount === trainingDays.length ? C.green : C.textMid }}>
                   {doneCount}/{trainingDays.length} done
                 </div>
                 <button onClick={() => { setAnchorEditValue(todayStr()); setShowAnchorEdit(true); }}
@@ -6132,12 +6134,12 @@ function SetRow({ num, weight, reps, rir, repsTarget, type, isLastSet, done, col
           </div>
           <input type="number" inputMode="numeric" value={reps} onChange={e => onR(e.target.value)}
             placeholder={repRange ? `${repRange.min}–${repRange.max}` : "0"}
-            style={{ ...setInput(color), borderColor: inRange ? LAKE.forest : belowRange ? "#e05a4d" : aboveRange ? LAKE.ochre : undefined }} />
-          <div style={{ fontSize: 10, fontFamily: SANS, fontWeight: 700, color: inRange ? LAKE.forest : belowRange ? "#e05a4d" : aboveRange ? LAKE.ochre : "#5c5c5c" }}>
+            style={{ ...setInput(color), borderColor: inRange ? C.green : belowRange ? C.red : aboveRange ? C.amber : undefined }} />
+          <div style={{ fontSize: 10, fontFamily: SANS, fontWeight: 700, color: inRange ? C.green : belowRange ? C.red : aboveRange ? C.amber : "#5c5c5c" }}>
             {inRange ? "✓ in range" : belowRange ? "↓ go lighter" : aboveRange ? "↑ go heavier" : "reps"}
           </div>
         </div>
-        <button onClick={onDone} style={{ width: 44, height: 44, borderRadius: 12, flexShrink: 0, background: done ? LAKE.forest : C.surface2, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "transform 0.12s, background 0.15s", transform: done ? "scale(1.05)" : "scale(1)" }}><Check size={20} strokeWidth={3} color={done ? C.bg : C.textDim} /></button>
+        <button onClick={onDone} style={{ width: 44, height: 44, borderRadius: 12, flexShrink: 0, background: done ? C.green : C.surface2, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "transform 0.12s, background 0.15s", transform: done ? "scale(1.05)" : "scale(1)" }}><Check size={20} strokeWidth={3} color={done ? C.bg : C.textDim} /></button>
         {onDelete && (
           <button onClick={onDelete} style={{ width: 28, height: 28, borderRadius: 8, background: "#2a1a18", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><X size={15} strokeWidth={2.5} color={C.red} /></button>
         )}
