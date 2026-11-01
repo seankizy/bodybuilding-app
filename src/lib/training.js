@@ -167,6 +167,14 @@ export function roundLoad(weight, type, stepOverride = null) {
 // Every past session of one movement, newest first, with its sets parsed and
 // summarized. Used by the progression engine so it can look back through the
 // whole history rather than only at the single most recent session.
+// True for a dumbbell, barbell, EZ bar, or kettlebell movement. Anything that
+// names a machine, cable, Smith machine, or stack is treated as gym-specific.
+export function isFreeWeight(name = "") {
+  const n = String(name);
+  if (/machine|smith|cable|pulley|stack|pec deck|hack squat|leg press|pulldown|selectorized/i.test(n)) return false;
+  return /\bDB\b|dumbbell|barbell|\bBB\b|EZ[- ]?bar|kettlebell|\bKB\b/i.test(n);
+}
+
 export function movementSessions(entries, mvName, excludeEntryId = null, bodyweight = false, location = null) {
   if (!mvName) return [];
   const want = nameKey(mvName);
@@ -204,7 +212,9 @@ export function movementSessions(entries, mvName, excludeEntryId = null, bodywei
   // feel very different on another gym's machine. With no history at this gym yet,
   // fall back to the other gym's sessions but flag it so the engine calibrates
   // instead of prescribing a jump.
-  if (location) {
+  // Free weights (dumbbells, barbells, EZ bars, kettlebells) weigh the same at
+  // every gym, so their history carries across gyms with no calibration.
+  if (location && !isFreeWeight(mvName)) {
     const same = out.filter(s => s.location === location);
     if (same.length) return same;
     if (out.length) out.crossGym = true;
