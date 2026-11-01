@@ -138,12 +138,13 @@ export function coachOrder(day, exercises, entries) {
 // Sean trains at two spots: Equinox (full equipment, the default the PROGRAM
 // above is written for) and his apartment building's gym (ARC). The apartment
 // gym has a Smith machine (also usable as a free barbell cage), barbell, hex
-// bar, dumbbell rack, flat and adjustable benches, a preacher bench, a dual
-// adjustable cable trainer (rope, V bar, D handles, EZ bar), a lat pulldown, a
-// seated chest press, a leg press with calf raise, a leg extension and curl
-// machine, an assisted dip and pull-up machine, a captain's chair, pull-up bars,
-// kettlebells, suspension straps, ab wheels and cardio. It has no hack squat,
-// pec deck, hip abduction machine, standing or seated calf machine, or 45 degree
+// bar, dumbbell rack, flat and adjustable benches, a preacher bench, a lat
+// pulldown, a seated chest press, a leg press with calf raise, a leg extension
+// and curl machine, an assisted dip and pull-up machine, a captain's chair,
+// pull-up bars, kettlebells, suspension straps, ab wheels and cardio. It has NO
+// cable or pulley machine of any kind (no functional trainer, no cable row), and
+// no hack squat, pec deck, reverse pec deck, hip abduction machine, standing or
+// seated calf machine, or 45 degree
 // back extension. Rather than
 // hand-editing the session every time, a session can be flagged with a
 // `location`, and GYM_SUBS below swaps in an apartment-friendly version of
@@ -162,21 +163,27 @@ export const LOCATIONS = {
 };
 export const GYM_SUBS = {
   // Only slots the apartment gym cannot do as programmed are listed. Everything
-  // else (cable work, leg press, leg extension and curl, lat pulldown, EZ bar,
-  // DB and barbell lifts) runs as written. Keyed to the Sep 29, 2026 program.
+  // else (leg press, leg extension and curl, lat pulldown, EZ bar, DB and barbell
+  // lifts) runs as written. The apartment gym has no cables or pulleys (Sean,
+  // Nov 1, 2026), so every cable slot is swapped too. Keyed to the Sep 29, 2026 program.
   // Day 1: Lower A
   "1.C": { name: "Smith Machine Squat (feet forward)", sets: 3, reps: "8–10", rest: "2m 30s", type: "compound", muscle: "Quads", cue: "Feet 6 to 12 inches in front of the bar, heels flat or on a plate, torso upright. Closest thing to a hack squat." },
+  // Day 2: Upper A
+  "2.C": { name: "Dumbbell Fly", sets: 3, reps: "10–15", rest: "1m 30s", type: "isolation", muscle: "Chest", cue: "Flat bench, slight bend in the elbows, deep stretch at the bottom, stop just short of the dumbbells touching." },
+  "2.F": { name: "Skull Crusher (EZ Bar)", sets: 3, reps: "8–12", rest: "1m 30s", type: "isolation", muscle: "Triceps", cue: "Lower the bar behind the head, not to the forehead, elbows pointed up." },
   // Day 4: Pull
-  "4.C": { name: "Low Cable Row (functional trainer)", sets: 2, reps: "10–12", rest: "1m 30s", type: "compound", muscle: "Back", cue: "Low pulley, V bar, chest up, pull to the lower ribs and pause." },
-  "4.E": { name: "Cable Reverse Fly (high pulleys)", sets: 3, reps: "12–20", rest: "1m", type: "isolation", muscle: "Shoulders", cue: "Cross the cables, arms slightly bent, sweep out and back at shoulder height." },
+  "4.C": { name: "Dumbbell Row", sets: 2, reps: "10–12 each arm", rest: "1m 30s", type: "compound", muscle: "Back", cue: "Hand and knee on a flat bench, pull the dumbbell to the hip, pause at the top." },
+  "4.D": { name: "DB Lateral Raise", sets: 4, reps: "12–20", rest: "1m", type: "isolation", muscle: "Shoulders", cue: "Lead with the elbows, stop at shoulder height, control the lowering." },
+  "4.E": { name: "Rear Delt DB Fly (Bent-Over)", sets: 3, reps: "12–20", rest: "1m", type: "isolation", muscle: "Shoulders", cue: "Chest on an incline bench or hinged over, arms slightly bent, sweep out wide and pause." },
   // Day 6: Lower B
-  "6.C": { name: "Cable Pull-Through (rope)", sets: 3, reps: "12–15", rest: "1m 30s", type: "isolation", muscle: "Glutes", cue: "Low pulley, rope between the legs, hinge back, then squeeze the glutes to stand." },
-  "6.E": { name: "Cable Hip Abduction (ankle strap)", sets: 3, reps: "15–20", rest: "1m", type: "isolation", muscle: "Glutes", cue: "Low pulley, hold the frame, lift the leg out to the side without leaning. Needs an ankle strap." },
+  "6.C": { name: "Smith Machine Hip Thrust", sets: 3, reps: "12–15", rest: "1m 30s", type: "compound", muscle: "Glutes", loadStep: 10, cue: "Lighter than Lower A. Pause 1 second at the top with a posterior pelvic tilt." },
+  "6.E": { name: "Side-Lying Hip Abduction (weighted)", sets: 3, reps: "15–20", rest: "1m", type: "isolation", muscle: "Glutes", cue: "Lie on your side, light dumbbell or plate on the outer thigh, lift the top leg slightly behind the body." },
   "6.F": { name: "Seated DB Calf Raise (on bench)", sets: 4, reps: "10–15", rest: "1m", type: "isolation", muscle: "Calves", cue: "Dumbbell across the knees, toes on a plate, full stretch and pause. Bent knees keep the soleus working." },
   // Day 7: Upper B
   "7.B": { name: "Flat DB Press", sets: 3, reps: "8–12", rest: "2m 30s", type: "compound", muscle: "Chest" },
   "7.C": { name: "Captain's Chair Dip (weighted)", sets: 3, reps: "8–12", rest: "2m", type: "compound", muscle: "Chest", cue: "Lean the torso forward for chest. Squeeze a dumbbell between the feet to add load." },
-  "7.D": { name: "Cable Crossover Fly", sets: 3, reps: "12–15", rest: "1m", type: "isolation", muscle: "Chest", cue: "Pulleys at shoulder height, slight forward lean, hands meet in front of the chest." },
+  "7.D": { name: "Incline Dumbbell Fly", sets: 3, reps: "12–15", rest: "1m", type: "isolation", muscle: "Chest", cue: "Bench at about 30 degrees, slight elbow bend, stretch wide, squeeze the chest to bring them up." },
+  "7.F": { name: "Preacher Curl (EZ Bar)", sets: 3, reps: "10–15", rest: "1m", type: "isolation", muscle: "Biceps", cue: "Full stretch at the bottom without bouncing, squeeze at the top." },
 };
 
 
@@ -369,6 +376,7 @@ export const SLOT_ALTERNATIVES = {
   "7.G": ["Overhead Cable Tricep Extension", "Cable Pushdown", "Rope Pushdown"],
 };
 // One extra not otherwise defined: the cable crossover variant for chest day.
+EXERCISE_EXTRAS.push({ name: "Incline Dumbbell Fly", muscle: "Chest", type: "isolation", sets: 3, reps: "12–15", rest: "1m" }, { name: "Side-Lying Hip Abduction (weighted)", muscle: "Glutes", type: "isolation", sets: 3, reps: "15–20", rest: "1m" });
 EXERCISE_EXTRAS.push({ name: "Cable Crossover Fly (high to low)", muscle: "Chest", type: "isolation", sets: 3, reps: "10–15", rest: "1m 30s" });
 
 export function loadCustomExercises() {
@@ -450,8 +458,12 @@ export function addCustomExercise(ex) {
 export function slotAlternatives(entry, mv) {
   const out = [];
   const seen = new Set([nameKey(mv.name)]);
+  // The apartment gym has no cables or pulleys (and no pec deck, hack squat, hip abduction,
+  // calf machine or back extension), so those alternatives are hidden there.
+  const noCables = entry?.location === "apartment";
   const push = name => {
     const ex = libFind(name);
+    if (ex && noCables && /cable|rope pushdown|pec deck|hack squat|hip abduction machine|calf raise machine|back extension/i.test(ex.name)) return;
     if (ex && !seen.has(exKey(ex.name))) { seen.add(exKey(ex.name)); out.push(ex); }
   };
   if (entry?.programDay && mv?.programRef) {
