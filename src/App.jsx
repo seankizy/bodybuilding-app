@@ -5179,6 +5179,66 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
         </div>
       </div>
 
+      {/* ── TODAY card: what today is in the 8-day cycle, plus a one-tap Start/Resume ── */}
+      {(() => {
+        // Reuses todayPlan (8-day cycle walk from the last completed session) and
+        // mesocycleWeek; no program logic is duplicated here.
+        const plan = todayPlan(entries, today);
+        const cycleDay = plan.kind === "done" ? plan.doneDay
+          : plan.kind === "train" ? plan.day
+          : ((((plan.day - 1 - daysBetween(today, plan.due)) % CYCLE_DAYS) + CYCLE_DAYS) % CYCLE_DAYS) + 1;
+        const meso = mesocycleWeek(entries, mesoOverride);
+        const nextProg = PROGRAM[plan.day];
+        const todaysOpen = entries.find(e => !e.completedAt && e.date === today);
+        const resumeTarget = todaysOpen ?? inProgressSession;
+        const doneEntry = plan.kind === "done"
+          ? entries.find(e => e.date === today && e.completedAt && e.programDay === plan.doneDay) ?? null
+          : null;
+        const title = plan.kind === "done" ? (PROGRAM[plan.doneDay]?.title ?? "Session")
+          : plan.kind === "train" ? (nextProg?.title ?? "Training")
+          : "Rest Day";
+        const sub = plan.kind === "done" ? "Done for today. Nice work."
+          : plan.kind === "train" ? (plan.overdue > 0 ? `${plan.overdue} day${plan.overdue !== 1 ? "s" : ""} overdue, do it today` : "Scheduled for today")
+          : `Next: ${nextProg?.title ?? "training"} on ${new Date(plan.due + "T12:00:00").toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}`;
+        const startToday = () => { setNewProgramDay(plan.day); setNewDate(today); setShowNewModal(true); };
+        const bigBtn = { width: "100%", marginTop: 14, padding: "16px", borderRadius: 14, border: "none", fontSize: 17, fontWeight: 800, cursor: "pointer", fontFamily: SANS, letterSpacing: 0.3, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 };
+        return (
+          <div style={{ margin: "4px 18px 4px", padding: "16px 16px 16px", borderRadius: 18, background: C.surface, boxShadow: shadow }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+              <div style={{ fontSize: 11, letterSpacing: 2, color: C.textDim, textTransform: "uppercase", fontFamily: SANS, fontWeight: 700 }}>Today</div>
+              <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                <span style={{ fontSize: 11, fontFamily: MONO, color: C.textMid }}>Day {cycleDay} of {CYCLE_DAYS}</span>
+                <span style={{ fontSize: 11, color: C.textDim }}>·</span>
+                <span style={{ fontSize: 11, fontFamily: MONO, color: meso.isDeload ? C.amber : C.textMid, fontWeight: meso.isDeload ? 700 : 400 }}>
+                  Week {meso.week}{meso.isDeload ? " · Deload" : ""}
+                </span>
+              </div>
+            </div>
+            <div style={{ fontSize: 22, fontWeight: 900, color: C.text, fontFamily: SANS, letterSpacing: -0.3, marginTop: 8, lineHeight: 1.15 }}>{title}</div>
+            <div style={{ fontSize: 13, color: plan.kind === "done" ? C.green : C.textMid, fontFamily: SANS, marginTop: 4 }}>{sub}</div>
+            {resumeTarget ? (
+              <button onClick={() => { setActiveId(resumeTarget.id); setView("entry"); }}
+                style={{ ...bigBtn, background: C.accent, color: "#0a0a0a" }}>
+                <Play size={16} strokeWidth={2.4} /> Resume{resumeTarget.date !== today ? ` (${fmtDate(resumeTarget.date)})` : ""}
+              </button>
+            ) : plan.kind === "train" ? (
+              <button onClick={startToday} style={{ ...bigBtn, background: C.accent, color: "#0a0a0a" }}>
+                <Dumbbell size={18} strokeWidth={2.2} /> Start
+              </button>
+            ) : plan.kind === "done" && doneEntry ? (
+              <button onClick={() => { setActiveId(doneEntry.id); setView("entry"); }}
+                style={{ ...bigBtn, background: C.surface2, color: C.text, fontSize: 15 }}>
+                View today's session
+              </button>
+            ) : plan.kind === "rest" ? (
+              <button onClick={startToday} style={{ ...bigBtn, background: C.surface2, color: C.textMid, fontSize: 14, padding: "13px" }}>
+                Start {nextProg?.tag ?? "next session"} early
+              </button>
+            ) : null}
+          </div>
+        );
+      })()}
+
       {/* Coach check-in reminder */}
       {(() => {
         const today = todayStr();
