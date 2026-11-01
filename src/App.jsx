@@ -2293,6 +2293,11 @@ function AppInner({ onBrief }) {
   // Macro tracking state
   const [macros, setMacros] = useState({});
   const [macroTargets, setMacroTargets] = useState(DEFAULT_MACRO_TARGETS);
+  // Visual confirmation when a past food is re-added with "+": the tapped row flashes
+  // and the new entry in today's list glows briefly.
+  const [macroFlashKey, setMacroFlashKey] = useState(null);
+  const [macroHighlightId, setMacroHighlightId] = useState(null);
+  const macroFlashTimer = useRef(null);
   const [checkinsDone, setCheckinsDone] = useState(() => {
     try { return JSON.parse(localStorage.getItem("wj_checkins_done") || "[]"); } catch { return []; }
   });
@@ -3561,11 +3566,28 @@ function AppInner({ onBrief }) {
       });
     }
     function logAgain(entry) {
+      const newId = Date.now();
+      const { date: _searchDate, ...clean } = entry; // search results carry a display-only date
       mutateMacros(prev => {
         const d = prev[todayStr()] ?? { entries: [] };
-        prev[todayStr()] = { ...d, entries: [...(d.entries ?? []), { ...entry, id: Date.now(), time: new Date().toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }) }] };
+        prev[todayStr()] = { ...d, entries: [...(d.entries ?? []), { ...clean, id: newId, time: new Date().toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }) }] };
         return prev;
       });
+      return newId;
+    }
+    // "+" with feedback: flash the tapped row, check-mark the button, glow the new
+    // entry in today's list, and a short haptic tap where the browser supports it.
+    function logAgainWithFeedback(entry, flashKey, after) {
+      const newId = logAgain(entry);
+      try { navigator.vibrate?.(15); } catch {}
+      setMacroFlashKey(flashKey);
+      setMacroHighlightId(newId);
+      clearTimeout(macroFlashTimer.current);
+      macroFlashTimer.current = setTimeout(() => {
+        setMacroFlashKey(null);
+        if (after) after();
+      }, 650);
+      setTimeout(() => setMacroHighlightId(h => (h === newId ? null : h)), 1800);
     }
     async function aiLogFoodPhoto() {
       if (!foodPhoto) return;
@@ -3933,18 +3955,25 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
                 <div style={{ padding: "16px 0", textAlign: "center", color: C.textDim, fontSize: 13, fontFamily: SANS }}>No matches</div>
               ) : (
                 <div>
-                  {results.slice(0, 30).map(r => (
-                    <div key={`${r.date}-${r.id}`} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 14px", borderRadius: 12, background: C.surface, marginBottom: 6 }}>
+                  {results.slice(0, 30).map(r => {
+                    const fk = `search-${r.date}-${r.id}`;
+                    const flashing = macroFlashKey === fk;
+                    return (
+                    <div key={`${r.date}-${r.id}`} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 14px", borderRadius: 12, background: C.surface, marginBottom: 6, animation: flashing ? "wjFlash 650ms ease-out" : "none" }}>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ fontSize: 13, fontWeight: 600, color: C.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.name}</div>
                         <div style={{ fontSize: 10, color: C.textDim, fontFamily: MONO, marginTop: 2 }}>{fmtDate(r.date)} · {r.cal} kcal · {Math.round(r.p)}p/{Math.round(r.c)}c/{Math.round(r.f)}f</div>
                       </div>
-                      <button onClick={() => { logAgain(r); setShowMacroSearch(false); setMacroSearchQuery(""); }}
-                        style={{ width: 28, height: 28, borderRadius: 8, background: C.surface2, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                        <Plus size={13} color={LAKE.sky} strokeWidth={2.5} />
+                      <button onClick={() => { if (macroFlashKey) return; logAgainWithFeedback(r, fk, () => { setShowMacroSearch(false); setMacroSearchQuery(""); }); }}
+                        aria-label="Add to today"
+                        style={{ width: 36, height: 36, borderRadius: 10, background: flashing ? C.green : C.surface2, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "background 0.15s" }}>
+                        {flashing
+                          ? <span style={{ display: "flex", animation: "wjPop 300ms ease-out" }}><Check size={16} color="#0a0a0a" strokeWidth={3} /></span>
+                          : <Plus size={15} color={LAKE.sky} strokeWidth={2.5} />}
                       </button>
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
               );
             })()}
@@ -3960,8 +3989,12 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
         <div style={{ padding: "4px 18px 180px" }}>
           {(day.entries ?? []).length === 0 ? (
             <div style={{ padding: "32px 0", textAlign: "center", color: C.textDim, fontSize: 13, fontFamily: SANS }}>Nothing logged {isToday ? "yet today" : "this day"}</div>
-          ) : [...day.entries].reverse().map(e => (
-            <div key={e.id} onClick={() => isToday && startEditFood(e)} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", borderRadius: 14, background: C.surface, marginBottom: 8, cursor: isToday ? "pointer" : "default" }}>
+          ) : [...day.entries].reverse().map(e => {
+            const fk = `list-${e.id}`;
+            const flashing = macroFlashKey === fk;
+            const isNew = macroHighlightId === e.id;
+            return (
+            <div key={e.id} onClick={() => isToday && startEditFood(e)} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", borderRadius: 14, background: C.surface, marginBottom: 8, cursor: isToday ? "pointer" : "default", animation: isNew ? "wjHighlight 1800ms ease-out" : flashing ? "wjFlash 650ms ease-out" : "none" }}>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 14, fontWeight: 600, color: C.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{e.name}</div>
                 <div style={{ fontSize: 11, color: C.textDim, fontFamily: MONO, marginTop: 2 }}>
@@ -3974,16 +4007,19 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
                   <Pencil size={13} color={C.textMid} strokeWidth={2} />
                 </button>
               )}
-              <button onClick={(ev) => { ev.stopPropagation(); logAgain(e); }} title="Log again today"
-                style={{ width: 30, height: 30, borderRadius: 8, background: C.surface2, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <Plus size={14} color={LAKE.sky} strokeWidth={2.5} />
+              <button onClick={(ev) => { ev.stopPropagation(); if (macroFlashKey) return; logAgainWithFeedback(e, fk); }} title="Log again today"
+                style={{ width: 30, height: 30, borderRadius: 8, background: flashing ? C.green : C.surface2, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "background 0.15s" }}>
+                {flashing
+                  ? <span style={{ display: "flex", animation: "wjPop 300ms ease-out" }}><Check size={14} color="#0a0a0a" strokeWidth={3} /></span>
+                  : <Plus size={14} color={LAKE.sky} strokeWidth={2.5} />}
               </button>
               <button onClick={(ev) => { ev.stopPropagation(); deleteFood(e.id); }}
                 style={{ width: 30, height: 30, borderRadius: 8, background: "#2a1a18", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
                 <X size={14} color={C.red} strokeWidth={2.5} />
               </button>
             </div>
-          ))}
+            );
+          })}
         </div>
 
         {/* Log Food modal */}
@@ -6126,7 +6162,10 @@ function Shell({ children }) {
   return (
     <div style={{ background: C.bg, minHeight: "100vh", color: C.text, fontFamily: SANS, maxWidth: 430, margin: "0 auto", overflowX: "hidden" }}>
       <style>{`@keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.4;transform:scale(1.5)} }
-.wj-set-input::placeholder { color: #4a4a4a; opacity: 1; font-weight: 700; }`}</style>
+.wj-set-input::placeholder { color: #4a4a4a; opacity: 1; font-weight: 700; }
+@keyframes wjFlash { 0% { background-color: rgba(76,195,138,0.45); } 100% { background-color: rgba(76,195,138,0); } }
+@keyframes wjHighlight { 0% { box-shadow: inset 0 0 0 1.5px rgba(76,195,138,0.9); background-color: rgba(76,195,138,0.18); } 100% { box-shadow: inset 0 0 0 1.5px rgba(76,195,138,0); background-color: rgba(76,195,138,0); } }
+@keyframes wjPop { 0% { transform: scale(0.6); } 60% { transform: scale(1.15); } 100% { transform: scale(1); } }`}</style>
       {children}
     </div>
   );
