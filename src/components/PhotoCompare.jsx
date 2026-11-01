@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { ChevronLeft, ChevronRight } from "../icons.jsx";
-import { C, MONO, SANS } from "../theme.js";
+import { C, SANS, MONO, STONE } from "../theme.js";
 import { fmtDate } from "../lib/utils.js";
 import { apiFetch, appHeaders } from "../lib/storage.js";
 import { daysBetween } from "../lib/checkins.js";
@@ -22,7 +22,7 @@ export function PhotoWeightCaption({ weightLog, date }) {
     <div style={{ textAlign: "center", marginTop: 3, fontSize: 12, color: C.textMid, fontFamily: SANS }}>
       {nw ? (
         <>
-          <span style={{ fontFamily: MONO, fontWeight: 700, color: C.text }}>{nw.weight} {nw.unit}</span>
+          <span style={{ fontFamily: MONO, fontVariantNumeric: "tabular-nums", fontWeight: 600, color: C.text }}>{nw.weight} {nw.unit}</span>
           <span style={{ color: C.textDim }}>{nw.daysOff === 0 ? " · same day" : ` · weighed ${fmtDate(nw.date)}`}</span>
         </>
       ) : <span style={{ color: C.textDim }}>No weigh-in logged</span>}
@@ -64,7 +64,7 @@ export function SliderCompare({ a, b }) {
     setPos(Math.max(0, Math.min(100, ((clientX - r.left) / r.width) * 100)));
   };
   const img = { position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", pointerEvents: "none" };
-  const tag = { position: "absolute", top: 10, padding: "3px 8px", borderRadius: 6, background: "rgba(0,0,0,0.6)", color: "#f2f2f2", fontSize: 11, fontWeight: 800, fontFamily: SANS, letterSpacing: 0.5 };
+  const tag = { position: "absolute", top: 10, padding: "3px 8px", borderRadius: 6, background: "rgba(0,0,0,0.6)", color: C.text, fontSize: 12, fontWeight: 600, fontFamily: SANS, letterSpacing: 0.2 };
   return (
     <div ref={boxRef}
       onPointerDown={e => { dragging.current = true; try { e.currentTarget.setPointerCapture(e.pointerId); } catch {} setFromX(e.clientX); }}
@@ -77,9 +77,9 @@ export function SliderCompare({ a, b }) {
       {(!urlA || !urlB) && (
         <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, color: C.textDim, fontFamily: SANS }}>Loading…</div>
       )}
-      <div style={{ position: "absolute", top: 0, bottom: 0, left: `${pos}%`, width: 2, marginLeft: -1, background: "#f2f2f2", boxShadow: "0 0 6px rgba(0,0,0,0.6)", pointerEvents: "none" }} />
-      <div style={{ position: "absolute", top: "50%", left: `${pos}%`, width: 34, height: 34, marginLeft: -17, marginTop: -17, borderRadius: 17, background: "#f2f2f2", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 2px 10px rgba(0,0,0,0.5)", pointerEvents: "none" }}>
-        <ChevronLeft size={14} color="#0a0a0a" strokeWidth={2.6} /><ChevronRight size={14} color="#0a0a0a" strokeWidth={2.6} />
+      <div style={{ position: "absolute", top: 0, bottom: 0, left: `${pos}%`, width: 2, marginLeft: -1, background: C.text, boxShadow: "0 0 6px rgba(0,0,0,0.6)", pointerEvents: "none" }} />
+      <div style={{ position: "absolute", top: "50%", left: `${pos}%`, width: 34, height: 34, marginLeft: -17, marginTop: -17, borderRadius: 17, background: STONE.carrara, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 2px 10px rgba(0,0,0,0.5)", pointerEvents: "none" }}>
+        <ChevronLeft size={14} color={C.ink} strokeWidth={2.6} /><ChevronRight size={14} color={C.ink} strokeWidth={2.6} />
       </div>
       <div style={{ ...tag, left: 10 }}>A · {fmtDate(a.date)}</div>
       <div style={{ ...tag, right: 10 }}>B · {fmtDate(b.date)}</div>

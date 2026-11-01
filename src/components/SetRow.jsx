@@ -1,5 +1,5 @@
 import { Check, RotateCcw, X } from "../icons.jsx";
-import { C, MONO, SANS } from "../theme.js";
+import { C, SANS, MONO, STONE, INK, DONE_ROW } from "../theme.js";
 import { rirFeedback } from "../lib/training.js";
 
 // SetRow with weight, reps, RIR selector, and movement-type-aware feedback
@@ -46,35 +46,35 @@ export function SetRow({ num, weight, reps, rir, repsTarget, type, isLastSet, do
   }
 
   return (
-    <div style={{ margin: "0 18px 4px", padding: "12px 14px", borderRadius: 14, background: done ? color + "14" : "#1c1c1c", transition: "background 0.2s", opacity: done ? 0.75 : 1 }}>
+    <div style={{ margin: "0 18px 4px", padding: "12px 14px", borderRadius: 14, background: done ? DONE_ROW : C.surface2, border: done ? "1px solid rgba(185,199,180,0.35)" : C.cardBorder, transition: "background 0.2s" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-        <div style={{ width: 34, height: 34, borderRadius: 9, background: "#1c1c1c", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 17, fontWeight: 800, color: "#c4c4c4", fontFamily: SANS, flexShrink: 0 }}>{num}</div>
+        <div style={{ width: 34, height: 34, borderRadius: 9, background: C.surface2, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, fontWeight: 600, color: C.textMid, fontFamily: SANS, flexShrink: 0 }}>{num}</div>
         <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <div style={{ fontSize: 10, letterSpacing: 1.5, color: "#a3a3a3", textTransform: "uppercase", fontFamily: SANS }}>Weight</div>
+          <div style={{ fontSize: 12, letterSpacing: 0.2, color: C.textDim, fontFamily: SANS }}>Weight</div>
           <input className="wj-set-input" type="number" inputMode="decimal" value={weight} onChange={e => onW(e.target.value)} placeholder={gW ?? "0"} style={setInput(color)} />
-          <div style={{ fontSize: 10, color: "#a3a3a3", fontFamily: SANS }}>lbs</div>
+          <div style={{ fontSize: 12, color: C.textDim, fontFamily: SANS }}>lbs</div>
         </div>
-        <div style={{ color: "#2e2e2e", fontSize: 16, fontWeight: 300 }}>×</div>
+        <div style={{ color: C.textFaint, fontSize: 15, fontWeight: 400 }}>×</div>
         <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <div style={{ fontSize: 10, letterSpacing: 1.5, color: "#a3a3a3", textTransform: "uppercase", fontFamily: SANS }}>
+          <div style={{ fontSize: 12, letterSpacing: 0.2, color: C.textDim, fontFamily: SANS }}>
             Reps{repRange ? ` ${repRange.min}–${repRange.max}` : ""}
           </div>
           <input className="wj-set-input" type="number" inputMode="numeric" value={reps} onChange={e => onR(e.target.value)}
             placeholder={gR ?? (repRange ? `${repRange.min}–${repRange.max}` : "0")}
-            style={{ ...setInput(color), borderColor: inRange ? C.green : belowRange ? C.red : aboveRange ? C.amber : undefined }} />
-          <div style={{ fontSize: 10, fontFamily: SANS, fontWeight: 700, color: inRange ? C.green : belowRange ? C.red : aboveRange ? C.amber : "#a3a3a3" }}>
+            style={{ ...setInput(color), borderColor: inRange ? C.success : belowRange ? C.alert : aboveRange ? C.warn : undefined }} />
+          <div style={{ fontSize: 12, fontFamily: SANS, fontWeight: 600, color: inRange ? C.success : belowRange ? C.alert : aboveRange ? C.warn : C.textDim }}>
             {inRange ? "✓ in range" : belowRange ? "↓ go lighter" : aboveRange ? "↑ go heavier" : "reps"}
           </div>
         </div>
-        <button onClick={onDone} style={{ width: 52, height: 52, borderRadius: 12, flexShrink: 0, background: done ? C.green : C.surface2, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "transform 0.12s, background 0.15s", transform: done ? "scale(1.05)" : "scale(1)" }}><Check size={20} strokeWidth={3} color={done ? C.bg : C.textDim} /></button>
+        <button onClick={onDone} style={{ width: 52, height: 52, borderRadius: 12, flexShrink: 0, background: done ? STONE.primary : C.surface2, border: done ? "none" : C.cardBorder, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "transform 0.12s, background 0.15s", transform: done ? "scale(1.05)" : "scale(1)" }}><Check size={20} strokeWidth={3} color={done ? INK.cipollino : C.textDim} /></button>
         {onDelete && (
-          <button onClick={onDelete} style={{ width: 36, height: 36, borderRadius: 10, background: "#2a1a18", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><X size={16} strokeWidth={2.5} color={C.red} /></button>
+          <button onClick={onDelete} style={{ width: 36, height: 36, borderRadius: 10, background: C.alertWash, border: "1px solid rgba(212,154,184,0.25)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><X size={16} strokeWidth={2.5} color={C.red} /></button>
         )}
       </div>
       {/* RIR row: full-width 44px buttons; the feedback / Repeat line sits below in a fixed-height slot so nothing shifts */}
-      <div style={{ marginTop: 10, paddingTop: 10, borderTop: "1px solid #262626" }}>
+      <div style={{ marginTop: 10, paddingTop: 10, borderTop: "1px solid rgba(255,255,255,0.08)" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <div style={{ fontSize: 10, letterSpacing: 1.5, color: "#a3a3a3", textTransform: "uppercase", fontFamily: SANS, flexShrink: 0, width: 26 }}>RIR</div>
+          <div style={{ fontSize: 12, letterSpacing: 0.2, color: C.textDim, fontFamily: SANS, flexShrink: 0, width: 26 }}>RIR</div>
           <div style={{ display: "flex", gap: 6, flex: 1 }}>
             {["0", "1", "2", "3", "4"].map(v => {
               const sel = String(rir) === v;
@@ -82,10 +82,10 @@ export function SetRow({ num, weight, reps, rir, repsTarget, type, isLastSet, do
               return (
                 <button key={v} onClick={() => onRIR(sel ? "" : v)} title={isGhost ? "Last session" : undefined} style={{
                   flex: 1, minWidth: 0, height: 44, borderRadius: 10, cursor: "pointer",
-                  background: sel ? color : "#262626",
-                  color: sel ? "#131313" : isGhost ? "#c9c9c9" : "#c4c4c4",
-                  border: isGhost ? "1.5px dashed #a3a3a3" : "1.5px solid transparent", boxSizing: "border-box",
-                  fontSize: 17, fontWeight: 800, fontFamily: SANS,
+                  background: sel ? STONE.carrara : C.surface3,
+                  color: sel ? INK.stone : C.textMid,
+                  border: isGhost ? "1.5px dashed #B8B2A8" : "1.5px solid transparent", boxSizing: "border-box",
+                  fontSize: 15, fontWeight: 600, fontFamily: SANS,
                 }}>{v}</button>
               );
             })}
@@ -94,11 +94,11 @@ export function SetRow({ num, weight, reps, rir, repsTarget, type, isLastSet, do
         <div style={{ minHeight: 30, marginTop: 8, display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 10 }}>
           {canRepeat ? (
             <button onClick={repeatLast} title="Fill the empty fields with last session's numbers"
-              style={{ display: "inline-flex", alignItems: "center", gap: 6, minHeight: 30, padding: "6px 12px", borderRadius: 8, background: "#2a2a2a", border: "none", color: "#c9c9c9", fontSize: 12, fontWeight: 700, fontFamily: SANS, cursor: "pointer" }}>
+              style={{ display: "inline-flex", alignItems: "center", gap: 6, minHeight: 30, padding: "6px 12px", borderRadius: 8, background: C.surface3, border: "none", color: C.textMid, fontSize: 12, fontWeight: 600, fontFamily: SANS, cursor: "pointer" }}>
               <RotateCcw size={13} strokeWidth={2.4} /> Repeat last
             </button>
           ) : rirFb ? (
-            <div style={{ fontSize: 11, fontFamily: SANS, fontWeight: 700, color: rirFb.color, lineHeight: 1.2 }}>
+            <div style={{ fontSize: 12, fontFamily: SANS, fontWeight: 600, color: rirFb.color, lineHeight: 1.2 }}>
               {rirFb.msg}
             </div>
           ) : null}
@@ -111,5 +111,5 @@ export function SetRow({ num, weight, reps, rir, repsTarget, type, isLastSet, do
 export function setInput(color) {
   // Big tap targets for logging mid-set: 52px tall, 24px numbers. The transparent
   // border lets the reps field show its in-range / out-of-range color.
-  return { width: "100%", minHeight: 52, boxSizing: "border-box", background: "#262626", borderRadius: 12, padding: "10px 6px", fontSize: 24, fontWeight: 800, color: "#f2f2f2", textAlign: "center", outline: "none", border: "1.5px solid transparent", WebkitAppearance: "none", fontFamily: MONO };
+  return { width: "100%", minHeight: 52, boxSizing: "border-box", background: C.surface3, borderRadius: 12, padding: "10px 6px", fontSize: 16, fontWeight: 600, color: C.text, textAlign: "center", outline: "none", border: "1.5px solid transparent", WebkitAppearance: "none", fontFamily: MONO, fontVariantNumeric: "tabular-nums" };
 }

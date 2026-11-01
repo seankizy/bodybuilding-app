@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Camera, Check, ChevronLeft, ChevronRight, ClipboardList, Dumbbell, Flame, Moon, Pencil, Play, Plus, Scale, Search, Trophy, Utensils, X } from "./icons.jsx";
-import { C, LAKE, MONO, SANS, shadow } from "./theme.js";
+import { C, LAKE, SANS, MONO, STONE, INK, fill, inkOn, TITLE, HERO, shadow } from "./theme.js";
 import { BLOCK_START, COACH_NOTES, COACH_SINCE, COACH_TARGETS, GYM_SUBS, LOCATIONS, MESO_LENGTH, PROGRAM, canonName, coachOrder, libFind, loggedSince, nameKey, programExFor, resolveExercise, saveSetOverride, searchLibrary } from "./program.js";
 import { buildSwappedMovement, lastMovementByName, migrateNames } from "./lib/movements.js";
 import { fmtDate, localDateStr, newEntry, newMovement, restToSeconds, todayStr } from "./lib/utils.js";
@@ -60,13 +60,13 @@ function BackupNudge() {
   if (!show) return null;
   const days = daysSinceBackup();
   return (
-    <div style={{ position: "fixed", top: "calc(env(safe-area-inset-top) + 10px)", left: "50%", transform: "translateX(-50%)", width: "calc(100% - 36px)", maxWidth: 394, background: "#1c1c1c", borderRadius: 14, padding: "10px 14px", display: "flex", alignItems: "center", gap: 10, zIndex: 60, boxShadow: `0 4px 24px rgba(0,0,0,0.5), 0 0 0 1px ${LAKE.sky}33`, fontFamily: SANS }}>
-      <div style={{ flex: 1, fontSize: 12, color: "#e8e8e8" }}>
+    <div style={{ position: "fixed", top: "calc(env(safe-area-inset-top) + 10px)", left: "50%", transform: "translateX(-50%)", width: "calc(100% - 36px)", maxWidth: 394, background: C.surface2, borderRadius: 14, padding: "10px 14px", display: "flex", alignItems: "center", gap: 10, zIndex: 60, boxShadow: `0 4px 24px rgba(0,0,0,0.5), 0 0 0 1px ${LAKE.sky}33`, fontFamily: SANS }}>
+      <div style={{ flex: 1, fontSize: 12, color: C.text }}>
         {days === Infinity ? "Your journal has never been backed up." : `Last backup ${Math.floor(days)} days ago.`} Save a copy to Drive.
       </div>
-      <button onClick={async () => { if (await saveBackupFile(backupFromStorage())) setShow(false); }} style={{ padding: "7px 12px", borderRadius: 10, border: "none", background: LAKE.sky, color: "#080c0a", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: SANS }}>Back up</button>
-      <button onClick={() => { try { localStorage.setItem("wj_backup_snooze", todayStr()); } catch {} setShow(false); }} style={{ width: 26, height: 26, borderRadius: 8, background: "#2a2a2a", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <X size={13} color="#c4c4c4" strokeWidth={2.5} />
+      <button onClick={async () => { if (await saveBackupFile(backupFromStorage())) setShow(false); }} style={{ padding: "7px 12px", borderRadius: 10, border: "none", background: STONE.primary, color: C.ink, fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: SANS }}>Back up</button>
+      <button onClick={() => { try { localStorage.setItem("wj_backup_snooze", todayStr()); } catch {} setShow(false); }} style={{ width: 26, height: 26, borderRadius: 8, background: C.surface3, border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <X size={13} color={C.textMid} strokeWidth={2.5} />
       </button>
     </div>
   );
@@ -642,7 +642,7 @@ function AppInner({ onBrief }) {
       <Shell>
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "100vh", gap: 12 }}>
           <div style={{ fontSize: 32 }}>🏋️</div>
-          <div style={{ fontSize: 14, color: "#a3a3a3", fontFamily: SANS, letterSpacing: 2 }}>LOADING…</div>
+          <div style={{ fontSize: 15, color: C.textDim, fontFamily: SANS, letterSpacing: 0.2 }}>Loading…</div>
         </div>
       </Shell>
     );
@@ -668,7 +668,7 @@ function AppInner({ onBrief }) {
   // ── MOVEMENT DETAIL ───────────────────────────────────────────────────────
   if (view === "movement" && activeEntry && activeMv) {
     const prog = activeEntry.programDay ? PROGRAM[activeEntry.programDay] : null;
-    const color = prog?.color ?? "#e8e8e8";
+    const color = prog?.color ?? C.text;
     const allMvs = activeEntry.movements;
     const curIdx = allMvs.findIndex(m => m.id === activeMv.id);
     const nextMv = allMvs[curIdx + 1] ?? null;
@@ -709,7 +709,7 @@ function AppInner({ onBrief }) {
           left={<BackBtn onClick={() => { setView("entry"); setShowStopwatch(false); resetStopwatch(); dismissTimer(); }} label={activeEntry.customTitle || "Entry"} />}
           right={
             <button onClick={() => { deleteMovement(activeEntry.id, activeMv.id); }}
-              style={btnStyle("#6b2222", "#e05a4d")}>Delete</button>
+              style={{ ...btnStyle(C.alertWash, C.alert), border: "1px solid rgba(212,154,184,0.35)" }}>Delete</button>
           }
         />
 
@@ -724,27 +724,27 @@ function AppInner({ onBrief }) {
           const mins = Math.floor(remaining / 60), secs = remaining % 60;
           const timeStr = mins > 0 ? `${mins}:${String(secs).padStart(2,"0")}` : `${secs}s`;
           return (
-            <div style={{ position: "sticky", top: 0, zIndex: 20, margin: "0 0 4px", padding: "10px 18px", background: done ? "#1c1c1c" : "#131313", borderBottom: `2px solid ${done ? color + "88" : color + "44"}`, display: "flex", alignItems: "center", gap: 14 }}>
+            <div style={{ position: "sticky", top: 0, zIndex: 20, margin: "0 0 4px", padding: "10px 18px", background: done ? C.surface2 : C.surface, borderBottom: `2px solid ${done ? color + "88" : color + "44"}`, display: "flex", alignItems: "center", gap: 14 }}>
               <div style={{ position: "relative", width: 44, height: 44, flexShrink: 0 }}>
                 <svg width="44" height="44" style={{ transform: "rotate(-90deg)" }}>
-                  <circle cx="22" cy="22" r={R} fill="none" stroke="#2e2e2e" strokeWidth="3" />
+                  <circle cx="22" cy="22" r={R} fill="none" stroke={C.textFaint} strokeWidth="3" />
                   <circle cx="22" cy="22" r={R} fill="none" stroke={color} strokeWidth="3"
                     strokeDasharray={`${circ * pct} ${circ}`} strokeLinecap="round"
                     style={{ transition: "stroke-dasharray 0.5s linear" }} />
                 </svg>
-                <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: remaining >= 60 ? 10 : 13, fontWeight: 900, fontFamily: SANS, color: done ? color : "#f2f2f2" }}>
+                <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 600, fontFamily: SANS, color: done ? color : C.text }}>
                   {done ? "GO" : timeStr}
                 </div>
               </div>
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 10, letterSpacing: 2, color: done ? color : "#c4c4c4", fontFamily: SANS, textTransform: "uppercase", marginBottom: 4 }}>
+                <div style={{ fontSize: 12, letterSpacing: 0.2, color: done ? color : C.textMid, fontFamily: SANS, marginBottom: 4 }}>
                   {done ? "✓ Rest complete — start!" : "Rest before this movement · 1m 30s"}
                 </div>
                 <div style={{ display: "flex", gap: 6 }}>
-                  {!done && running && <button onClick={pauseTimer} style={{ ...btnStyle("#2e2e2e", "#c4c4c4"), padding: "4px 10px", fontSize: 11 }}>⏸</button>}
-                  {!done && !running && <button onClick={resumeTimer} style={{ ...btnStyle(color + "22", color), padding: "4px 10px", fontSize: 11 }}>▶</button>}
-                  <button onClick={() => resetTimer(90)} style={{ ...btnStyle("#2e2e2e", "#c4c4c4"), padding: "4px 10px", fontSize: 11 }}>↺</button>
-                  {done && <button onClick={dismissTimer} style={{ ...btnStyle(color, "#131313"), padding: "4px 14px", fontSize: 12, fontWeight: 800 }}>Dismiss</button>}
+                  {!done && running && <button onClick={pauseTimer} style={{ ...btnStyle(C.surface3, C.textMid), padding: "4px 10px", fontSize: 12 }}>⏸</button>}
+                  {!done && !running && <button onClick={resumeTimer} style={{ ...btnStyle(color + "22", color), padding: "4px 10px", fontSize: 12 }}>▶</button>}
+                  <button onClick={() => resetTimer(90)} style={{ ...btnStyle(C.surface3, C.textMid), padding: "4px 10px", fontSize: 12 }}>↺</button>
+                  {done && <button onClick={dismissTimer} style={{ ...btnStyle(color, C.ink), padding: "4px 14px", fontSize: 12, fontWeight: 600 }}>Dismiss</button>}
                 </div>
               </div>
             </div>
@@ -753,18 +753,18 @@ function AppInner({ onBrief }) {
 
         <div style={{ padding: "4px 18px 16px" }}>
           {activeMv.programRef && (
-            <div style={{ fontSize: 11, letterSpacing: 2, color: "#c4c4c4", textTransform: "uppercase", marginBottom: 6, fontFamily: SANS, display: "flex", alignItems: "center", gap: 8 }}>
+            <div style={{ fontSize: 12, letterSpacing: 0.2, color: C.textMid, marginBottom: 6, fontFamily: SANS, display: "flex", alignItems: "center", gap: 8 }}>
               <span>{prog?.title} · {activeMv.programRef}</span>
-              {activeMv.substituted && <span style={{ color: "#f0c97a", letterSpacing: 0.5 }}>· apartment swap</span>}
+              {activeMv.substituted && <span style={{ color: C.warn, letterSpacing: 0.2 }}>· apartment swap</span>}
             </div>
           )}
           {(() => {
             const pr = detailedPRForMovement(activeEntry, activeMv, entries);
             const best = pr ? bestSetForMovement(activeMv) : null;
             return pr && best ? (
-              <div style={{ display: "inline-flex", alignItems: "center", gap: 6, marginBottom: 8, padding: "4px 10px", borderRadius: 8, background: C.green + "22" }}>
-                <Trophy size={13} color={C.green} strokeWidth={2.2} />
-                <span style={{ fontSize: 11, fontWeight: 800, color: C.green, fontFamily: SANS, letterSpacing: 0.5 }}>PR THIS SESSION · {best.w} x {best.r} · e1RM {best.e1rm}</span>
+              <div style={{ display: "inline-flex", alignItems: "center", gap: 6, marginBottom: 8, padding: "4px 10px", borderRadius: 8, background: STONE.rosa }}>
+                <Trophy size={13} color={INK.rosa} strokeWidth={2.2} />
+                <span style={{ fontSize: 12, fontWeight: 600, color: INK.rosa, fontFamily: SANS, letterSpacing: 0.2 }}>PR this session · {best.w} x {best.r} · e1RM {best.e1rm}</span>
               </div>
             ) : null;
           })()}
@@ -778,7 +778,7 @@ function AppInner({ onBrief }) {
             placeholder="Movement name…"
           />
           {activeMv.swappedFrom && (
-            <div style={{ marginTop: 6, fontSize: 11, color: "#f0c97a", fontFamily: SANS, letterSpacing: 0.3 }}>
+            <div style={{ marginTop: 6, fontSize: 12, color: C.warn, fontFamily: SANS, letterSpacing: 0.3 }}>
               swapped from {activeMv.swappedFrom}{activeMv.swapReason && activeMv.swapReason !== "Renamed" ? ` (${activeMv.swapReason.toLowerCase()})` : ""}
             </div>
           )}
@@ -791,27 +791,27 @@ function AppInner({ onBrief }) {
               <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 8 }}>
                 {sg.map(ex => (
                   <button key={ex.name} onMouseDown={e => e.preventDefault()} onClick={() => swapMovementTo(activeEntry.id, activeMv.id, ex, "Renamed")}
-                    style={{ ...btnStyle("#2e2e2e", "#e8e8e8"), padding: "5px 10px", fontSize: 11, fontWeight: 700 }}>{ex.name}</button>
+                    style={{ ...btnStyle(C.surface3, C.text), padding: "5px 10px", fontSize: 12, fontWeight: 600 }}>{ex.name}</button>
                 ))}
               </div>
             );
           })()}
           <button onClick={() => setShowSwap(true)}
-            style={{ ...btnStyle("#2e2e2e", color), padding: "6px 12px", fontSize: 12, fontWeight: 800, marginTop: 10 }}>⇄ Swap exercise</button>
+            style={{ ...btnStyle(C.surface3, color), padding: "6px 12px", fontSize: 12, fontWeight: 600, marginTop: 10 }}>⇄ Swap exercise</button>
           {showSwap && <SwapSheet entry={activeEntry} mv={activeMv} color={color} onClose={() => setShowSwap(false)}
             onPick={(ex, reason) => swapMovementTo(activeEntry.id, activeMv.id, ex, reason)} />}
           {activeMv.repsTarget && (
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 8 }}>
               <Pill color={color}>{activeMv.setsTarget} sets</Pill>
               <Pill color={color}>{activeMv.repsTarget} reps</Pill>
-              {activeMv.rest && <Pill color="#c4c4c4">Rest {activeMv.rest}</Pill>}
+              {activeMv.rest && <Pill color={C.textMid}>Rest {activeMv.rest}</Pill>}
             </div>
           )}
           {(() => {
             const cue = activeMv.cue || programExFor(activeEntry, activeMv)?.cue;
             return cue ? (
-              <div style={{ marginTop: 10, padding: "9px 12px", borderRadius: 10, background: "#1c1c1c", fontSize: 12, color: "#c9c9c9", fontFamily: SANS, lineHeight: 1.5 }}>
-                <span style={{ fontSize: 10, letterSpacing: 1.5, color: "#a3a3a3", textTransform: "uppercase", fontWeight: 700, marginRight: 6 }}>Cue</span>
+              <div style={{ marginTop: 10, padding: "9px 12px", borderRadius: 10, background: C.surface2, fontSize: 12, color: C.textMid, fontFamily: SANS, lineHeight: 1.5 }}>
+                <span style={{ fontSize: 12, letterSpacing: 0.2, color: C.textDim, fontWeight: 600, marginRight: 6 }}>Cue</span>
                 {cue}
               </div>
             ) : null;
@@ -819,13 +819,13 @@ function AppInner({ onBrief }) {
         </div>
 
         {activeMv.lastSets && activeMv.lastDate && (
-          <div style={{ margin: "0 18px 14px", padding: "10px 14px", borderRadius: 12, background: "#131313" }}>
-            <div style={{ fontSize: 10, letterSpacing: 2, color: "#a3a3a3", textTransform: "uppercase", fontFamily: SANS, marginBottom: 6 }}>
+          <div style={{ margin: "0 18px 14px", padding: "10px 14px", borderRadius: 12, background: C.surface }}>
+            <div style={{ fontSize: 12, letterSpacing: 0.2, color: C.textDim, fontFamily: SANS, marginBottom: 6 }}>
               Last session · {fmtDate(activeMv.lastDate)}{activeMv.lastLocation ? ` · ${LOCATIONS[activeMv.lastLocation]?.short ?? ""}` : ""}
             </div>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
               {activeMv.lastSets.map((s, i) => (
-                <span key={i} style={{ fontSize: 12, fontFamily: SANS, fontWeight: 700, padding: "4px 9px", borderRadius: 7, background: "#1c1c1c", color: "#e8e8e888" }}>
+                <span key={i} style={{ fontSize: 12, fontFamily: SANS, fontWeight: 600, padding: "4px 9px", borderRadius: 7, background: C.surface2, color: "rgba(238,233,224,0.53)" }}>
                   {s.w ? `${s.w}lbs` : "BW"}×{s.r || "?"}
                 </span>
               ))}
@@ -860,25 +860,25 @@ function AppInner({ onBrief }) {
           };
           // Emphasize only when the suggestion is a real change from last time
           const isChange = sug.action === "add_weight" || sug.action === "back_off" || sug.action === "deload" || sug.action === "block_start" || sug.action === "coach";
-          const accent = isChange ? LAKE.sky : "#a3a3a3";
+          const accent = isChange ? LAKE.sky : C.textDim;
           const alreadyApplied = activeMv.sets.length > 0 && String(activeMv.sets[0].w) === String(sug.weight);
           return (
-            <div style={{ margin: "0 18px 14px", padding: "12px 14px", borderRadius: 12, background: isChange ? LAKE.sky + "14" : "#131313" }}>
+            <div style={{ margin: "0 18px 14px", padding: "12px 14px", borderRadius: 12, background: isChange ? LAKE.sky + "14" : C.surface }}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, marginBottom: 6 }}>
-                <div style={{ fontSize: 10, letterSpacing: 2, color: accent, textTransform: "uppercase", fontFamily: SANS, fontWeight: 700 }}>
+                <div style={{ fontSize: 12, letterSpacing: 0.2, color: accent, fontFamily: SANS, fontWeight: 600 }}>
                   Suggested · {LABEL[sug.action]}
                 </div>
                 {sug.weight > 0 && (
-                  <div style={{ fontSize: 15, fontWeight: 800, color: accent, fontFamily: MONO }}>
+                  <div style={{ fontSize: 15, fontWeight: 600, color: accent, fontFamily: MONO, fontVariantNumeric: "tabular-nums" }}>
                     {sug.weight} lbs
                   </div>
                 )}
               </div>
-              <div style={{ fontSize: 11, color: "#c4c4c4", fontFamily: SANS, lineHeight: 1.5 }}>
+              <div style={{ fontSize: 12, color: C.textMid, fontFamily: SANS, lineHeight: 1.5 }}>
                 {sug.reason}
               </div>
               {COACH_NOTES[canonName(activeMv.name)] && sug.action !== "coach" && !loggedSince(entries.filter(e => e.id !== activeEntry.id), activeMv.name, COACH_SINCE) && (
-                <div style={{ fontSize: 11, color: "#e0a83a", fontFamily: SANS, lineHeight: 1.5, marginTop: 6 }}>
+                <div style={{ fontSize: 12, color: C.warn, fontFamily: SANS, lineHeight: 1.5, marginTop: 6 }}>
                   {COACH_NOTES[canonName(activeMv.name)]}
                 </div>
               )}
@@ -888,7 +888,7 @@ function AppInner({ onBrief }) {
                     const next = activeMv.sets.map(s => (s.done ? s : { ...s, w: String(sug.weight) }));
                     updateMovement(activeEntry.id, activeMv.id, { sets: next });
                   }}
-                  style={{ marginTop: 10, padding: "8px 14px", borderRadius: 9, background: accent, border: "none", color: "#0a0a0a", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: SANS }}>
+                  style={{ marginTop: 10, padding: "8px 14px", borderRadius: 9, background: accent, border: "none", color: C.ink, fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: SANS }}>
                   Apply {sug.weight} lbs to unlogged sets
                 </button>
               )}
@@ -915,8 +915,8 @@ function AppInner({ onBrief }) {
           const slotKey = activeEntry.programDay && activeMv.programRef ? `${activeEntry.programDay}.${activeMv.programRef}` : null;
           const card = (accent, label, body, extra) => (
             <div style={{ margin: "0 18px 14px", padding: "12px 14px", borderRadius: 12, background: accent + "14" }}>
-              <div style={{ fontSize: 10, letterSpacing: 2, color: accent, textTransform: "uppercase", fontFamily: SANS, fontWeight: 700, marginBottom: 6 }}>{label}</div>
-              <div style={{ fontSize: 12, color: "#c9c9c9", fontFamily: SANS, lineHeight: 1.5 }}>{body}</div>
+              <div style={{ fontSize: 12, letterSpacing: 0.2, color: accent, fontFamily: SANS, fontWeight: 600, marginBottom: 6 }}>{label}</div>
+              <div style={{ fontSize: 12, color: C.textMid, fontFamily: SANS, lineHeight: 1.5 }}>{body}</div>
               {extra}
             </div>
           );
@@ -929,23 +929,23 @@ function AppInner({ onBrief }) {
             if (forward && slotKey && progEx) saveSetOverride(slotKey, activeMv.name, to === (progEx.programSets ?? -1) ? null : to);
           };
           const smallBtn = (txt, onClick, filled) => (
-            <button onClick={onClick} style={{ ...btnStyle(filled ? "#f0c97a" : "#2e2e2e", filled ? "#131313" : "#e8e8e8"), padding: "7px 12px", fontSize: 12, fontWeight: 800, marginTop: 10, marginRight: 8 }}>{txt}</button>
+            <button onClick={onClick} style={{ ...btnStyle(filled ? STONE.venato : C.surface3, filled ? C.ink : C.text), padding: "7px 12px", fontSize: 12, fontWeight: 600, marginTop: 10, marginRight: 8 }}>{txt}</button>
           );
           return (
             <>
-              {level && level !== "good" && card("#f0c97a", `Recovery · ${level}`, READINESS_TEXT[level])}
-              {pr && card("#e8e8e8", "PR in reach", `${pr.weight} × ${pr.reps} beats your best ever (${pr.bestW} × ${pr.bestR}, ${fmtDate(pr.bestDate)}).`)}
-              {plateau && card("#e0a83a", `Stalled · ${plateau.sessions} sessions`, `No new best since ${fmtDate(plateau.since)}. ${plateau.fix}`,
+              {level && level !== "good" && card(C.warn, `Recovery · ${level}`, READINESS_TEXT[level])}
+              {pr && card(C.text, "PR in reach", `${pr.weight} × ${pr.reps} beats your best ever (${pr.bestW} × ${pr.bestR}, ${fmtDate(pr.bestDate)}).`)}
+              {plateau && card(C.warn, `Stalled · ${plateau.sessions} sessions`, `No new best since ${fmtDate(plateau.since)}. ${plateau.fix}`,
                 plateau.kind === "reset" && plateau.weight ? smallBtn(`Use ${plateau.weight} today`, () => updateMovement(activeEntry.id, activeMv.id, { sets: activeMv.sets.map(st => (st.r !== "" && st.r != null) ? st : { ...st, w: String(plateau.weight) }) }), true) : null)}
-              {setSug && card("#f0c97a", setSug.dir === "add" ? `Add a set · ${setSug.to} sets` : `Drop a set · ${setSug.to} sets`, setSug.reason,
+              {setSug && card(C.warn, setSug.dir === "add" ? `Add a set · ${setSug.to} sets` : `Drop a set · ${setSug.to} sets`, setSug.reason,
                 <div>
                   {smallBtn("Today only", () => applySets(setSug.to, false), false)}
                   {slotKey && progEx && smallBtn("From now on", () => applySets(setSug.to, true), true)}
                 </div>)}
               {progEx?.programSets != null && progEx.programSets !== progEx.sets && (
-                <div style={{ margin: "-6px 18px 14px", fontSize: 11, color: "#c4c4c4", fontFamily: SANS }}>
+                <div style={{ margin: "-6px 18px 14px", fontSize: 12, color: C.textMid, fontFamily: SANS }}>
                   You set this slot to {progEx.sets} sets (program: {progEx.programSets}).{" "}
-                  <span onClick={() => { saveSetOverride(slotKey, activeMv.name, null); applySets(progEx.programSets, false); }} style={{ color: "#f0c97a", cursor: "pointer", fontWeight: 700 }}>Reset to program</span>
+                  <span onClick={() => { saveSetOverride(slotKey, activeMv.name, null); applySets(progEx.programSets, false); }} style={{ color: C.warn, cursor: "pointer", fontWeight: 600 }}>Reset to program</span>
                 </div>
               )}
             </>
@@ -956,21 +956,21 @@ function AppInner({ onBrief }) {
 
         {/* CHANGE 1: Stopwatch between movements — shown after finishing a movement */}
         {showStopwatch && (
-          <div style={{ margin: "0 18px 14px", padding: "16px", borderRadius: 14, background: "#e8e8e822" }}>
-            <div style={{ fontSize: 11, letterSpacing: 2, color: "#e8e8e8", textTransform: "uppercase", fontFamily: SANS, marginBottom: 8 }}>Rest Before Next Movement</div>
-            <div style={{ fontSize: 42, fontWeight: 900, color: "#e8e8e8", fontFamily: SANS, letterSpacing: 4, textAlign: "center" }}>
+          <div style={{ margin: "0 18px 14px", padding: "16px", borderRadius: 14, background: "rgba(215,212,216,0.13)" }}>
+            <div style={{ fontSize: 12, letterSpacing: 0.2, color: C.text, fontFamily: SANS, marginBottom: 8 }}>Rest Before Next Movement</div>
+            <div style={{ ...HERO, color: C.text, textAlign: "center" }}>
               {`${Math.floor(stopwatchElapsed / 60)}:${String(stopwatchElapsed % 60).padStart(2, "0")}`}
             </div>
             <div style={{ display: "flex", gap: 8, marginTop: 12, justifyContent: "center" }}>
-              <button onClick={toggleStopwatch} style={{ ...btnStyle("#1c1c1c", "#e8e8e8"), padding: "8px 16px" }}>
+              <button onClick={toggleStopwatch} style={{ ...btnStyle(C.surface2, C.text), padding: "8px 16px" }}>
                 {stopwatchRunning ? "⏸ Pause" : "▶ Resume"}
               </button>
-              <button onClick={resetStopwatch} style={{ ...btnStyle("#2e2e2e", "#c4c4c4"), padding: "8px 14px" }}>↺</button>
+              <button onClick={resetStopwatch} style={{ ...btnStyle(C.surface3, C.textMid), padding: "8px 14px" }}>↺</button>
               <button onClick={() => {
                 dismissStopwatch();
                 if (nextMv) { setActiveMvId(nextMv.id); setTimerState(null); }
                 else setView("entry");
-              }} style={{ ...btnStyle("#e8e8e8", "#131313"), padding: "8px 16px", fontWeight: 800 }}>
+              }} style={{ ...btnStyle(STONE.carrara, C.ink), padding: "8px 16px", fontWeight: 600 }}>
                 Next: {nextMv?.name?.split(" ")[0] || "Done"} →
               </button>
             </div>
@@ -1044,12 +1044,12 @@ function AppInner({ onBrief }) {
             {alreadyDone ? (
               <div style={{ display: "flex", gap: 10 }}>
                 <button onClick={() => updateMovement(activeEntry.id, activeMv.id, { doneAt: null })}
-                  style={{ flex: 1, padding: "13px", borderRadius: 14, background: "transparent", color: "#a3a3a3", fontSize: 13, fontFamily: SANS, fontWeight: 700, cursor: "pointer" }}>
+                  style={{ flex: 1, padding: "13px", borderRadius: 14, background: "transparent", color: C.textDim, fontSize: 12, fontFamily: SANS, fontWeight: 600, cursor: "pointer" }}>
                   ↩ Undo Done
                 </button>
                 {nextMv && (
                   <button onClick={() => { dismissTimer(); setActiveMvId(nextMv.id); }}
-                    style={{ flex: 2, padding: "13px", borderRadius: 14, background: "#1c1c1c", color: "#f2f2f2", fontSize: 14, fontFamily: SANS, fontWeight: 800, cursor: "pointer" }}>
+                    style={{ flex: 2, padding: "13px", borderRadius: 14, background: C.surface2, color: C.text, fontSize: 15, fontFamily: SANS, fontWeight: 600, cursor: "pointer" }}>
                     Next: {nextMv.name || "Movement"} →
                   </button>
                 )}
@@ -1057,23 +1057,21 @@ function AppInner({ onBrief }) {
             ) : (
               <button onClick={finishAndAdvance} style={{
                 width: "100%", padding: "18px", borderRadius: 16,
-                background: isLast
-                  ? "linear-gradient(135deg, #e8e8e8, #e8e8e8)"
-                  : `linear-gradient(135deg, ${color}, ${color}cc)`,
-                border: "none", color: "#131313",
-                fontSize: 15, fontWeight: 900, cursor: "pointer",
-                fontFamily: SANS, letterSpacing: 1,
-                boxShadow: `0 4px 24px ${color}33`,
+                background: STONE.primary,
+                border: "none", color: C.ink,
+                fontSize: 15, fontWeight: 600, cursor: "pointer",
+                fontFamily: SANS, letterSpacing: 0.2,
+                boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.3), 0 4px 18px rgba(0,0,0,0.35)",
               }}>
-                {isLast ? "✓ FINISH LAST MOVEMENT" : `✓ DONE · NEXT: ${(nextMv?.name || "Next").toUpperCase()}`}
+                {isLast ? "✓ Finish last movement" : `✓ Done · next: ${nextMv?.name || "Next"}`}
               </button>
             )}
           </div>
         )}
         {prToast && (
           <div key={prToast.id} onClick={() => setPrToast(null)} role="status"
-            style={{ position: "fixed", top: 18, left: "50%", transform: "translateX(-50%)", zIndex: 300, display: "flex", alignItems: "center", gap: 10, padding: "12px 18px", borderRadius: 14, background: C.green, color: "#0a0a0a", boxShadow: "0 8px 30px rgba(76,195,138,0.35)", fontFamily: SANS, fontSize: 15, fontWeight: 800, whiteSpace: "nowrap", animation: "wjToast 2800ms ease-out forwards" }}>
-            <Trophy size={18} color="#0a0a0a" strokeWidth={2.4} /> {prToast.text}
+            style={{ position: "fixed", top: 18, left: "50%", transform: "translateX(-50%)", zIndex: 300, display: "flex", alignItems: "center", gap: 10, padding: "12px 18px", borderRadius: 14, background: STONE.rosa, color: INK.rosa, boxShadow: "0 8px 30px rgba(0,0,0,0.5)", fontFamily: SANS, fontSize: 15, fontWeight: 600, whiteSpace: "nowrap", animation: "wjToast 2800ms ease-out forwards" }}>
+            <Trophy size={18} color={INK.rosa} strokeWidth={2.4} /> {prToast.text}
           </div>
         )}
         <BottomNav tab={tab} setTab={t => { setTab(t); if (t !== "journal") setView("journal"); }} onOpenMenu={() => setShowMoreMenu(true)} />
@@ -1085,7 +1083,7 @@ function AppInner({ onBrief }) {
   // ── ENTRY DETAIL ──────────────────────────────────────────────────────────
   if (view === "entry" && activeEntry) {
     const prog = activeEntry.programDay ? PROGRAM[activeEntry.programDay] : null;
-    const color = prog?.color ?? "#e8e8e8";
+    const color = prog?.color ?? C.text;
     const isRest = prog?.exercises?.length === 0;
 
     return (
@@ -1094,11 +1092,11 @@ function AppInner({ onBrief }) {
           left={<BackBtn onClick={() => setView("journal")} label="Journal" />}
           right={
             <button onClick={() => deleteEntry(activeEntry.id)}
-              style={btnStyle("#6b2222", "#e05a4d")}>Delete</button>
+              style={{ ...btnStyle(C.alertWash, C.alert), border: "1px solid rgba(212,154,184,0.35)" }}>Delete</button>
           }
         />
         <div style={{ padding: "4px 18px 0" }}>
-          <input type="date" style={{ ...ghostInput, fontSize: 16, color: "#c4c4c4", marginBottom: 6 }}
+          <input type="date" style={{ ...ghostInput, fontSize: 16, color: C.textMid, marginBottom: 6 }}
             value={activeEntry.date}
             onChange={e => updateEntry(activeEntry.id, { date: e.target.value })} />
           <input style={bigInput} value={activeEntry.customTitle}
@@ -1110,7 +1108,7 @@ function AppInner({ onBrief }) {
               <Pill color={color}>{prog.tag}</Pill>
               {!isRest && (
                 <div onClick={() => updateEntry(activeEntry.id, { location: activeEntry.location === "apartment" ? "equinox" : "apartment" })}
-                  style={{ cursor: "pointer", padding: "3px 10px", borderRadius: 999, fontSize: 11, fontWeight: 700, fontFamily: SANS, letterSpacing: 0.5, background: activeEntry.location === "apartment" ? "#f0c97a22" : "#1c1c1c", color: activeEntry.location === "apartment" ? "#f0c97a" : "#c4c4c4", border: `1px solid ${activeEntry.location === "apartment" ? "#f0c97a55" : "#2e2e2e"}` }}>
+                  style={{ cursor: "pointer", padding: "3px 10px", borderRadius: 999, fontSize: 12, fontWeight: 600, fontFamily: SANS, letterSpacing: 0.2, background: activeEntry.location === "apartment" ? "rgba(218,214,211,0.13)" : C.surface2, color: activeEntry.location === "apartment" ? C.warn : C.textMid, border: `1px solid ${activeEntry.location === "apartment" ? "rgba(201,166,190,0.33)" : C.line}` }}>
                   {LOCATIONS[activeEntry.location ?? "equinox"]?.short ?? "Equinox"} · tap to switch
                 </div>
               )}
@@ -1124,10 +1122,10 @@ function AppInner({ onBrief }) {
           const setR = (k, v) => updateEntry(activeEntry.id, { readiness: { ...r, [k]: r[k] === v ? null : v } });
           const row = (label, k, opts) => (
             <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
-              <div style={{ width: 64, fontSize: 12, color: "#c4c4c4", fontFamily: SANS }}>{label}</div>
+              <div style={{ width: 64, fontSize: 12, color: C.textMid, fontFamily: SANS }}>{label}</div>
               {opts.map(([v, t]) => (
                 <button key={v} onClick={() => setR(k, v)}
-                  style={{ ...btnStyle(r[k] === v ? color : "#1c1c1c", r[k] === v ? "#131313" : "#c4c4c4"), flex: 1, padding: "8px 0", fontSize: 12, fontWeight: 700 }}>{t}</button>
+                  style={{ ...btnStyle(r[k] === v ? color : C.surface2, r[k] === v ? C.ink : C.textMid), flex: 1, padding: "8px 0", fontSize: 12, fontWeight: 600 }}>{t}</button>
               ))}
             </div>
           );
@@ -1137,7 +1135,7 @@ function AppInner({ onBrief }) {
               <div style={{ margin: "0 18px 6px" }}>
                 {row("Sleep", "sleep", READINESS_SLEEP)}
                 {row("Soreness", "soreness", READINESS_SORE)}
-                {level && <div style={{ fontSize: 12, color: level === "good" ? "#c9c9c9" : "#f0c97a", fontFamily: SANS, lineHeight: 1.5, marginTop: 2 }}>{READINESS_TEXT[level]}</div>}
+                {level && <div style={{ fontSize: 12, color: level === "good" ? C.textMid : C.warn, fontFamily: SANS, lineHeight: 1.5, marginTop: 2 }}>{READINESS_TEXT[level]}</div>}
               </div>
             </>
           );
@@ -1149,10 +1147,10 @@ function AppInner({ onBrief }) {
           placeholder="How did today feel? Energy, sleep, PRs, anything…" rows={3} />
 
         {isRest ? (
-          <div style={{ margin: "20px 18px", padding: "28px 20px", borderRadius: 16, background: "#1c1c1c", textAlign: "center" }}>
+          <div style={{ margin: "20px 18px", padding: "28px 20px", borderRadius: 16, background: C.surface2, textAlign: "center" }}>
             <div style={{ display: "flex", justifyContent: "center", marginBottom: 10 }}><Moon size={34} color={C.textMid} strokeWidth={1.8} /></div>
-            <div style={{ color: "#f2f2f2", fontWeight: 700, fontSize: 18 }}>Rest Day</div>
-            <div style={{ color: "#c4c4c4", fontSize: 13, marginTop: 4 }}>Recovery is part of the program</div>
+            <div style={{ color: C.text, fontWeight: 600, fontSize: 15 }}>Rest Day</div>
+            <div style={{ color: C.textMid, fontSize: 12, marginTop: 4 }}>Recovery is part of the program</div>
           </div>
         ) : (
           <>
@@ -1176,7 +1174,7 @@ function AppInner({ onBrief }) {
               const canMoveDown = i < activeEntry.movements.length - 1;
               return (
                 <div key={mv.id}>
-                  <MvCard color={mvDone ? "#e8e8e8" : color}
+                  <MvCard color={mvDone ? C.text : color}
                     onClick={() => { setActiveMvId(mv.id); setView("movement"); setShowStopwatch(false); resetStopwatch(); }}>
                     <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
                       <div onClick={e => {
@@ -1190,29 +1188,29 @@ function AppInner({ onBrief }) {
                         updateMovement(activeEntry.id, mv.id, { doneAt: ts });
                       }} style={{
                         width: 34, height: 34, borderRadius: 10, flexShrink: 0,
-                        background: mvDone ? "#e8e8e8" : "#1c1c1c",
+                        background: mvDone ? STONE.primary : C.surface2,
                         display: "flex", alignItems: "center", justifyContent: "center",
-                        fontSize: 16, cursor: "pointer", transition: "all 0.15s",
+                        fontSize: 15, cursor: "pointer", transition: "all 0.15s",
                       }}>
-                        {mvDone ? <span style={{ color: "#131313" }}>✓</span> : <span style={{ fontSize: 11, fontFamily: SANS, fontWeight: 800, color: "#a3a3a3" }}>{mv.programRef ?? String(i + 1)}</span>}
+                        {mvDone ? <span style={{ color: C.ink }}>✓</span> : <span style={{ fontSize: 12, fontFamily: SANS, fontWeight: 600, color: C.textDim }}>{mv.programRef ?? String(i + 1)}</span>}
                       </div>
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontWeight: 700, fontSize: 15, color: mvDone ? "#e8e8e8" : "#f2f2f2", lineHeight: 1.3, textDecoration: mvDone ? "line-through" : "none", opacity: mvDone ? 0.7 : 1, display: "flex", alignItems: "center", gap: 6 }}>
-                          {mv.name || <span style={{ color: "#a3a3a3" }}>Unnamed movement</span>}
-                          {isPR && <span style={{ fontSize: 9, fontWeight: 800, color: "#0a0a0a", background: C.green, padding: "2px 6px", borderRadius: 4, letterSpacing: 0.5, flexShrink: 0 }}>PR</span>}
-                          {mv.substituted && <span style={{ fontSize: 9, fontWeight: 800, color: "#f0c97a", background: "#f0c97a22", padding: "2px 6px", borderRadius: 4, letterSpacing: 0.5, flexShrink: 0 }}>SWAP</span>}
+                        <div style={{ fontWeight: 600, fontSize: 15, color: mvDone ? C.text : C.text, lineHeight: 1.3, textDecoration: mvDone ? "line-through" : "none", opacity: mvDone ? 0.7 : 1, display: "flex", alignItems: "center", gap: 6 }}>
+                          {mv.name || <span style={{ color: C.textDim }}>Unnamed movement</span>}
+                          {isPR && <span style={{ fontSize: 12, fontWeight: 600, color: INK.rosa, background: STONE.rosa, padding: "2px 6px", borderRadius: 4, letterSpacing: 0.2, flexShrink: 0 }}>PR</span>}
+                          {mv.substituted && <span style={{ fontSize: 12, fontWeight: 600, color: C.textMid, background: C.surface3, padding: "2px 6px", borderRadius: 4, letterSpacing: 0.2, flexShrink: 0 }}>Swap</span>}
                         </div>
-                        <div style={{ fontSize: 12, color: "#c4c4c4", marginTop: 3 }}>
+                        <div style={{ fontSize: 12, color: C.textMid, marginTop: 3 }}>
                           {mv.repsTarget ? `${mv.setsTarget} sets · ${mv.repsTarget} reps` : `${mv.sets.length} sets logged`}
-                          {mv.doneAt && <span style={{ color: "#e8e8e877", marginLeft: 6 }}>· done {new Date(mv.doneAt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}</span>}
+                          {mv.doneAt && <span style={{ color: "rgba(238,233,224,0.47)", marginLeft: 6 }}>· done {new Date(mv.doneAt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}</span>}
                         </div>
                         <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginTop: 6 }}>
                           {mv.sets.map((s, si) => (
                             <span key={si} style={{
-                              fontSize: 11, fontFamily: SANS,
+                              fontSize: 12, fontFamily: SANS,
                               padding: "3px 7px", borderRadius: 6,
-                              background: s.r ? `${color}2a` : "#2e2e2e",
-                              color: s.r ? color : "#a3a3a3", fontWeight: 600,
+                              background: s.r ? STONE.cipollino : C.surface3,
+                              color: s.r ? INK.cipollino : C.textDim, fontWeight: 600,
                             }}>
                               {s.w ? `${s.w}×` : ""}{s.r || "–"}
                             </span>
@@ -1223,12 +1221,12 @@ function AppInner({ onBrief }) {
                       <div style={{ display: "flex", flexDirection: "column", gap: 4, flexShrink: 0 }} onClick={e => e.stopPropagation()}>
                         <button
                           onClick={() => canMoveUp && reorderMovements(activeEntry.id, i, i - 1)}
-                          style={{ width: 32, height: 32, borderRadius: 8, background: canMoveUp ? "#1c1c1c" : "transparent", color: canMoveUp ? "#c4c4c4" : "#a3a3a3", fontSize: 14, cursor: canMoveUp ? "pointer" : "default", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: SANS }}>
+                          style={{ width: 32, height: 32, borderRadius: 8, border: C.cardBorder, background: canMoveUp ? C.surface2 : "transparent", color: canMoveUp ? C.textMid : C.textDim, fontSize: 15, cursor: canMoveUp ? "pointer" : "default", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: SANS }}>
                           ↑
                         </button>
                         <button
                           onClick={() => canMoveDown && reorderMovements(activeEntry.id, i, i + 1)}
-                          style={{ width: 32, height: 32, borderRadius: 8, background: canMoveDown ? "#1c1c1c" : "transparent", color: canMoveDown ? "#c4c4c4" : "#a3a3a3", fontSize: 14, cursor: canMoveDown ? "pointer" : "default", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: SANS }}>
+                          style={{ width: 32, height: 32, borderRadius: 8, border: C.cardBorder, background: canMoveDown ? C.surface2 : "transparent", color: canMoveDown ? C.textMid : C.textDim, fontSize: 15, cursor: canMoveDown ? "pointer" : "default", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: SANS }}>
                           ↓
                         </button>
                       </div>
@@ -1251,16 +1249,16 @@ function AppInner({ onBrief }) {
         {!isRest && (
           <div style={{ padding: "16px 18px 120px" }}>
             {activeEntry.completedAt ? (
-              <div style={{ padding: "18px", borderRadius: 16, background: "#e8e8e822", textAlign: "center" }}>
+              <div style={{ padding: "18px", borderRadius: 16, background: "rgba(215,212,216,0.13)", textAlign: "center" }}>
                 <div style={{ display: "flex", justifyContent: "center", marginBottom: 8 }}><Trophy size={30} color={C.accent} strokeWidth={2} /></div>
-                <div style={{ fontSize: 16, fontWeight: 800, color: "#e8e8e8", fontFamily: SANS }}>WORKOUT COMPLETE</div>
-                <div style={{ fontSize: 12, color: "#a3a3a3", marginTop: 4, fontFamily: SANS }}>
+                <div style={{ fontSize: 15, fontWeight: 600, color: C.text, fontFamily: SANS }}>Workout complete</div>
+                <div style={{ fontSize: 12, color: C.textDim, marginTop: 4, fontFamily: SANS }}>
                   {new Date(activeEntry.completedAt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}
                   {" · "}
                   {activeEntry.movements.filter(m => m.doneAt).length}/{activeEntry.movements.length} movements done
                 </div>
                 <button onClick={() => updateEntry(activeEntry.id, { completedAt: null })}
-                  style={{ marginTop: 10, padding: "6px 16px", borderRadius: 8, background: "transparent", color: "#a3a3a3", fontSize: 12, fontFamily: SANS, cursor: "pointer" }}>
+                  style={{ marginTop: 10, padding: "6px 16px", borderRadius: 8, background: "transparent", color: C.textDim, fontSize: 12, fontFamily: SANS, cursor: "pointer" }}>
                   Undo
                 </button>
               </div>
@@ -1317,13 +1315,13 @@ function AppInner({ onBrief }) {
                 setCompletionSummary({ entry: activeEntry, prs: sessionPRs });
               }} style={{
                 width: "100%", padding: "18px", borderRadius: 16,
-                background: "linear-gradient(135deg, #e8e8e8, #e8e8e8)",
-                border: "none", color: "#131313",
-                fontSize: 16, fontWeight: 900, cursor: "pointer",
-                fontFamily: SANS, letterSpacing: 1,
-                boxShadow: "0 4px 24px #ffffff44",
+                background: STONE.primary,
+                border: "none", color: C.ink,
+                fontSize: 15, fontWeight: 600, cursor: "pointer",
+                fontFamily: SANS, letterSpacing: 0.2,
+                boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.3), 0 4px 18px rgba(0,0,0,0.35)",
               }}>
-                ✓ COMPLETE WORKOUT
+                ✓ Complete workout
               </button>
             )}
           </div>
@@ -1643,14 +1641,14 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
         <div key={label} style={{ marginBottom: 12 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 5 }}>
             <span style={{ fontSize: 12, color: C.textMid, fontFamily: SANS, fontWeight: 600 }}>
-              {label} <span style={{ fontFamily: MONO, fontWeight: 400, color: over ? C.red : C.textDim }}>{Math.round(val)} / {target}g</span>
+              {label} <span style={{ fontFamily: MONO, fontVariantNumeric: "tabular-nums", fontWeight: 400, color: over ? C.red : C.textDim }}>{Math.round(val)} / {target}g</span>
             </span>
-            <span style={{ fontSize: 12, fontFamily: MONO, fontWeight: 700, color: over ? C.red : barColor }}>
+            <span style={{ fontSize: 12, fontFamily: MONO, fontVariantNumeric: "tabular-nums", fontWeight: 600, color: over ? C.red : barColor }}>
               {over ? `${Math.round(val - target)}g over` : `${Math.round(left)}g left`}
             </span>
           </div>
           <div style={{ width: `${trackPct}%`, height: 10, borderRadius: 5, background: C.surface2, overflow: "hidden" }}>
-            <div style={{ width: `${fillPct}%`, height: "100%", background: over ? C.red : barColor, borderRadius: 5, transition: "width 0.3s" }} />
+            <div style={{ width: `${fillPct}%`, height: "100%", background: fill(over ? C.red : barColor), borderRadius: 5, transition: "width 0.3s" }} />
           </div>
         </div>
       );
@@ -1660,9 +1658,9 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
     // macro (protein and carbs 4 per gram, fat 9). Grams inside the segments, kcal under.
     const remainingSplit = () => {
       const rem = [
-        { key: "Protein", g: Math.max(0, targets.p - totals.p), kcal: Math.max(0, targets.p - totals.p) * 4, color: LAKE.forest },
-        { key: "Carbs", g: Math.max(0, targets.c - totals.c), kcal: Math.max(0, targets.c - totals.c) * 4, color: LAKE.ochre },
-        { key: "Fat", g: Math.max(0, targets.f - totals.f), kcal: Math.max(0, targets.f - totals.f) * 9, color: LAKE.peak },
+        { key: "Protein", g: Math.max(0, targets.p - totals.p), kcal: Math.max(0, targets.p - totals.p) * 4, color: C.low },
+        { key: "Carbs", g: Math.max(0, targets.c - totals.c), kcal: Math.max(0, targets.c - totals.c) * 4, color: C.success },
+        { key: "Fat", g: Math.max(0, targets.f - totals.f), kcal: Math.max(0, targets.f - totals.f) * 9, color: C.pr },
       ];
       const sumKcal = rem.reduce((n, r) => n + r.kcal, 0);
       const calLeft = targetCals - totals.cal;
@@ -1670,7 +1668,7 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
         <div style={{ marginTop: 6, paddingTop: 14, borderTop: `1px solid ${C.surface2}` }}>
           <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 10 }}>
             <span style={{ fontSize: 12, color: C.textMid, fontFamily: SANS, fontWeight: 600 }}>Left to eat</span>
-            <span style={{ fontFamily: MONO, fontSize: 13, fontWeight: 700, color: calLeft < 0 ? C.red : C.text }}>
+            <span style={{ fontFamily: MONO, fontVariantNumeric: "tabular-nums", fontSize: 12, fontWeight: 600, color: calLeft < 0 ? C.red : C.text }}>
               {calLeft < 0 ? `${Math.abs(calLeft)} kcal over` : `${calLeft} kcal left`}
             </span>
           </div>
@@ -1680,21 +1678,21 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
             <>
               <div style={{ display: "flex", gap: 2, height: 30, borderRadius: 8, overflow: "hidden" }}>
                 {rem.filter(r => r.kcal > 0).map(r => (
-                  <div key={r.key} style={{ flex: r.kcal, minWidth: 0, background: r.color, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, fontFamily: MONO, color: "#0a0a0a", whiteSpace: "nowrap" }}>
+                  <div key={r.key} style={{ flex: r.kcal, minWidth: 0, background: fill(r.color), display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 600, fontFamily: MONO, fontVariantNumeric: "tabular-nums", color: inkOn(r.color), whiteSpace: "nowrap" }}>
                     {r.kcal / sumKcal > 0.12 ? `${Math.round(r.g)}g` : ""}
                   </div>
                 ))}
               </div>
               <div style={{ display: "flex", gap: 2, marginTop: 6 }}>
                 {rem.filter(r => r.kcal > 0).map(r => (
-                  <div key={r.key} style={{ flex: r.kcal, minWidth: 0, textAlign: "center", fontSize: 10, fontFamily: MONO, color: C.textDim, whiteSpace: "nowrap" }}>
+                  <div key={r.key} style={{ flex: r.kcal, minWidth: 0, textAlign: "center", fontSize: 12, fontFamily: MONO, fontVariantNumeric: "tabular-nums", color: C.textDim, whiteSpace: "nowrap" }}>
                     {r.kcal / sumKcal > 0.12 ? `${Math.round(r.kcal)} kcal` : `${Math.round(r.kcal)}`}
                   </div>
                 ))}
               </div>
               <div style={{ display: "flex", gap: 2, marginTop: 2 }}>
                 {rem.filter(r => r.kcal > 0).map(r => (
-                  <div key={r.key} style={{ flex: r.kcal, minWidth: 0, textAlign: "center", fontSize: 10, fontFamily: SANS, color: C.textDim, whiteSpace: "nowrap" }}>
+                  <div key={r.key} style={{ flex: r.kcal, minWidth: 0, textAlign: "center", fontSize: 12, fontFamily: SANS, color: C.textDim, whiteSpace: "nowrap" }}>
                     {r.kcal / sumKcal > 0.12 ? r.key : r.key[0]}
                   </div>
                 ))}
@@ -1707,13 +1705,13 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
 
     return (
       <Shell>
-        <div style={{ padding: "52px 18px 16px", background: "linear-gradient(160deg,#131313 0%,#131313 100%)" }}>
-          <div style={{ fontSize: 11, letterSpacing: 3, color: C.textDim, textTransform: "uppercase", fontFamily: SANS, marginBottom: 4 }}>Nutrition</div>
-          <div style={{ fontSize: 30, fontWeight: 900, color: C.text, lineHeight: 1, fontFamily: SANS, letterSpacing: -0.5 }}>Macros</div>
+        <div style={{ padding: "52px 18px 16px", background: "transparent" }}>
+          <div style={{ fontSize: 12, letterSpacing: 0.2, color: C.textDim, fontFamily: SANS, marginBottom: 4 }}>Nutrition</div>
+          <div style={{ ...TITLE, color: C.text }}>Macros</div>
           {/* Date navigation */}
           <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 10 }}>
             <button onClick={() => shiftDate(-1)} style={{ background: C.surface2, borderRadius: 8, width: 30, height: 30, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}><ChevronLeft size={16} color={C.textMid} /></button>
-            <div style={{ fontSize: 14, fontWeight: 700, color: C.text, fontFamily: SANS, flex: 1, textAlign: "center" }}>
+            <div style={{ fontSize: 15, fontWeight: 600, color: C.text, fontFamily: SANS, flex: 1, textAlign: "center" }}>
               {isToday ? "Today" : fmtDate(macroDate)}
             </div>
             <button onClick={() => shiftDate(1)} disabled={isToday} style={{ background: C.surface2, borderRadius: 8, width: 30, height: 30, display: "flex", alignItems: "center", justifyContent: "center", cursor: isToday ? "default" : "pointer", opacity: isToday ? 0.3 : 1 }}><ChevronRight size={16} color={C.textMid} /></button>
@@ -1722,43 +1720,43 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
 
         {/* Day type banner — auto-detected from workout journal */}
         <div onClick={toggleDayType} style={{ margin: "12px 18px 4px", padding: "12px 16px", borderRadius: 14, cursor: "pointer",
-          background: dType === "training" ? LAKE.forest + "22" : C.surface,
+          background: dType === "training" ? `linear-gradient(rgba(12,12,12,0.6), rgba(12,12,12,0.6)), ${STONE.bardiglio}` : C.surface, border: C.cardBorder,
           
           display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <div>
-            <div style={{ fontSize: 13, fontWeight: 800, color: dType === "training" ? LAKE.forest : C.textMid, letterSpacing: 0.5, textTransform: "uppercase", fontFamily: SANS }}>
+            <div style={{ fontSize: 12, fontWeight: 600, color: dType === "training" ? C.text : C.textMid, letterSpacing: 0.2, fontFamily: SANS }}>
               {dType === "training" ? "Training Day" : "Rest Day"}
             </div>
-            <div style={{ fontSize: 11, color: C.textDim, fontFamily: SANS, marginTop: 2 }}>
+            <div style={{ fontSize: 12, color: C.textDim, fontFamily: SANS, marginTop: 2 }}>
               {trainedToday ? "Auto: session logged, locked to training" : macros[macroDate]?.dayTypeManual ? "Manually set · tap to switch" : "Auto: no session yet · tap to override"}
             </div>
           </div>
           <div style={{ textAlign: "right" }}>
-            <div style={{ fontSize: 13, fontFamily: MONO, fontWeight: 700, color: totals.cal > targetCals ? C.red : C.text }}>
+            <div style={{ fontSize: 12, fontFamily: MONO, fontVariantNumeric: "tabular-nums", fontWeight: 600, color: totals.cal > targetCals ? C.red : C.text }}>
               {totals.cal} <span style={{ color: C.textDim, fontWeight: 400 }}>/ {targetCals}</span>
             </div>
-            <div style={{ fontSize: 10, fontFamily: MONO, color: C.textDim, marginTop: 1 }}>
+            <div style={{ fontSize: 12, fontFamily: MONO, fontVariantNumeric: "tabular-nums", color: C.textDim, marginTop: 1 }}>
               {Math.max(0, targetCals - totals.cal)} left
             </div>
           </div>
         </div>
 
         {/* Calorie summary, macro tracks on one shared grams scale, then calories left split by macro */}
-        <div style={{ margin: "10px 18px", padding: "16px", borderRadius: 18, background: C.surface, boxShadow: shadow }}>
+        <div style={{ margin: "10px 18px", padding: "16px", borderRadius: 18, background: C.surface, border: C.cardBorder, boxShadow: shadow }}>
           <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 14 }}>
-            <span style={{ fontSize: 13, fontWeight: 700, color: C.text, fontFamily: SANS }}>Calories</span>
-            <span style={{ fontFamily: MONO }}>
-              <span style={{ fontSize: 24, fontWeight: 800, color: totals.cal > targetCals ? C.red : LAKE.sky }}>{totals.cal}</span>
-              <span style={{ fontSize: 13, color: C.textDim }}> / {targetCals}</span>
+            <span style={{ fontSize: 12, fontWeight: 600, color: C.text, fontFamily: SANS }}>Calories</span>
+            <span style={{ fontFamily: MONO, fontVariantNumeric: "tabular-nums" }}>
+              <span style={{ ...HERO, color: totals.cal > targetCals ? C.red : C.text }}>{totals.cal}</span>
+              <span style={{ fontSize: 12, color: C.textDim }}> / {targetCals}</span>
             </span>
           </div>
           {(() => {
             const scaleMax = Math.max(targets.p, targets.c, targets.f);
             return (
               <>
-                {macroBar("Protein", totals.p, targets.p, LAKE.forest, scaleMax)}
-                {macroBar("Carbs", totals.c, targets.c, LAKE.ochre, scaleMax)}
-                {macroBar("Fat", totals.f, targets.f, LAKE.peak, scaleMax)}
+                {macroBar("Protein", totals.p, targets.p, C.low, scaleMax)}
+                {macroBar("Carbs", totals.c, targets.c, C.success, scaleMax)}
+                {macroBar("Fat", totals.f, targets.f, C.pr, scaleMax)}
               </>
             );
           })()}
@@ -1767,19 +1765,19 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
 
         <div style={{ display: "flex", gap: 10, padding: "0 18px 8px" }}>
           <button onClick={() => { setAiError(""); setAiPendingReview(null); setEditingFoodId(null); setFoodName(""); setFoodP(""); setFoodC(""); setFoodF(""); setShowFoodModal(true); }}
-            style={{ flex: 2, padding: "14px", borderRadius: 14, background: LAKE.sky, border: "none", color: "#0a0a0a", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: SANS, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+            style={{ flex: 2, padding: "14px", borderRadius: 14, background: STONE.primary, border: "none", color: C.ink, fontSize: 15, fontWeight: 600, cursor: "pointer", fontFamily: SANS, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
             <Plus size={16} strokeWidth={2.5} /> Log Food
           </button>
           <button onClick={() => setShowChef(true)}
-            style={{ padding: "14px", borderRadius: 14, background: C.surface2, color: LAKE.forest, fontSize: 13, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }} title="Macro Chef">
+            style={{ padding: "14px", borderRadius: 14, background: C.surface2, color: LAKE.forest, fontSize: 12, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }} title="Macro Chef">
             <Utensils size={16} strokeWidth={2} />
           </button>
           <button onClick={() => setShowMacroSearch(s => !s)}
-            style={{ padding: "14px", borderRadius: 14, background: showMacroSearch ? LAKE.sky + "33" : C.surface2, color: showMacroSearch ? LAKE.sky : C.textMid, fontSize: 13, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }} title="Search food history">
+            style={{ padding: "14px", borderRadius: 14, background: showMacroSearch ? LAKE.sky + "33" : C.surface2, color: showMacroSearch ? LAKE.sky : C.textMid, fontSize: 12, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }} title="Search food history">
             <Search size={16} strokeWidth={2} />
           </button>
           <button onClick={() => setShowTargetsModal(true)}
-            style={{ padding: "14px", borderRadius: 14, background: C.surface2, color: C.textMid, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+            style={{ padding: "14px", borderRadius: 14, background: C.surface2, color: C.textMid, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
             Targets
           </button>
         </div>
@@ -1798,23 +1796,23 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
                 });
               });
               return results.length === 0 ? (
-                <div style={{ padding: "16px 0", textAlign: "center", color: C.textDim, fontSize: 13, fontFamily: SANS }}>No matches</div>
+                <div style={{ padding: "16px 0", textAlign: "center", color: C.textDim, fontSize: 12, fontFamily: SANS }}>No matches</div>
               ) : (
                 <div>
                   {results.slice(0, 30).map(r => {
                     const fk = `search-${r.date}-${r.id}`;
                     const flashing = macroFlashKey === fk;
                     return (
-                    <div key={`${r.date}-${r.id}`} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 14px", borderRadius: 12, background: C.surface, marginBottom: 6, animation: flashing ? "wjFlash 650ms ease-out" : "none" }}>
+                    <div key={`${r.date}-${r.id}`} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 14px", borderRadius: 12, background: C.surface, border: C.cardBorder, marginBottom: 6, animation: flashing ? "wjFlash 650ms ease-out" : "none" }}>
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: 13, fontWeight: 600, color: C.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.name}</div>
-                        <div style={{ fontSize: 10, color: C.textDim, fontFamily: MONO, marginTop: 2 }}>{fmtDate(r.date)} · {r.cal} kcal · {Math.round(r.p)}p/{Math.round(r.c)}c/{Math.round(r.f)}f</div>
+                        <div style={{ fontSize: 12, fontWeight: 600, color: C.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.name}</div>
+                        <div style={{ fontSize: 12, color: C.textDim, fontFamily: MONO, fontVariantNumeric: "tabular-nums", marginTop: 2 }}>{fmtDate(r.date)} · {r.cal} kcal · {Math.round(r.p)}p/{Math.round(r.c)}c/{Math.round(r.f)}f</div>
                       </div>
                       <button onClick={() => { if (macroFlashKey) return; logAgainWithFeedback(r, fk, () => { setShowMacroSearch(false); setMacroSearchQuery(""); }); }}
                         aria-label="Add to today"
-                        style={{ width: 36, height: 36, borderRadius: 10, background: flashing ? C.green : C.surface2, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "background 0.15s" }}>
+                        style={{ width: 36, height: 36, borderRadius: 10, background: flashing ? STONE.cipollino : C.surface2, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "background 0.15s" }}>
                         {flashing
-                          ? <span style={{ display: "flex", animation: "wjPop 300ms ease-out" }}><Check size={16} color="#0a0a0a" strokeWidth={3} /></span>
+                          ? <span style={{ display: "flex", animation: "wjPop 300ms ease-out" }}><Check size={16} color={C.ink} strokeWidth={3} /></span>
                           : <Plus size={15} color={LAKE.sky} strokeWidth={2.5} />}
                       </button>
                     </div>
@@ -1828,22 +1826,22 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
 
         {/* Entries list */}
         <div style={{ padding: "8px 18px 4px" }}>
-          <div style={{ fontSize: 11, letterSpacing: 2, color: C.textDim, textTransform: "uppercase", fontFamily: SANS, fontWeight: 700 }}>
+          <div style={{ fontSize: 12, letterSpacing: 0.2, color: C.textDim, fontFamily: SANS, fontWeight: 600 }}>
             {(day.entries ?? []).length} entr{(day.entries ?? []).length === 1 ? "y" : "ies"}
           </div>
         </div>
         <div style={{ padding: "4px 18px 180px" }}>
           {(day.entries ?? []).length === 0 ? (
-            <div style={{ padding: "32px 0", textAlign: "center", color: C.textDim, fontSize: 13, fontFamily: SANS }}>Nothing logged {isToday ? "yet today" : "this day"}</div>
+            <div style={{ padding: "32px 0", textAlign: "center", color: C.textDim, fontSize: 12, fontFamily: SANS }}>Nothing logged {isToday ? "yet today" : "this day"}</div>
           ) : [...day.entries].reverse().map(e => {
             const fk = `list-${e.id}`;
             const flashing = macroFlashKey === fk;
             const isNew = macroHighlightId === e.id;
             return (
-            <div key={e.id} onClick={() => isToday && startEditFood(e)} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", borderRadius: 14, background: C.surface, marginBottom: 8, cursor: isToday ? "pointer" : "default", animation: isNew ? "wjHighlight 1800ms ease-out" : flashing ? "wjFlash 650ms ease-out" : "none" }}>
+            <div key={e.id} onClick={() => isToday && startEditFood(e)} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", borderRadius: 14, background: C.surface, border: C.cardBorder, marginBottom: 8, cursor: isToday ? "pointer" : "default", animation: isNew ? "wjHighlight 1800ms ease-out" : flashing ? "wjFlash 650ms ease-out" : "none" }}>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 14, fontWeight: 600, color: C.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{e.name}</div>
-                <div style={{ fontSize: 11, color: C.textDim, fontFamily: MONO, marginTop: 2 }}>
+                <div style={{ fontSize: 15, fontWeight: 600, color: C.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{e.name}</div>
+                <div style={{ fontSize: 12, color: C.textDim, fontFamily: MONO, fontVariantNumeric: "tabular-nums", marginTop: 2 }}>
                   {e.cal || 0} kcal · {Math.round(e.p) || 0}p / {Math.round(e.c) || 0}c / {Math.round(e.f) || 0}f{e.time ? ` · ${e.time}` : ""}
                 </div>
               </div>
@@ -1854,13 +1852,13 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
                 </button>
               )}
               <button onClick={(ev) => { ev.stopPropagation(); if (macroFlashKey) return; logAgainWithFeedback(e, fk); }} title="Log again today"
-                style={{ width: 30, height: 30, borderRadius: 8, background: flashing ? C.green : C.surface2, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "background 0.15s" }}>
+                style={{ width: 30, height: 30, borderRadius: 8, background: flashing ? STONE.cipollino : C.surface2, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "background 0.15s" }}>
                 {flashing
-                  ? <span style={{ display: "flex", animation: "wjPop 300ms ease-out" }}><Check size={14} color="#0a0a0a" strokeWidth={3} /></span>
+                  ? <span style={{ display: "flex", animation: "wjPop 300ms ease-out" }}><Check size={14} color={C.ink} strokeWidth={3} /></span>
                   : <Plus size={14} color={LAKE.sky} strokeWidth={2.5} />}
               </button>
               <button onClick={(ev) => { ev.stopPropagation(); deleteFood(e.id); }}
-                style={{ width: 30, height: 30, borderRadius: 8, background: "#2a1a18", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                style={{ width: 30, height: 30, borderRadius: 8, background: C.alertWash, border: "1px solid rgba(212,154,184,0.25)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
                 <X size={14} color={C.red} strokeWidth={2.5} />
               </button>
             </div>
@@ -1872,40 +1870,40 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
         {showFoodModal && (
           <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)", display: "flex", alignItems: "flex-end", zIndex: 100 }}
             onClick={() => { setShowFoodModal(false); setFoodPhoto(null); setAiError(""); setAiPendingReview(null); setEditingFoodId(null); setFoodName(""); setFoodP(""); setFoodC(""); setFoodF(""); }}>
-            <div style={{ background: C.surface, width: "100%", borderRadius: "24px 24px 0 0", padding: "24px 18px 44px", borderBottom: "none", boxSizing: "border-box", maxHeight: "85vh", overflowY: "auto" }}
+            <div style={{ background: C.sheet, width: "100%", borderRadius: "24px 24px 0 0", padding: "24px 18px 44px", borderBottom: "none", boxSizing: "border-box", maxHeight: "85vh", overflowY: "auto" }}
               onClick={e => e.stopPropagation()}>
               <div style={{ width: 36, height: 4, borderRadius: 2, background: C.line, margin: "0 auto 20px" }} />
-              <div style={{ fontSize: 18, fontWeight: 700, color: C.text, marginBottom: 16, fontFamily: SANS }}>{editingFoodId ? "Edit Entry" : aiPendingReview ? "Review Estimate" : "Log Food"}</div>
+              <div style={{ fontSize: 15, fontWeight: 600, color: C.text, marginBottom: 16, fontFamily: SANS }}>{editingFoodId ? "Edit Entry" : aiPendingReview ? "Review Estimate" : "Log Food"}</div>
 
               {aiPendingReview && (
                 <div style={{ marginBottom: 18, padding: "16px", borderRadius: 14, background: C.surface2 }}>
-                  <div style={{ fontSize: 11, letterSpacing: 1.5, color: LAKE.ochre, textTransform: "uppercase", fontFamily: SANS, fontWeight: 700, marginBottom: 10 }}>Check before logging</div>
+                  <div style={{ fontSize: 12, letterSpacing: 0.2, color: LAKE.ochre, fontFamily: SANS, fontWeight: 600, marginBottom: 10 }}>Check before logging</div>
                   <input value={aiPendingReview.name} onChange={e => setAiPendingReview({ ...aiPendingReview, name: e.target.value })}
-                    style={{ width: "100%", background: C.bg, borderRadius: 10, padding: "11px 14px", fontSize: 16, fontWeight: 600, color: C.text, outline: "none", fontFamily: SANS, boxSizing: "border-box", marginBottom: 10, border: "none" }} />
+                    style={{ width: "100%", background: C.surface3, borderRadius: 10, padding: "11px 14px", fontSize: 16, fontWeight: 600, color: C.text, outline: "none", fontFamily: SANS, boxSizing: "border-box", marginBottom: 10, border: "none" }} />
                   <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
                     {[["Protein", "p"], ["Carbs", "c"], ["Fat", "f"]].map(([lbl, key]) => (
                       <div key={key} style={{ flex: 1 }}>
-                        <div style={{ fontSize: 10, letterSpacing: 1, color: C.textDim, textTransform: "uppercase", fontFamily: SANS, marginBottom: 4, textAlign: "center" }}>{lbl} g</div>
+                        <div style={{ fontSize: 12, letterSpacing: 0.2, color: C.textDim, fontFamily: SANS, marginBottom: 4, textAlign: "center" }}>{lbl} g</div>
                         <input type="number" inputMode="decimal" value={aiPendingReview[key]}
                           onChange={e => setAiPendingReview({ ...aiPendingReview, [key]: parseFloat(e.target.value) || 0 })}
-                          style={{ width: "100%", background: C.bg, borderRadius: 10, padding: "11px 6px", fontSize: 18, fontWeight: 700, color: C.text, textAlign: "center", outline: "none", fontFamily: MONO, boxSizing: "border-box", border: "none" }} />
+                          style={{ width: "100%", background: C.surface3, borderRadius: 10, padding: "11px 6px", fontSize: 16, fontWeight: 600, color: C.text, textAlign: "center", outline: "none", fontFamily: MONO, fontVariantNumeric: "tabular-nums", boxSizing: "border-box", border: "none" }} />
                       </div>
                     ))}
                   </div>
-                  <div style={{ fontSize: 13, color: C.textMid, fontFamily: MONO, textAlign: "center", marginBottom: 14 }}>
+                  <div style={{ fontSize: 12, color: C.textMid, fontFamily: MONO, fontVariantNumeric: "tabular-nums", textAlign: "center", marginBottom: 14 }}>
                     = {macroCals(aiPendingReview.p, aiPendingReview.c, aiPendingReview.f)} kcal
                   </div>
                   {aiPendingReview.source && (
-                    <div style={{ fontSize: 11, color: LAKE.sky, fontFamily: SANS, marginBottom: 10, lineHeight: 1.5, padding: "8px 10px", background: C.bg, borderRadius: 8, maxHeight: 120, overflowY: "auto", wordBreak: "break-word" }}>
+                    <div style={{ fontSize: 12, color: LAKE.sky, fontFamily: SANS, marginBottom: 10, lineHeight: 1.5, padding: "8px 10px", background: C.surface3, borderRadius: 8, maxHeight: 120, overflowY: "auto", wordBreak: "break-word" }}>
                       Breakdown: {aiPendingReview.source}
                     </div>
                   )}
-                  <div style={{ fontSize: 11, color: C.textDim, fontFamily: SANS, marginBottom: 14, lineHeight: 1.5 }}>
+                  <div style={{ fontSize: 12, color: C.textDim, fontFamily: SANS, marginBottom: 14, lineHeight: 1.5 }}>
                     Does this look right for what you actually ate? Adjust the numbers above if not, then confirm.
                   </div>
                   <div style={{ display: "flex", gap: 8 }}>
                     <button onClick={() => { setAiPendingReview(null); setAiDescription(""); setFoodPhoto(null); }}
-                      style={{ flex: 1, padding: "14px", borderRadius: 12, background: C.bg, color: C.textMid, fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: SANS, border: "none" }}>
+                      style={{ flex: 1, padding: "14px", borderRadius: 12, background: C.surface3, color: C.textMid, fontSize: 15, fontWeight: 600, cursor: "pointer", fontFamily: SANS, border: "none" }}>
                       Discard
                     </button>
                     <button onClick={() => {
@@ -1923,7 +1921,7 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
                       });
                       setAiPendingReview(null); setAiDescription(""); setFoodPhoto(null);
                       setShowFoodModal(false);
-                    }} style={{ flex: 2, padding: "14px", borderRadius: 12, background: LAKE.forest, color: "#0a0a0a", fontSize: 15, fontWeight: 700, cursor: "pointer", fontFamily: SANS, border: "none" }}>
+                    }} style={{ flex: 2, padding: "14px", borderRadius: 12, background: STONE.primary, color: C.ink, fontSize: 15, fontWeight: 600, cursor: "pointer", fontFamily: SANS, border: "none" }}>
                       Confirm & Log
                     </button>
                   </div>
@@ -1934,17 +1932,17 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
               <>
               {/* Photo logging */}
               <div style={{ marginBottom: 14, padding: "14px", borderRadius: 14, background: C.surface2 }}>
-                <div style={{ fontSize: 11, letterSpacing: 1.5, color: LAKE.forest, textTransform: "uppercase", fontFamily: SANS, fontWeight: 700, marginBottom: 8 }}>Snap a Photo — AI estimates</div>
+                <div style={{ fontSize: 12, letterSpacing: 0.2, color: LAKE.forest, fontFamily: SANS, fontWeight: 600, marginBottom: 8 }}>Snap a Photo — AI estimates</div>
                 {foodPhoto ? (
                   <div style={{ position: "relative", marginBottom: 8 }}>
                     <img src={foodPhoto.dataUrl} alt="Food" style={{ width: "100%", maxHeight: 180, objectFit: "cover", borderRadius: 10 }} />
                     <button onClick={() => setFoodPhoto(null)}
                       style={{ position: "absolute", top: 6, right: 6, width: 26, height: 26, borderRadius: 8, background: "rgba(0,0,0,0.7)", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                      <X size={14} color="#fff" strokeWidth={2.5} />
+                      <X size={14} color={C.text} strokeWidth={2.5} />
                     </button>
                   </div>
                 ) : (
-                  <label style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "18px", borderRadius: 10, border: `1.5px dashed ${C.line}`, cursor: "pointer", color: C.textMid, fontSize: 13, fontFamily: SANS }}>
+                  <label style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "18px", borderRadius: 10, border: `1.5px dashed ${C.line}`, cursor: "pointer", color: C.textMid, fontSize: 12, fontFamily: SANS }}>
                     <input type="file" accept="image/*" style={{ display: "none" }}
                       onChange={e => handlePhotoSelect(e.target.files[0])} />
                     Take Photo or Choose Image
@@ -1954,9 +1952,9 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
                   <>
                     <textarea value={aiDescription} onChange={e => setAiDescription(e.target.value)} rows={2}
                       placeholder="Optional: correct the portion — e.g. &quot;I only ate half of this&quot; or &quot;2 of the 4 pieces&quot; — tap the mic on your keyboard to speak this"
-                      style={{ width: "100%", marginTop: 10, background: C.bg, borderRadius: 10, padding: "10px 12px", fontSize: 16, color: C.text, outline: "none", resize: "none", fontFamily: SANS, boxSizing: "border-box" }} />
+                      style={{ width: "100%", marginTop: 10, background: C.surface3, borderRadius: 10, padding: "10px 12px", fontSize: 16, color: C.text, outline: "none", resize: "none", fontFamily: SANS, boxSizing: "border-box" }} />
                     <button onClick={aiLogFoodPhoto} disabled={aiLoading}
-                      style={{ width: "100%", marginTop: 8, padding: "11px", borderRadius: 10, background: aiLoading ? C.surface : LAKE.forest, border: "none", color: aiLoading ? C.textDim : "#0a0a0a", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: SANS }}>
+                      style={{ width: "100%", marginTop: 8, padding: "11px", borderRadius: 10, background: aiLoading ? C.surface : STONE.primary, border: "none", color: aiLoading ? C.textDim : C.ink, fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: SANS }}>
                       {aiLoading ? "Searching for nutrition data…" : "Estimate & Log from Photo"}
                     </button>
                   </>
@@ -1966,13 +1964,13 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
               {/* AI describe (text only, no photo) — hidden once a photo is attached, since the photo section above already has its own note field and action button */}
               {!foodPhoto && (
               <div style={{ marginBottom: 18, padding: "14px", borderRadius: 14, background: C.surface2 }}>
-                <div style={{ fontSize: 11, letterSpacing: 1.5, color: LAKE.sky, textTransform: "uppercase", fontFamily: SANS, fontWeight: 700, marginBottom: 8 }}>Describe It — AI estimates</div>
-                <div style={{ fontSize: 11, color: C.textDim, marginBottom: 8, fontFamily: SANS }}>No photo — type it, or tap the mic on your keyboard to speak it.</div>
+                <div style={{ fontSize: 12, letterSpacing: 0.2, color: LAKE.sky, fontFamily: SANS, fontWeight: 600, marginBottom: 8 }}>Describe It — AI estimates</div>
+                <div style={{ fontSize: 12, color: C.textDim, marginBottom: 8, fontFamily: SANS }}>No photo — type it, or tap the mic on your keyboard to speak it.</div>
                 <textarea value={aiDescription} onChange={e => setAiDescription(e.target.value)} rows={2}
                   placeholder="e.g. 1.5 scoops whey with oat milk and a banana"
-                  style={{ width: "100%", background: C.bg, borderRadius: 10, padding: "10px 12px", fontSize: 16, color: C.text, outline: "none", resize: "none", fontFamily: SANS, boxSizing: "border-box" }} />
+                  style={{ width: "100%", background: C.surface3, borderRadius: 10, padding: "10px 12px", fontSize: 16, color: C.text, outline: "none", resize: "none", fontFamily: SANS, boxSizing: "border-box" }} />
                 <button onClick={aiLogFood} disabled={aiLoading}
-                  style={{ width: "100%", marginTop: 8, padding: "11px", borderRadius: 10, background: aiLoading ? C.surface : LAKE.sky, border: "none", color: aiLoading ? C.textDim : "#0a0a0a", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: SANS }}>
+                  style={{ width: "100%", marginTop: 8, padding: "11px", borderRadius: 10, background: aiLoading ? C.surface : STONE.primary, border: "none", color: aiLoading ? C.textDim : C.ink, fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: SANS }}>
                   {aiLoading ? "Searching for nutrition data…" : "Estimate & Log"}
                 </button>
                 {aiError && <div style={{ marginTop: 8, fontSize: 12, color: C.red, fontFamily: SANS }}>{aiError}</div>}
@@ -1984,30 +1982,30 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
               {!aiPendingReview && !foodPhoto && (
               <>
               {/* Manual entry (always shown when not reviewing — this is the edit form too) */}
-              <div style={{ fontSize: 11, letterSpacing: 1.5, color: C.textDim, textTransform: "uppercase", fontFamily: SANS, fontWeight: 700, marginBottom: 8 }}>{editingFoodId ? "Edit Details" : "Or Enter Manually"}</div>
+              <div style={{ fontSize: 12, letterSpacing: 0.2, color: C.textDim, fontFamily: SANS, fontWeight: 600, marginBottom: 8 }}>{editingFoodId ? "Edit Details" : "Or Enter Manually"}</div>
               <input value={foodName} onChange={e => setFoodName(e.target.value)} placeholder="Food name"
                 style={{ width: "100%", background: C.surface2, borderRadius: 10, padding: "11px 14px", fontSize: 16, color: C.text, outline: "none", fontFamily: SANS, boxSizing: "border-box", marginBottom: 10 }} />
               <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
                 {[["Protein", foodP, setFoodP], ["Carbs", foodC, setFoodC], ["Fat", foodF, setFoodF]].map(([lbl, val, setter]) => (
                   <div key={lbl} style={{ flex: 1 }}>
-                    <div style={{ fontSize: 10, letterSpacing: 1, color: C.textDim, textTransform: "uppercase", fontFamily: SANS, marginBottom: 4, textAlign: "center" }}>{lbl} g</div>
+                    <div style={{ fontSize: 12, letterSpacing: 0.2, color: C.textDim, fontFamily: SANS, marginBottom: 4, textAlign: "center" }}>{lbl} g</div>
                     <input type="number" inputMode="decimal" value={val} onChange={e => setter(e.target.value)} placeholder="0"
-                      style={{ width: "100%", background: C.surface2, borderRadius: 10, padding: "11px 6px", fontSize: 18, fontWeight: 700, color: C.text, textAlign: "center", outline: "none", fontFamily: MONO, boxSizing: "border-box" }} />
+                      style={{ width: "100%", background: C.surface2, borderRadius: 10, padding: "11px 6px", fontSize: 16, fontWeight: 600, color: C.text, textAlign: "center", outline: "none", fontFamily: MONO, fontVariantNumeric: "tabular-nums", boxSizing: "border-box" }} />
                   </div>
                 ))}
               </div>
-              <div style={{ fontSize: 13, color: C.textMid, fontFamily: MONO, textAlign: "center", marginBottom: 14 }}>
+              <div style={{ fontSize: 12, color: C.textMid, fontFamily: MONO, fontVariantNumeric: "tabular-nums", textAlign: "center", marginBottom: 14 }}>
                 = {macroCals(foodP, foodC, foodF)} kcal
               </div>
               <div style={{ display: "flex", gap: 8 }}>
                 {editingFoodId && (
                   <button onClick={() => { setAiPendingReview(null); setEditingFoodId(null); setFoodName(""); setFoodP(""); setFoodC(""); setFoodF(""); setShowFoodModal(false); }}
-                    style={{ flex: 1, padding: "14px", borderRadius: 12, background: C.surface2, color: C.textMid, fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: SANS }}>
+                    style={{ flex: 1, padding: "14px", borderRadius: 12, background: C.surface2, color: C.textMid, fontSize: 15, fontWeight: 600, cursor: "pointer", fontFamily: SANS }}>
                     Cancel
                   </button>
                 )}
                 <button onClick={addFood}
-                  style={{ flex: editingFoodId ? 2 : 1, padding: "14px", borderRadius: 12, background: LAKE.forest, border: "none", color: "#0a0a0a", fontSize: 15, fontWeight: 700, cursor: "pointer", fontFamily: SANS }}>
+                  style={{ flex: editingFoodId ? 2 : 1, padding: "14px", borderRadius: 12, background: STONE.primary, border: "none", color: C.ink, fontSize: 15, fontWeight: 600, cursor: "pointer", fontFamily: SANS }}>
                   {editingFoodId ? "Save Changes" : "Add Entry"}
                 </button>
               </div>
@@ -2037,28 +2035,28 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
         {showTargetsModal && (
           <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)", display: "flex", alignItems: "flex-end", zIndex: 100 }}
             onClick={() => setShowTargetsModal(false)}>
-            <div style={{ background: C.surface, width: "100%", borderRadius: "24px 24px 0 0", padding: "24px 18px 44px", borderBottom: "none", boxSizing: "border-box" }}
+            <div style={{ background: C.sheet, width: "100%", borderRadius: "24px 24px 0 0", padding: "24px 18px 44px", borderBottom: "none", boxSizing: "border-box" }}
               onClick={e => e.stopPropagation()}>
               <div style={{ width: 36, height: 4, borderRadius: 2, background: C.line, margin: "0 auto 20px" }} />
-              <div style={{ fontSize: 18, fontWeight: 700, color: C.text, marginBottom: 16, fontFamily: SANS }}>Macro Targets</div>
+              <div style={{ fontSize: 15, fontWeight: 600, color: C.text, marginBottom: 16, fontFamily: SANS }}>Macro Targets</div>
               {["training", "rest"].map(dt => (
                 <div key={dt} style={{ marginBottom: 16 }}>
-                  <div style={{ fontSize: 12, fontWeight: 800, color: dt === "training" ? LAKE.forest : C.textMid, textTransform: "uppercase", letterSpacing: 1, fontFamily: SANS, marginBottom: 8 }}>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: dt === "training" ? LAKE.forest : C.textMid, letterSpacing: 0.2, fontFamily: SANS, marginBottom: 8 }}>
                     {dt === "training" ? "Training Day" : "Rest Day"} · {macroCals(macroTargets[dt].p, macroTargets[dt].c, macroTargets[dt].f)} kcal
                   </div>
                   <div style={{ display: "flex", gap: 8 }}>
                     {[["p", "Protein"], ["c", "Carbs"], ["f", "Fat"]].map(([key, lbl]) => (
                       <div key={key} style={{ flex: 1 }}>
-                        <div style={{ fontSize: 10, letterSpacing: 1, color: C.textDim, textTransform: "uppercase", fontFamily: SANS, marginBottom: 4, textAlign: "center" }}>{lbl}</div>
+                        <div style={{ fontSize: 12, letterSpacing: 0.2, color: C.textDim, fontFamily: SANS, marginBottom: 4, textAlign: "center" }}>{lbl}</div>
                         <input type="number" inputMode="numeric" value={macroTargets[dt][key]}
                           onChange={e => saveMacroTargets({ ...macroTargets, [dt]: { ...macroTargets[dt], [key]: parseFloat(e.target.value) || 0 } })}
-                          style={{ width: "100%", background: C.surface2, borderRadius: 10, padding: "10px 6px", fontSize: 17, fontWeight: 700, color: C.text, textAlign: "center", outline: "none", fontFamily: MONO, boxSizing: "border-box" }} />
+                          style={{ width: "100%", background: C.surface2, borderRadius: 10, padding: "10px 6px", fontSize: 16, fontWeight: 600, color: C.text, textAlign: "center", outline: "none", fontFamily: MONO, fontVariantNumeric: "tabular-nums", boxSizing: "border-box" }} />
                       </div>
                     ))}
                   </div>
                 </div>
               ))}
-              <div style={{ fontSize: 11, color: C.textDim, fontFamily: SANS, lineHeight: 1.5 }}>
+              <div style={{ fontSize: 12, color: C.textDim, fontFamily: SANS, lineHeight: 1.5 }}>
                 The day type auto-switches based on whether you've logged a workout — no more forgetting which targets apply.
               </div>
             </div>
@@ -2086,10 +2084,10 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
       : (cycleAnchor ? new Date(cycleAnchor + "T12:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "cycle start");
     return (
       <Shell>
-        <div style={{ padding: "52px 18px 20px", background: "linear-gradient(160deg,#131313 0%,#131313 100%)" }}>
-          <div style={{ fontSize: 11, letterSpacing: 3, color: "#a3a3a3", textTransform: "uppercase", fontFamily: SANS, marginBottom: 4 }}>Sets Per Muscle</div>
-          <div style={{ fontSize: 30, fontWeight: 900, color: "#f2f2f2", lineHeight: 1, fontFamily: SANS, letterSpacing: -0.5 }}>Volume</div>
-          <div style={{ fontSize: 13, color: "#a3a3a3", marginTop: 6, fontFamily: SANS }}>
+        <div style={{ padding: "52px 18px 20px", background: "transparent" }}>
+          <div style={{ fontSize: 12, letterSpacing: 0.2, color: C.textDim, fontFamily: SANS, marginBottom: 4 }}>Sets Per Muscle</div>
+          <div style={{ ...TITLE, color: C.text }}>Volume</div>
+          <div style={{ fontSize: 12, color: C.textDim, marginTop: 6, fontFamily: SANS }}>
             {viewingPast ? cycleLabel : `Since ${cycleLabel} · resets with each new cycle`}
           </div>
         </div>
@@ -2100,18 +2098,18 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
             <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 4 }}>
               <button onClick={() => setSelectedCycleIdx(null)} style={{
                 flexShrink: 0, padding: "8px 14px", borderRadius: 10, cursor: "pointer", fontFamily: SANS,
-                fontSize: 12, fontWeight: 700, whiteSpace: "nowrap",
-                background: !viewingPast ? LAKE.sky : C.surface2,
-                color: !viewingPast ? "#0a0a0a" : C.textMid,
+                fontSize: 12, fontWeight: 600, whiteSpace: "nowrap",
+                background: !viewingPast ? STONE.carrara : C.surface2,
+                color: !viewingPast ? C.ink : C.textMid,
               }}>
                 Current Cycle
               </button>
               {pastCycles.map((c, i) => (
                 <button key={i} onClick={() => setSelectedCycleIdx(i)} style={{
                   flexShrink: 0, padding: "8px 14px", borderRadius: 10, cursor: "pointer", fontFamily: SANS,
-                  fontSize: 12, fontWeight: 700, whiteSpace: "nowrap",
-                  background: selectedCycleIdx === i ? LAKE.sky : C.surface2,
-                  color: selectedCycleIdx === i ? "#0a0a0a" : C.textMid,
+                  fontSize: 12, fontWeight: 600, whiteSpace: "nowrap",
+                  background: selectedCycleIdx === i ? STONE.carrara : C.surface2,
+                  color: selectedCycleIdx === i ? C.ink : C.textMid,
                 }}>
                   {fmtDate(c.start)} – {fmtDate(c.end)}
                 </button>
@@ -2125,14 +2123,14 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
           const meso = mesocycleWeek(entries, mesoOverride);
           if (!meso.isDeload) return null;
           return (
-            <div style={{ margin: "12px 18px 4px", padding: "14px 16px", borderRadius: 14, background: C.amber + "14" }}>
-              <div style={{ fontSize: 13, fontWeight: 700, color: C.amber, marginBottom: 8, display: "flex", alignItems: "center", gap: 6 }}>
-                <Flame size={14} color={C.amber} strokeWidth={2} /> Deload Week: Volume Targets
+            <div style={{ margin: "12px 18px 4px", padding: "14px 16px", borderRadius: 14, background: STONE.venato, color: INK.stone }}>
+              <div style={{ fontSize: 12, fontWeight: 600, color: INK.stone, marginBottom: 8, display: "flex", alignItems: "center", gap: 6 }}>
+                <Flame size={14} color={INK.stone} strokeWidth={2} /> Deload week: volume targets
               </div>
               {Object.entries(VOLUME_LANDMARKS).map(([muscle, lm]) => (
-                <div key={muscle} style={{ display: "flex", justifyContent: "space-between", padding: "5px 0", borderBottom: `1px solid ${C.lineSoft}` }}>
-                  <span style={{ fontSize: 12, color: C.textMid, fontFamily: SANS }}>{muscle}</span>
-                  <span style={{ fontSize: 12, fontFamily: MONO, color: C.accent }}>
+                <div key={muscle} style={{ display: "flex", justifyContent: "space-between", padding: "5px 0", borderBottom: "1px solid rgba(0,0,0,0.1)" }}>
+                  <span style={{ fontSize: 12, color: INK.stone, fontFamily: SANS }}>{muscle}</span>
+                  <span style={{ fontSize: 12, fontFamily: MONO, fontVariantNumeric: "tabular-nums", color: INK.stone }}>
                     {Math.round(lm.mev * 0.5)}–{Math.round(lm.mev * 0.6)} sets · 60% weight · 3–4 RIR
                   </span>
                 </div>
@@ -2146,10 +2144,10 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
           const barW = W - labelW - numW;
           const H = allMuscles.length * rowH + 18;
           return (
-            <div style={{ margin: "12px 18px 0", padding: "16px", borderRadius: 18, background: C.surface, boxShadow: shadow }}>
+            <div style={{ margin: "12px 18px 0", padding: "16px", borderRadius: 18, background: C.surface, border: C.cardBorder, boxShadow: shadow }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 10 }}>
-                <div style={{ fontSize: 13, fontWeight: 700, color: C.text }}>Sets per muscle</div>
-                <div style={{ fontSize: 10, color: C.textDim, fontFamily: SANS }}>{viewingPast ? "that cycle" : "this 8-day cycle"}</div>
+                <div style={{ fontSize: 12, fontWeight: 600, color: C.text }}>Sets per muscle</div>
+                <div style={{ fontSize: 12, color: C.textDim, fontFamily: SANS }}>{viewingPast ? "that cycle" : "this 8-day cycle"}</div>
               </div>
               <svg width="100%" viewBox={`0 0 ${W} ${H}`} style={{ display: "block" }}>
                 {allMuscles.map((muscle, idx) => {
@@ -2162,20 +2160,20 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
                   const y = idx * rowH + 4;
                   return (
                     <g key={muscle}>
-                      <text x={0} y={y + 13} fontSize="11" fill={C.textMid} fontFamily={SANS}>{muscle}</text>
+                      <text x={0} y={y + 13} fontSize="12" fill={C.textMid} fontFamily={SANS}>{muscle}</text>
                       <rect x={labelW} y={y + 3} width={sx(lm.mev) - labelW} height={14} fill={C.surface2} rx="3" />
                       <rect x={sx(lm.mev)} y={y + 3} width={sx(lm.mav) - sx(lm.mev)} height={14} fill={C.green} opacity="0.16" />
                       <rect x={sx(lm.mav)} y={y + 3} width={sx(lm.mrv) - sx(lm.mav)} height={14} fill={C.amber} opacity="0.16" />
                       <rect x={sx(lm.mrv)} y={y + 3} width={labelW + barW - sx(lm.mrv)} height={14} fill={C.red} opacity="0.10" />
-                      <rect x={labelW} y={y + 7} width={Math.max(0, sx(sets) - labelW)} height={6} fill={st.color === C.textMid ? C.textMid : st.color} rx="3" />
-                      <text x={W} y={y + 14} fontSize="12" fill={st.color} textAnchor="end" fontFamily="monospace" fontWeight="700">{sets}</text>
+                      <rect x={labelW} y={y + 7} width={Math.max(0, sx(sets) - labelW)} height={6} fill={st.color} rx="3" />
+                      <text x={W} y={y + 14} fontSize="12" fill={st.color} textAnchor="end" fontFamily={MONO} fontWeight="600">{sets}</text>
                     </g>
                   );
                 })}
-                <g fontSize="9" fontFamily={SANS} fill={C.textDim}>
+                <g fontSize="12" fontFamily={SANS} fill={C.textDim}>
                   <rect x={labelW} y={H - 10} width="8" height="8" fill={C.green} opacity="0.5" rx="1" /><text x={labelW + 11} y={H - 3}>MEV to MAV</text>
-                  <rect x={labelW + 80} y={H - 10} width="8" height="8" fill={C.amber} opacity="0.5" rx="1" /><text x={labelW + 91} y={H - 3}>MAV to MRV</text>
-                  <rect x={labelW + 160} y={H - 10} width="8" height="8" fill={C.red} opacity="0.4" rx="1" /><text x={labelW + 171} y={H - 3}>over MRV</text>
+                  <rect x={labelW + 92} y={H - 10} width="8" height="8" fill={C.amber} opacity="0.5" rx="1" /><text x={labelW + 103} y={H - 3}>MAV to MRV</text>
+                  <rect x={labelW + 184} y={H - 10} width="8" height="8" fill={C.red} opacity="0.4" rx="1" /><text x={labelW + 195} y={H - 3}>over MRV</text>
                 </g>
               </svg>
             </div>
@@ -2190,21 +2188,21 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
             const mevPct = (lm.mev / lm.mrv) * 100;
             const mavPct = (lm.mav / lm.mrv) * 100;
             return (
-              <div key={muscle} style={{ marginBottom: 12, padding: "16px 18px", borderRadius: 18, background: C.surface, boxShadow: shadow }}>
+              <div key={muscle} style={{ marginBottom: 12, padding: "16px 18px", borderRadius: 18, background: C.surface, border: C.cardBorder, boxShadow: shadow }}>
                 <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 12 }}>
-                  <div style={{ fontSize: 15, fontWeight: 700, color: C.text, letterSpacing: -0.2 }}>{muscle}</div>
+                  <div style={{ fontSize: 15, fontWeight: 600, color: C.text, letterSpacing: 0 }}>{muscle}</div>
                   <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
-                    <span style={{ fontSize: 24, fontWeight: 800, color: status.color, fontFamily: MONO }}>{sets}</span>
-                    <span style={{ fontSize: 11, color: C.textDim, fontFamily: SANS, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>{status.label}</span>
+                    <span style={{ fontSize: 15, fontWeight: 600, color: status.color, fontFamily: MONO, fontVariantNumeric: "tabular-nums" }}>{sets}</span>
+                    <span style={{ fontSize: 12, color: C.textDim, fontFamily: SANS, fontWeight: 600, letterSpacing: 0.2 }}>{status.label}</span>
                   </div>
                 </div>
                 {/* Volume bar with MEV/MAV/MRV markers */}
                 <div style={{ position: "relative", height: 12, borderRadius: 6, background: `linear-gradient(90deg, ${C.surface2} 0 ${mevPct}%, ${C.green}29 ${mevPct}% ${mavPct}%, ${C.amber}29 ${mavPct}% 100%)`, overflow: "hidden" }}>
-                  <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: `${pct}%`, background: `linear-gradient(90deg, ${status.color}aa, ${status.color})`, borderRadius: 6, transition: "width 0.4s ease" }} />
+                  <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: `${pct}%`, background: fill(status.color), borderRadius: 6, transition: "width 0.4s ease" }} />
                   <div style={{ position: "absolute", left: `${mevPct}%`, top: 0, bottom: 0, width: 1.5, background: "rgba(255,255,255,0.25)" }} />
                   <div style={{ position: "absolute", left: `${mavPct}%`, top: 0, bottom: 0, width: 1.5, background: "rgba(255,255,255,0.25)" }} />
                 </div>
-                <div style={{ display: "flex", justifyContent: "space-between", marginTop: 5, fontSize: 9, color: C.textDim, fontFamily: MONO, fontWeight: 600 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", marginTop: 5, fontSize: 12, color: C.textDim, fontFamily: MONO, fontVariantNumeric: "tabular-nums", fontWeight: 600 }}>
                   <span>MEV {lm.mev}</span>
                   <span>MAV {lm.mav}</span>
                   <span>MRV {lm.mrv}</span>
@@ -2212,7 +2210,7 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
               </div>
             );
           })}
-          <div style={{ padding: "8px 4px", fontSize: 11, color: "#a3a3a3", fontFamily: SANS, lineHeight: 1.6 }}>
+          <div style={{ padding: "8px 4px", fontSize: 12, color: C.textDim, fontFamily: SANS, lineHeight: 1.6 }}>
             MEV = minimum effective volume · MAV = max adaptive (the productive zone) · MRV = max recoverable. Stay in the green band for growth; back off if you're over MRV repeatedly.
           </div>
         </div>
@@ -2278,54 +2276,54 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
             return (
               <g key={i}>
                 <line x1={L} y1={y} x2={W - R} y2={y} stroke={C.line} strokeWidth="1" strokeDasharray="3,4" />
-                <text x={L - 5} y={y + 3} fontSize="9" fill={C.textDim} textAnchor="end" fontFamily="monospace">{Math.round(v)}</text>
+                <text x={L - 5} y={y + 3} fontSize="12" fill={C.textDim} textAnchor="end" fontFamily={MONO}>{Math.round(v)}</text>
               </g>
             );
           })}
           <path d={area} fill="url(#lg)" />
           <path d={path} fill="none" stroke={color} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
           {pts.map(([x, y], i) => (
-            <circle key={i} cx={x} cy={y} r={i === bestIdx ? 4.5 : 3} fill={i === bestIdx ? C.green : color} stroke={C.surface} strokeWidth="1.5" />
+            <circle key={i} cx={x} cy={y} r={i === bestIdx ? 4.5 : 3} fill={i === bestIdx ? C.pr : color} stroke={C.surface} strokeWidth="1.5" />
           ))}
-          <text x={pts[bestIdx][0]} y={Math.max(9, pts[bestIdx][1] - 8)} fontSize="9" fill={C.green} textAnchor={bestIdx === pts.length - 1 ? "end" : bestIdx === 0 ? "start" : "middle"} fontFamily="monospace" fontWeight="700">PR {rawMax}</text>
-          <text x={pts[0][0]} y={H - 4} fontSize="9" fill={C.textDim} textAnchor="start" fontFamily="monospace">{data[0].date.slice(5)}</text>
-          <text x={pts[pts.length-1][0]} y={H - 4} fontSize="9" fill={C.textDim} textAnchor="end" fontFamily="monospace">{data[data.length-1].date.slice(5)}</text>
+          <text x={pts[bestIdx][0]} y={Math.max(9, pts[bestIdx][1] - 8)} fontSize="12" fill={C.pr} textAnchor={bestIdx === pts.length - 1 ? "end" : bestIdx === 0 ? "start" : "middle"} fontFamily={MONO} fontWeight="600">PR {rawMax}</text>
+          <text x={pts[0][0]} y={H - 4} fontSize="12" fill={C.textDim} textAnchor="start" fontFamily={MONO}>{data[0].date.slice(5)}</text>
+          <text x={pts[pts.length-1][0]} y={H - 4} fontSize="12" fill={C.textDim} textAnchor="end" fontFamily={MONO}>{data[data.length-1].date.slice(5)}</text>
         </svg>
       );
     }
 
     return (
       <Shell>
-        <div style={{ padding: "52px 18px 20px", background: "linear-gradient(160deg,#131313 0%,#131313 100%)" }}>
-          <div style={{ fontSize: 11, letterSpacing: 3, color: C.textDim, textTransform: "uppercase", fontFamily: SANS, marginBottom: 4 }}>Performance</div>
-          <div style={{ fontSize: 30, fontWeight: 900, color: C.text, lineHeight: 1, fontFamily: SANS, letterSpacing: -0.5 }}>Progress</div>
+        <div style={{ padding: "52px 18px 20px", background: "transparent" }}>
+          <div style={{ fontSize: 12, letterSpacing: 0.2, color: C.textDim, fontFamily: SANS, marginBottom: 4 }}>Performance</div>
+          <div style={{ ...TITLE, color: C.text }}>Progress</div>
         </div>
 
         <div style={{ padding: "0 18px 16px" }}>
 
           {/* ── SESSION HEATMAP ── */}
-          <div style={{ marginBottom: 14, padding: "16px", borderRadius: 18, background: C.surface, boxShadow: shadow }}>
+          <div style={{ marginBottom: 14, padding: "16px", borderRadius: 18, background: C.surface, border: C.cardBorder, boxShadow: shadow }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 12 }}>
-              <div style={{ fontSize: 13, fontWeight: 700, color: C.text }}>Consistency</div>
+              <div style={{ fontSize: 12, fontWeight: 600, color: C.text }}>Consistency</div>
               <div style={{ fontSize: 12, color: C.textDim, fontFamily: SANS }}>{completedSessions}/70 days trained</div>
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(10, 1fr)", gap: 3 }}>
               {heatDays.map((d, i) => (
-                <div key={i} title={d.date} style={{ aspectRatio: "1", borderRadius: 3, background: d.count > 0 ? C.accent : C.surface2, opacity: d.count > 0 ? 1 : 0.5 }} />
+                <div key={i} title={d.date} style={{ aspectRatio: "1", borderRadius: 3, background: d.count > 0 ? STONE.carrara : C.surface2, opacity: d.count > 0 ? 1 : 0.5 }} />
               ))}
             </div>
-            <div style={{ display: "flex", justifyContent: "space-between", marginTop: 6, fontSize: 10, color: C.textDim, fontFamily: SANS }}>
+            <div style={{ display: "flex", justifyContent: "space-between", marginTop: 6, fontSize: 12, color: C.textDim, fontFamily: SANS }}>
               <span>10 weeks ago</span><span>Today</span>
             </div>
           </div>
 
           {/* ── PUSH/PULL BALANCE ── */}
-          <div style={{ marginBottom: 14, padding: "16px", borderRadius: 18, background: C.surface, boxShadow: shadow }}>
-            <div style={{ fontSize: 13, fontWeight: 700, color: C.text, marginBottom: 12 }}>Push / Pull Balance <span style={{ fontSize: 11, color: C.textDim, fontWeight: 400 }}>last 8 days</span></div>
+          <div style={{ marginBottom: 14, padding: "16px", borderRadius: 18, background: C.surface, border: C.cardBorder, boxShadow: shadow }}>
+            <div style={{ fontSize: 12, fontWeight: 600, color: C.text, marginBottom: 12 }}>Push / Pull Balance <span style={{ fontSize: 12, color: C.textDim, fontWeight: 400 }}>last 8 days</span></div>
             {[
-              { label: "Push", val: balance.push, color: C.accent },
-              { label: "Pull", val: balance.pull, color: "#c4c4c4" },
-              { label: "Legs", val: balance.legs, color: "#e8e8e8" },
+              { label: "Push", val: balance.push, color: C.text },
+              { label: "Pull", val: balance.pull, color: C.textMid },
+              { label: "Legs", val: balance.legs, color: C.text },
             ].map(({ label, val, color }) => {
               const total = balance.push + balance.pull + balance.legs || 1;
               const pct = Math.round((val / total) * 100);
@@ -2334,16 +2332,16 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
                 <div key={label} style={{ marginBottom: 10 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
                     <span style={{ fontSize: 12, color: C.textMid, fontFamily: SANS }}>{label}</span>
-                    <span style={{ fontSize: 12, fontFamily: MONO, color }}>{val} sets · {pct}%</span>
+                    <span style={{ fontSize: 12, fontFamily: MONO, fontVariantNumeric: "tabular-nums", color }}>{val} sets · {pct}%</span>
                   </div>
                   <div style={{ height: 6, borderRadius: 3, background: C.surface2, overflow: "hidden" }}>
-                    <div style={{ width: `${pct}%`, height: "100%", background: color, borderRadius: 3, transition: "width 0.3s" }} />
+                    <div style={{ width: `${pct}%`, height: "100%", background: fill(color), borderRadius: 3, transition: "width 0.3s" }} />
                   </div>
                 </div>
               );
             })}
             {balance.push > 0 && balance.pull > 0 && (
-              <div style={{ fontSize: 11, color: C.textDim, fontFamily: SANS, marginTop: 6 }}>
+              <div style={{ fontSize: 12, color: C.textDim, fontFamily: SANS, marginTop: 6 }}>
                 Push:Pull ratio {(balance.push / balance.pull).toFixed(2)}:1
                 {balance.push / balance.pull > 1.3 ? " — consider more pulling" : balance.push / balance.pull < 0.7 ? " — consider more pushing" : " — well balanced"}
               </div>
@@ -2351,10 +2349,10 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
           </div>
 
           {/* ── PER-LIFT PROGRESSION ── */}
-          <div style={{ marginBottom: 14, padding: "16px", borderRadius: 18, background: C.surface, boxShadow: shadow }}>
-            <div style={{ fontSize: 13, fontWeight: 700, color: C.text, marginBottom: 10 }}>Lift Progression <span style={{ fontSize: 11, color: C.textDim, fontWeight: 400 }}>estimated 1RM per session</span></div>
+          <div style={{ marginBottom: 14, padding: "16px", borderRadius: 18, background: C.surface, border: C.cardBorder, boxShadow: shadow }}>
+            <div style={{ fontSize: 12, fontWeight: 600, color: C.text, marginBottom: 10 }}>Lift Progression <span style={{ fontSize: 12, color: C.textDim, fontWeight: 400 }}>estimated 1RM per session</span></div>
             <select value={selMv || ""} onChange={e => setSelectedMovement(e.target.value)}
-              style={{ width: "100%", padding: "10px 12px", borderRadius: 10, background: C.surface2, color: C.text, fontSize: 13, fontFamily: SANS, marginBottom: 12, outline: "none" }}>
+              style={{ width: "100%", padding: "10px 12px", borderRadius: 10, background: C.surface2, color: C.text, fontSize: 12, fontFamily: SANS, marginBottom: 12, outline: "none" }}>
               {mvNames.map(n => <option key={n} value={n}>{n}</option>)}
             </select>
             {history.length > 0 && (
@@ -2362,44 +2360,44 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
                 <LineChart data={history} color={C.text} />
                 <div style={{ display: "flex", justifyContent: "space-between", marginTop: 10 }}>
                   <div style={{ textAlign: "center" }}>
-                    <div style={{ fontSize: 9, color: C.textDim, letterSpacing: 1, textTransform: "uppercase", fontFamily: SANS }}>First</div>
-                    <div style={{ fontSize: 16, fontWeight: 800, color: C.textMid, fontFamily: MONO }}>{history[0].e1rm}lbs</div>
+                    <div style={{ fontSize: 12, color: C.textDim, letterSpacing: 0.2, fontFamily: SANS }}>First</div>
+                    <div style={{ fontSize: 15, fontWeight: 600, color: C.textMid, fontFamily: MONO, fontVariantNumeric: "tabular-nums" }}>{history[0].e1rm}lbs</div>
                   </div>
                   <div style={{ textAlign: "center" }}>
-                    <div style={{ fontSize: 9, color: C.textDim, letterSpacing: 1, textTransform: "uppercase", fontFamily: SANS }}>Best</div>
-                    <div style={{ fontSize: 16, fontWeight: 800, color: C.green, fontFamily: MONO }}>{Math.max(...history.map(h => h.e1rm))}lbs</div>
+                    <div style={{ fontSize: 12, color: C.textDim, letterSpacing: 0.2, fontFamily: SANS }}>Best</div>
+                    <div style={{ fontSize: 15, fontWeight: 600, color: C.pr, fontFamily: MONO, fontVariantNumeric: "tabular-nums" }}>{Math.max(...history.map(h => h.e1rm))}lbs</div>
                   </div>
                   <div style={{ textAlign: "center" }}>
-                    <div style={{ fontSize: 9, color: C.textDim, letterSpacing: 1, textTransform: "uppercase", fontFamily: SANS }}>Sessions</div>
-                    <div style={{ fontSize: 16, fontWeight: 800, color: C.textMid, fontFamily: MONO }}>{history.length}</div>
+                    <div style={{ fontSize: 12, color: C.textDim, letterSpacing: 0.2, fontFamily: SANS }}>Sessions</div>
+                    <div style={{ fontSize: 15, fontWeight: 600, color: C.textMid, fontFamily: MONO, fontVariantNumeric: "tabular-nums" }}>{history.length}</div>
                   </div>
                   <div style={{ textAlign: "center" }}>
-                    <div style={{ fontSize: 9, color: C.textDim, letterSpacing: 1, textTransform: "uppercase", fontFamily: SANS }}>Change</div>
-                    <div style={{ fontSize: 16, fontWeight: 800, color: history[history.length-1].e1rm >= history[0].e1rm ? C.green : C.red, fontFamily: MONO }}>
+                    <div style={{ fontSize: 12, color: C.textDim, letterSpacing: 0.2, fontFamily: SANS }}>Change</div>
+                    <div style={{ fontSize: 15, fontWeight: 600, color: history[history.length-1].e1rm >= history[0].e1rm ? C.green : C.red, fontFamily: MONO, fontVariantNumeric: "tabular-nums" }}>
                       {history[history.length-1].e1rm >= history[0].e1rm ? "+" : ""}{history[history.length-1].e1rm - history[0].e1rm}lbs
                     </div>
                   </div>
                 </div>
-                <div style={{ fontSize: 11, color: C.textDim, fontFamily: SANS, marginTop: 8 }}>Estimated 1RM via Epley formula (adjusted for RIR)</div>
+                <div style={{ fontSize: 12, color: C.textDim, fontFamily: SANS, marginTop: 8 }}>Estimated 1RM via Epley formula (adjusted for RIR)</div>
               </>
             )}
           </div>
 
           {/* ── PERSONAL RECORDS ── */}
-          <div style={{ marginBottom: 14, padding: "16px", borderRadius: 18, background: C.surface, boxShadow: shadow }}>
-            <div style={{ fontSize: 13, fontWeight: 700, color: C.text, marginBottom: 12 }}>Personal Records</div>
+          <div style={{ marginBottom: 14, padding: "16px", borderRadius: 18, background: C.surface, border: C.cardBorder, boxShadow: shadow }}>
+            <div style={{ fontSize: 12, fontWeight: 600, color: C.text, marginBottom: 12 }}>Personal Records</div>
             {Object.entries(prs).length === 0 ? (
-              <div style={{ fontSize: 13, color: C.textDim, fontFamily: SANS }}>Log some sets to see PRs</div>
+              <div style={{ fontSize: 12, color: C.textDim, fontFamily: SANS }}>Log some sets to see PRs</div>
             ) : Object.entries(prs).sort((a, b) => b[1].maxE1RM - a[1].maxE1RM).map(([name, pr]) => (
               <div key={name} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 0", borderBottom: `1px solid ${C.lineSoft}` }}>
-                <Trophy size={14} color={C.green} strokeWidth={2} style={{ flexShrink: 0 }} />
+                <Trophy size={14} color={C.pr} strokeWidth={2} style={{ flexShrink: 0 }} />
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: C.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{name}</div>
-                  <div style={{ fontSize: 11, color: C.textDim, fontFamily: SANS, marginTop: 2 }}>{pr.date} · {pr.maxWeight}lbs × {pr.reps}</div>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: C.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{name}</div>
+                  <div style={{ fontSize: 12, color: C.textDim, fontFamily: SANS, marginTop: 2 }}>{pr.date} · {pr.maxWeight}lbs × {pr.reps}</div>
                 </div>
                 <div style={{ textAlign: "right", flexShrink: 0 }}>
-                  <div style={{ fontSize: 16, fontWeight: 800, color: C.green, fontFamily: MONO }}>~{pr.maxE1RM}lbs</div>
-                  <div style={{ fontSize: 9, color: C.textDim, fontFamily: SANS }}>e1RM</div>
+                  <div style={{ fontSize: 15, fontWeight: 600, color: C.pr, fontFamily: MONO, fontVariantNumeric: "tabular-nums" }}>~{pr.maxE1RM}lbs</div>
+                  <div style={{ fontSize: 12, color: C.textDim, fontFamily: SANS }}>e1RM</div>
                 </div>
               </div>
             ))}
@@ -2598,7 +2596,7 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
     function PhotoSlot({ label, photo, onPick }) {
       return (
         <div style={{ flex: 1 }}>
-          <div style={{ fontSize: 11, letterSpacing: 1.5, color: C.textDim, textTransform: "uppercase", fontFamily: SANS, fontWeight: 700, marginBottom: 8, textAlign: "center" }}>{label}</div>
+          <div style={{ fontSize: 12, letterSpacing: 0.2, color: C.textDim, fontFamily: SANS, fontWeight: 600, marginBottom: 8, textAlign: "center" }}>{label}</div>
           <div style={{
             aspectRatio: "3/4", borderRadius: 16, background: C.surface2,
             display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden",
@@ -2615,14 +2613,14 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
           </div>
           {photo && (
             <>
-              <div style={{ textAlign: "center", marginTop: 8, fontSize: 13, fontWeight: 700, color: C.text, fontFamily: SANS }}>
+              <div style={{ textAlign: "center", marginTop: 8, fontSize: 12, fontWeight: 600, color: C.text, fontFamily: SANS }}>
                 {fmtDate(photo.date)}
               </div>
               <PhotoWeightCaption weightLog={weightLog} date={photo.date} />
               <button onClick={onPick} style={{
                 display: "block", width: "100%", marginTop: 8, padding: "10px", borderRadius: 10,
                 background: LAKE.sky + "22", border: "none", cursor: "pointer",
-                fontSize: 12, fontWeight: 700, color: LAKE.sky, fontFamily: SANS,
+                fontSize: 12, fontWeight: 600, color: LAKE.sky, fontFamily: SANS,
               }}>
                 Change Photo
               </button>
@@ -2634,20 +2632,20 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
 
     return (
       <Shell>
-        <div style={{ padding: "52px 18px 20px", background: "linear-gradient(160deg,#111110 0%,#141210 100%)" }}>
-          <div style={{ fontSize: 11, letterSpacing: 3, color: C.textDim, textTransform: "uppercase", fontFamily: SANS, marginBottom: 4 }}>Compare Dates</div>
-          <div style={{ fontSize: 30, fontWeight: 900, color: C.text, lineHeight: 1, fontFamily: SANS, letterSpacing: -0.5 }}>Progress Photos</div>
-          <div style={{ fontSize: 13, color: C.textDim, marginTop: 6, fontFamily: SANS }}>From your Google Drive folder</div>
+        <div style={{ padding: "52px 18px 20px", background: "transparent" }}>
+          <div style={{ fontSize: 12, letterSpacing: 0.2, color: C.textDim, fontFamily: SANS, marginBottom: 4 }}>Compare Dates</div>
+          <div style={{ ...TITLE, color: C.text }}>Progress Photos</div>
+          <div style={{ fontSize: 12, color: C.textDim, marginTop: 6, fontFamily: SANS }}>From your Google Drive folder</div>
         </div>
 
         <div style={{ padding: "0 18px 24px" }}>
           {drivePhotosLoading && (
-            <div style={{ textAlign: "center", padding: "40px 0", color: C.textDim, fontSize: 13, fontFamily: SANS }}>Loading photos…</div>
+            <div style={{ textAlign: "center", padding: "40px 0", color: C.textDim, fontSize: 12, fontFamily: SANS }}>Loading photos…</div>
           )}
           {drivePhotosError && (
-            <div style={{ padding: "16px", borderRadius: 14, background: "#2a1a18", marginBottom: 16 }}>
-              <div style={{ fontSize: 13, color: C.red, fontFamily: SANS, marginBottom: 10 }}>{drivePhotosError}</div>
-              <button onClick={loadPhotos} style={{ padding: "10px 16px", borderRadius: 10, background: C.surface2, border: "none", color: C.text, fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: SANS }}>
+            <div style={{ padding: "16px", borderRadius: 14, background: C.alertWash, marginBottom: 16 }}>
+              <div style={{ fontSize: 12, color: C.red, fontFamily: SANS, marginBottom: 10 }}>{drivePhotosError}</div>
+              <button onClick={loadPhotos} style={{ padding: "10px 16px", borderRadius: 10, background: C.surface2, border: "none", color: C.text, fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: SANS }}>
                 Try Again
               </button>
             </div>
@@ -2658,8 +2656,8 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
                 <div style={{ display: "flex", gap: 6, padding: 4, borderRadius: 12, background: C.surface2, marginBottom: 14 }}>
                   {[["side", "Side by side"], ["slider", "Slider"]].map(([m, label]) => (
                     <button key={m} onClick={() => setPhotoCompareMode(m)} style={{
-                      flex: 1, padding: "10px", borderRadius: 9, border: "none", cursor: "pointer", fontFamily: SANS, fontSize: 13, fontWeight: 700,
-                      background: photoCompareMode === m ? C.accent : "transparent", color: photoCompareMode === m ? "#0a0a0a" : C.textMid,
+                      flex: 1, padding: "10px", borderRadius: 9, border: "none", cursor: "pointer", fontFamily: SANS, fontSize: 12, fontWeight: 600,
+                      background: photoCompareMode === m ? STONE.carrara : "transparent", color: photoCompareMode === m ? C.ink : C.textMid,
                     }}>{label}</button>
                   ))}
                 </div>
@@ -2670,12 +2668,12 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
                   <div style={{ display: "flex", gap: 12, marginTop: 10 }}>
                     {[["A", photoSlotA], ["B", photoSlotB]].map(([slot, ph]) => (
                       <div key={slot} style={{ flex: 1, textAlign: "center" }}>
-                        <div style={{ fontSize: 13, fontWeight: 700, color: C.text, fontFamily: SANS }}>{slot} · {fmtDate(ph.date)}</div>
+                        <div style={{ fontSize: 12, fontWeight: 600, color: C.text, fontFamily: SANS }}>{slot} · {fmtDate(ph.date)}</div>
                         <PhotoWeightCaption weightLog={weightLog} date={ph.date} />
                         <button onClick={() => setPhotoPickerSlot(slot)} style={{
                           display: "block", width: "100%", marginTop: 8, padding: "10px", borderRadius: 10,
                           background: LAKE.sky + "22", border: "none", cursor: "pointer",
-                          fontSize: 12, fontWeight: 700, color: LAKE.sky, fontFamily: SANS,
+                          fontSize: 12, fontWeight: 600, color: LAKE.sky, fontFamily: SANS,
                         }}>Change {slot}</button>
                       </div>
                     ))}
@@ -2695,7 +2693,7 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
                 </div>
               )}
               {dates.length === 0 && (
-                <div style={{ textAlign: "center", padding: "20px 0", color: C.textDim, fontSize: 13, fontFamily: SANS }}>
+                <div style={{ textAlign: "center", padding: "20px 0", color: C.textDim, fontSize: 12, fontFamily: SANS }}>
                   No photos found in your Drive folder.
                 </div>
               )}
@@ -2706,12 +2704,12 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
         {/* Date/photo picker sheet */}
         {photoPickerSlot && (
           <div onClick={() => setPhotoPickerSlot(null)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", display: "flex", alignItems: "flex-end", zIndex: 150 }}>
-            <div onClick={e => e.stopPropagation()} style={{ background: C.surface, width: "100%", borderRadius: "24px 24px 0 0", padding: "20px 18px 40px", boxSizing: "border-box", maxWidth: 430, margin: "0 auto", maxHeight: "80vh", overflowY: "auto" }}>
+            <div onClick={e => e.stopPropagation()} style={{ background: C.sheet, width: "100%", borderRadius: "24px 24px 0 0", padding: "20px 18px 40px", boxSizing: "border-box", maxWidth: 430, margin: "0 auto", maxHeight: "80vh", overflowY: "auto" }}>
               <div style={{ width: 36, height: 4, borderRadius: 2, background: C.line, margin: "0 auto 18px" }} />
-              <div style={{ fontSize: 17, fontWeight: 700, color: C.text, marginBottom: 16, fontFamily: SANS }}>Choose a Photo</div>
+              <div style={{ fontSize: 15, fontWeight: 600, color: C.text, marginBottom: 16, fontFamily: SANS }}>Choose a Photo</div>
               {dates.map(date => (
                 <div key={date} style={{ marginBottom: 18 }}>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: C.textMid, fontFamily: SANS, marginBottom: 8 }}>{fmtDate(date)}</div>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: C.textMid, fontFamily: SANS, marginBottom: 8 }}>{fmtDate(date)}</div>
                   <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 4 }}>
                     {photosByDate[date].map(photo => (
                       <div key={photo.id} onClick={() => {
@@ -2818,31 +2816,31 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
 
     return (
       <Shell>
-        <div style={{ padding: "52px 18px 20px", background: "linear-gradient(160deg,#131313 0%,#131313 100%)" }}>
-          <div style={{ fontSize: 11, letterSpacing: 3, color: "#a3a3a3", textTransform: "uppercase", fontFamily: SANS, marginBottom: 4 }}>Backup & History</div>
-          <div style={{ fontSize: 30, fontWeight: 900, color: "#f2f2f2", lineHeight: 1, fontFamily: SANS, letterSpacing: -0.5 }}>Data</div>
+        <div style={{ padding: "52px 18px 20px", background: "transparent" }}>
+          <div style={{ fontSize: 12, letterSpacing: 0.2, color: C.textDim, fontFamily: SANS, marginBottom: 4 }}>Backup & History</div>
+          <div style={{ ...TITLE, color: C.text }}>Data</div>
           <div style={{ display: "flex", gap: 20, marginTop: 10 }}>
-            <div><div style={{ fontSize: 22, fontWeight: 900, color: "#e8e8e8", fontFamily: SANS }}>{totalSessions}</div><div style={{ fontSize: 10, color: "#a3a3a3", letterSpacing: 1, textTransform: "uppercase", fontFamily: SANS }}>Sessions</div></div>
-            <div><div style={{ fontSize: 22, fontWeight: 900, color: "#e8e8e8", fontFamily: SANS }}>{totalSets}</div><div style={{ fontSize: 10, color: "#a3a3a3", letterSpacing: 1, textTransform: "uppercase", fontFamily: SANS }}>Sets Logged</div></div>
-            <div><div style={{ fontSize: 22, fontWeight: 900, color: "#e05a4d", fontFamily: SANS }}>{weightLog.length}</div><div style={{ fontSize: 10, color: "#a3a3a3", letterSpacing: 1, textTransform: "uppercase", fontFamily: SANS }}>Weigh-ins</div></div>
+            <div><div style={{ fontSize: 15, fontWeight: 600, color: C.text, fontFamily: SANS }}>{totalSessions}</div><div style={{ fontSize: 12, color: C.textDim, letterSpacing: 0.2, fontFamily: SANS }}>Sessions</div></div>
+            <div><div style={{ fontSize: 15, fontWeight: 600, color: C.text, fontFamily: SANS }}>{totalSets}</div><div style={{ fontSize: 12, color: C.textDim, letterSpacing: 0.2, fontFamily: SANS }}>Sets Logged</div></div>
+            <div><div style={{ fontSize: 15, fontWeight: 600, color: C.alert, fontFamily: SANS }}>{weightLog.length}</div><div style={{ fontSize: 12, color: C.textDim, letterSpacing: 0.2, fontFamily: SANS }}>Weigh-ins</div></div>
           </div>
         </div>
 
         {/* Export / Import + Coach Export */}
         <div style={{ padding: "16px 18px 8px" }}>
-          <div style={{ fontSize: 11, letterSpacing: 2, color: "#a3a3a3", textTransform: "uppercase", fontFamily: SANS, fontWeight: 700, marginBottom: 10 }}>Backup</div>
+          <div style={{ fontSize: 12, letterSpacing: 0.2, color: C.textDim, fontFamily: SANS, fontWeight: 600, marginBottom: 10 }}>Backup</div>
           <div style={{ display: "flex", gap: 10, marginBottom: 10 }}>
-            <button onClick={() => downloadJSON(entries, weightLog, mesoOverride, cycleAnchor, macros, macroTargets)} style={{ flex: 1, padding: "13px", borderRadius: 14, background: "#e8e8e822", color: "#e8e8e8", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: SANS }}>
+            <button onClick={() => downloadJSON(entries, weightLog, mesoOverride, cycleAnchor, macros, macroTargets)} style={{ flex: 1, padding: "13px", borderRadius: 14, background: "rgba(215,212,216,0.13)", color: C.text, fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: SANS }}>
               Export JSON
             </button>
-            <button onClick={() => downloadCSV(entries, weightLog)} style={{ flex: 1, padding: "13px", borderRadius: 14, background: "#e8e8e822", color: "#e8e8e8", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: SANS }}>
+            <button onClick={() => downloadCSV(entries, weightLog)} style={{ flex: 1, padding: "13px", borderRadius: 14, background: "rgba(215,212,216,0.13)", color: C.text, fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: SANS }}>
               Export CSV
             </button>
           </div>
           <input ref={fileInputRef} type="file" accept=".json" style={{ display: "none" }}
             onChange={e => { if (e.target.files[0]) handleImport(e.target.files[0]); e.target.value = ""; }} />
           <button onClick={() => { setImportStatus(null); fileInputRef.current?.click(); }}
-            style={{ width: "100%", padding: "13px", borderRadius: 14, background: "#e8e8e822", color: "#e8e8e8", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: SANS, marginBottom: 10 }}>
+            style={{ width: "100%", padding: "13px", borderRadius: 14, background: "rgba(215,212,216,0.13)", color: C.text, fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: SANS, marginBottom: 10 }}>
             Import JSON Backup
           </button>
           <button onClick={async () => {
@@ -2854,11 +2852,11 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
             } finally {
               setPdfLoading(false);
             }
-          }} disabled={pdfLoading} style={{ width: "100%", padding: "13px", borderRadius: 14, background: "#1c1c1c", color: pdfLoading ? C.textDim : C.text, fontSize: 13, fontWeight: 700, cursor: pdfLoading ? "default" : "pointer", fontFamily: SANS, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+          }} disabled={pdfLoading} style={{ width: "100%", padding: "13px", borderRadius: 14, background: C.surface2, color: pdfLoading ? C.textDim : C.text, fontSize: 12, fontWeight: 600, cursor: pdfLoading ? "default" : "pointer", fontFamily: SANS, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
             <Trophy size={15} color={pdfLoading ? C.textDim : C.accent} strokeWidth={2} /> {pdfLoading ? "Generating PDF…" : "Coach Report (PDF)"}
           </button>
           {importStatus && (
-            <div style={{ marginTop: 10, padding: "10px 14px", borderRadius: 10, background: importStatus === "success" ? "#e8e8e822" : "#e05a4d22", color: importStatus === "success" ? "#e8e8e8" : "#e05a4d", fontSize: 13, fontFamily: SANS }}>
+            <div style={{ marginTop: 10, padding: "10px 14px", borderRadius: 10, background: importStatus === "success" ? "rgba(215,212,216,0.13)" : "rgba(201,166,190,0.13)", color: importStatus === "success" ? C.text : C.alert, fontSize: 12, fontFamily: SANS }}>
               {importStatus === "success" ? "✓ " : "✕ "}{importMsg}
             </div>
           )}
@@ -2872,16 +2870,16 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
 
         {/* Filter by day */}
         <div style={{ padding: "8px 18px 4px" }}>
-          <div style={{ fontSize: 11, letterSpacing: 2, color: "#a3a3a3", textTransform: "uppercase", fontFamily: SANS, fontWeight: 700, marginBottom: 8 }}>Session History · {filtered.filter(e => {
+          <div style={{ fontSize: 12, letterSpacing: 0.2, color: C.textDim, fontFamily: SANS, fontWeight: 600, marginBottom: 8 }}>Session History · {filtered.filter(e => {
             if (!searchQuery) return true;
             const q = searchQuery.toLowerCase();
             return e.customTitle?.toLowerCase().includes(q) || e.note?.toLowerCase().includes(q) || e.movements.some(m => m.name?.toLowerCase().includes(q) || m.note?.toLowerCase().includes(q));
           }).length} shown</div>
           <div style={{ display: "flex", gap: 6, overflowX: "auto", paddingBottom: 4, scrollbarWidth: "none" }}>
-            <button onClick={() => setFilterDay(null)} style={{ flexShrink: 0, padding: "5px 12px", borderRadius: 8, border: "none", cursor: "pointer", fontFamily: SANS, fontSize: 11, fontWeight: 700, background: filterDay === null ? "#e8e8e8" : "#2e2e2e", color: filterDay === null ? "#131313" : "#c4c4c4" }}>All</button>
+            <button onClick={() => setFilterDay(null)} style={{ flexShrink: 0, padding: "5px 12px", borderRadius: 8, border: "none", cursor: "pointer", fontFamily: SANS, fontSize: 12, fontWeight: 600, background: filterDay === null ? STONE.carrara : C.surface3, color: filterDay === null ? C.ink : C.textMid }}>All</button>
             {Object.entries(PROGRAM).filter(([,d]) => d.exercises.length > 0).map(([dn, d]) => (
               <button key={dn} onClick={() => setFilterDay(filterDay === Number(dn) ? null : Number(dn))}
-                style={{ flexShrink: 0, padding: "5px 12px", borderRadius: 8, border: "none", cursor: "pointer", fontFamily: SANS, fontSize: 11, fontWeight: 700, background: filterDay === Number(dn) ? d.color : "#2e2e2e", color: filterDay === Number(dn) ? "#131313" : d.color }}>
+                style={{ flexShrink: 0, padding: "5px 12px", borderRadius: 8, border: "none", cursor: "pointer", fontFamily: SANS, fontSize: 12, fontWeight: 600, background: filterDay === Number(dn) ? fill(d.color) : C.surface3, color: filterDay === Number(dn) ? C.ink : d.color }}>
                 Day {dn}
               </button>
             ))}
@@ -2898,47 +2896,47 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
           return (
             <div style={{ padding: "4px 18px 100px" }}>
               {displayed.length === 0 ? (
-                <div style={{ padding: "40px 0", textAlign: "center", color: "#a3a3a3", fontSize: 13, fontFamily: SANS }}>No sessions found</div>
+                <div style={{ padding: "40px 0", textAlign: "center", color: C.textDim, fontSize: 12, fontFamily: SANS }}>No sessions found</div>
               ) : displayed.map(entry => {
                 const prog = entry.programDay ? PROGRAM[entry.programDay] : null;
-                const color = prog?.color ?? "#a3a3a3";
+                const color = prog?.color ?? C.textDim;
                 const expanded = expandedId === entry.id;
-                const entryColor = prog?.color ?? "#e8e8e8";
+                const entryColor = prog?.color ?? C.text;
                 const totalVol = entry.movements.reduce((n, mv) =>
                   n + mv.sets.reduce((s, set) => s + (parseFloat(set.w)||0) * (parseFloat(set.r)||0), 0), 0);
                 return (
-                  <div key={entry.id} style={{ marginBottom: 8, borderRadius: 14, overflow: "hidden", background: expanded ? color + "14" : "#131313" }}>
-                    <div style={{ height: 3, background: prog ? color : "#2e2e2e" }} />
+                  <div key={entry.id} style={{ marginBottom: 8, borderRadius: 14, overflow: "hidden", background: expanded ? color + "14" : C.surface }}>
+                    <div style={{ height: 3, background: prog ? fill(color) : C.surface3 }} />
                     <div onClick={() => setExpandedId(expanded ? null : entry.id)}
                       style={{ padding: "12px 14px", cursor: "pointer", display: "flex", alignItems: "center", gap: 12 }}>
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: 10, color: "#a3a3a3", fontFamily: SANS, letterSpacing: 1, marginBottom: 2 }}>
-                          {fmtDate(entry.date)}{entry.programDay ? ` · DAY ${entry.programDay}` : ""}
-                          {entry.completedAt && <span style={{ color: "#e8e8e8", marginLeft: 6 }}>✓</span>}
+                        <div style={{ fontSize: 12, color: C.textDim, fontFamily: SANS, letterSpacing: 0.2, marginBottom: 2 }}>
+                          {fmtDate(entry.date)}{entry.programDay ? ` · Day ${entry.programDay}` : ""}
+                          {entry.completedAt && <span style={{ color: C.text, marginLeft: 6 }}>✓</span>}
                         </div>
-                        <div style={{ fontSize: 15, fontWeight: 700, color: "#f2f2f2" }}>{entry.customTitle || "Custom Session"}</div>
-                        <div style={{ fontSize: 11, color: "#a3a3a3", fontFamily: SANS, marginTop: 2 }}>
+                        <div style={{ fontSize: 15, fontWeight: 600, color: C.text }}>{entry.customTitle || "Custom Session"}</div>
+                        <div style={{ fontSize: 12, color: C.textDim, fontFamily: SANS, marginTop: 2 }}>
                           {entry.movements.length} movements
-                          {totalVol > 0 && <span style={{ color: "#c4c4c4", marginLeft: 8 }}>{Math.round(totalVol).toLocaleString()} lbs total vol</span>}
+                          {totalVol > 0 && <span style={{ color: C.textMid, marginLeft: 8 }}>{Math.round(totalVol).toLocaleString()} lbs total vol</span>}
                         </div>
                       </div>
-                      <div style={{ color: "#a3a3a3", fontSize: 14, fontFamily: SANS, transition: "transform 0.2s", transform: expanded ? "rotate(90deg)" : "none" }}>›</div>
+                      <div style={{ color: C.textDim, fontSize: 15, fontFamily: SANS, transition: "transform 0.2s", transform: expanded ? "rotate(90deg)" : "none" }}>›</div>
                     </div>
                     {expanded && (
-                      <div style={{ borderTop: "1px solid #2e2e2e", padding: "10px 14px 14px" }}>
-                        {entry.note && <div style={{ fontSize: 12, color: "#c4c4c4", marginBottom: 10, fontStyle: "italic" }}>{entry.note}</div>}
+                      <div style={{ borderTop: "1px solid rgba(255,255,255,0.08)", padding: "10px 14px 14px" }}>
+                        {entry.note && <div style={{ fontSize: 12, color: C.textMid, marginBottom: 10, fontStyle: "italic" }}>{entry.note}</div>}
                         {entry.movements.map(mv => (
                           <div key={mv.id} style={{ marginBottom: 10 }}>
-                            <div style={{ fontSize: 12, fontWeight: 700, color: "#c4c4c4", marginBottom: 4, fontFamily: SANS }}>
+                            <div style={{ fontSize: 12, fontWeight: 600, color: C.textMid, marginBottom: 4, fontFamily: SANS }}>
                               {mv.programRef ? `${mv.programRef}. ` : ""}{mv.name}
                             </div>
                             <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
                               {mv.sets.map((s, si) => (
-                                <span key={si} style={{ fontSize: 11, fontFamily: SANS, padding: "3px 8px", borderRadius: 6, background: s.r ? entryColor + "22" : "#2e2e2e", color: s.r ? entryColor : "#a3a3a3" }}>
+                                <span key={si} style={{ fontSize: 12, fontFamily: SANS, padding: "3px 8px", borderRadius: 6, background: s.r ? entryColor + "22" : C.surface3, color: s.r ? entryColor : C.textDim }}>
                                   {s.w ? `${s.w}×` : "BW×"}{s.r || "–"}
                                 </span>
                               ))}
-                              {mv.note && <span style={{ fontSize: 10, color: "#a3a3a3", fontStyle: "italic", alignSelf: "center", marginLeft: 4 }}>{mv.note}</span>}
+                              {mv.note && <span style={{ fontSize: 12, color: C.textDim, fontStyle: "italic", alignSelf: "center", marginLeft: 4 }}>{mv.note}</span>}
                             </div>
                           </div>
                         ))}
@@ -2985,22 +2983,22 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
     const CHART_H = 140, CHART_W = 340;
     return (
       <Shell>
-        <div style={{ padding: "52px 18px 16px", background: "linear-gradient(160deg,#131313 0%,#131313 100%)" }}>
-          <div style={{ fontSize: 11, letterSpacing: 3, color: "#a3a3a3", textTransform: "uppercase", fontFamily: SANS, marginBottom: 4 }}>Body Weight</div>
-          <div style={{ fontSize: 30, fontWeight: 900, color: "#f2f2f2", lineHeight: 1, fontFamily: SANS, letterSpacing: -0.5 }}>Weight Tracker</div>
+        <div style={{ padding: "52px 18px 16px", background: "transparent" }}>
+          <div style={{ fontSize: 12, letterSpacing: 0.2, color: C.textDim, fontFamily: SANS, marginBottom: 4 }}>Body Weight</div>
+          <div style={{ ...TITLE, color: C.text }}>Weight Tracker</div>
           {latest && (
             <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginTop: 8 }}>
-              <span style={{ fontSize: 36, fontWeight: 900, color: "#e8e8e8", fontFamily: SANS }}>{latest.weight}</span>
-              <span style={{ fontSize: 16, color: "#a3a3a3", fontFamily: SANS }}>{latest.unit}</span>
+              <span style={{ ...HERO, color: C.text }}>{latest.weight}</span>
+              <span style={{ fontSize: 15, color: C.textDim, fontFamily: SANS }}>{latest.unit}</span>
               {diff !== null && (
-                <span style={{ fontSize: 14, fontFamily: SANS, fontWeight: 700, color: parseFloat(diff) < 0 ? "#e8e8e8" : parseFloat(diff) > 0 ? "#e05a4d" : "#c4c4c4" }}>
+                <span style={{ fontSize: 15, fontFamily: SANS, fontWeight: 600, color: parseFloat(diff) < 0 ? C.text : parseFloat(diff) > 0 ? C.alert : C.textMid }}>
                   {parseFloat(diff) > 0 ? "+" : ""}{diff} vs last
                 </span>
               )}
             </div>
           )}
           {totalDiff !== null && (
-            <div style={{ fontSize: 12, color: "#a3a3a3", fontFamily: SANS, marginTop: 4 }}>
+            <div style={{ fontSize: 12, color: C.textDim, fontFamily: SANS, marginTop: 4 }}>
               Total change: {parseFloat(totalDiff) > 0 ? "+" : ""}{totalDiff} {sorted_w[0]?.unit} over {weightLog.length} entries
             </div>
           )}
@@ -3013,16 +3011,16 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
             ? CHART_H - ((vals[scrubIdx] - minV) / range) * CHART_H
             : null;
           return (
-          <div style={{ margin: "16px 18px 0", padding: "16px", borderRadius: 16, background: "#131313" }}>
+          <div style={{ margin: "16px 18px 0", padding: "16px", borderRadius: 16, background: C.surface }}>
             <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 10 }}>
-              <div style={{ fontSize: 11, letterSpacing: 2, color: "#a3a3a3", textTransform: "uppercase", fontFamily: SANS }}>Progress</div>
+              <div style={{ fontSize: 12, letterSpacing: 0.2, color: C.textDim, fontFamily: SANS }}>Progress</div>
               {active ? (
                 <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
-                  <span style={{ fontSize: 17, fontWeight: 800, color: "#e8e8e8", fontFamily: MONO }}>{active.weight}</span>
-                  <span style={{ fontSize: 11, color: "#c4c4c4", fontFamily: SANS }}>{fmtDate(active.date)}</span>
+                  <span style={{ fontSize: 15, fontWeight: 600, color: C.text, fontFamily: MONO, fontVariantNumeric: "tabular-nums" }}>{active.weight}</span>
+                  <span style={{ fontSize: 12, color: C.textMid, fontFamily: SANS }}>{fmtDate(active.date)}</span>
                 </div>
               ) : (
-                <div style={{ fontSize: 10, color: "#a3a3a3", fontFamily: SANS }}>Touch & drag to scrub</div>
+                <div style={{ fontSize: 12, color: C.textDim, fontFamily: SANS }}>Touch & drag to scrub</div>
               )}
             </div>
             <svg
@@ -3035,8 +3033,8 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
                 const val = (minV + p * range).toFixed(1);
                 return (
                   <g key={p}>
-                    <line x1="30" y1={y} x2={CHART_W} y2={y} stroke="#2e2e2e" strokeWidth="1" strokeDasharray="3,4" />
-                    <text x="26" y={y + 4} fontSize="9" fill="#a3a3a3" textAnchor="end" fontFamily="monospace">{val}</text>
+                    <line x1="30" y1={y} x2={CHART_W} y2={y} stroke={C.textFaint} strokeWidth="1" strokeDasharray="3,4" />
+                    <text x="26" y={y + 4} fontSize="12" fill={C.handle} textAnchor="end" fontFamily={MONO}>{val}</text>
                   </g>
                 );
               })}
@@ -3047,19 +3045,19 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
                     const y = CHART_H - ((v - minV) / range) * CHART_H;
                     return `${x},${y}`;
                   }).join(" ")}
-                  fill="none" stroke="#e8e8e8" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round"
+                  fill="none" stroke={C.text} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round"
                 />
               )}
               {vals.map((v, i) => {
                 const x = 30 + (i / Math.max(vals.length - 1, 1)) * (CHART_W - 30);
                 const y = CHART_H - ((v - minV) / range) * CHART_H;
-                return <circle key={i} cx={x} cy={y} r="3.5" fill="#e8e8e8" stroke="#131313" strokeWidth="1.5" />;
+                return <circle key={i} cx={x} cy={y} r="3.5" fill={STONE.carrara} stroke={C.ink} strokeWidth="1.5" />;
               })}
               {/* Scrubber: vertical line + emphasized point at the touched index */}
               {activeX !== null && (
                 <g pointerEvents="none">
                   <line x1={activeX} y1={0} x2={activeX} y2={CHART_H} stroke={LAKE.sky} strokeWidth="1.5" strokeDasharray="4,3" />
-                  <circle cx={activeX} cy={activeY} r="6" fill={LAKE.sky} stroke="#131313" strokeWidth="2" />
+                  <circle cx={activeX} cy={activeY} r="6" fill={LAKE.sky} stroke={C.ink} strokeWidth="2" />
                 </g>
               )}
               {/* Invisible wide hit area so the whole chart height is touchable, not just the line */}
@@ -3097,15 +3095,15 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
           const line = rolling.map((r, i) => `${i === 0 ? "M" : "L"}${x(r.date).toFixed(1)},${y(r.v).toFixed(1)}`).join(" ");
           const fmtD = d => new Date(d + "T12:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" });
           return (
-            <div style={{ margin: "12px 18px 0", padding: "16px", borderRadius: 16, background: "#131313" }}>
+            <div style={{ margin: "12px 18px 0", padding: "16px", borderRadius: 16, background: C.surface }}>
               <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 6 }}>
-                <div style={{ fontSize: 11, letterSpacing: 2, color: "#a3a3a3", textTransform: "uppercase", fontFamily: SANS }}>7-Day Average</div>
-                <div style={{ fontSize: 10, color: "#a3a3a3", fontFamily: SANS }}>dots = weigh-ins · line = 7-day avg</div>
+                <div style={{ fontSize: 12, letterSpacing: 0.2, color: C.textDim, fontFamily: SANS }}>7-Day Average</div>
+                <div style={{ fontSize: 12, color: C.textDim, fontFamily: SANS }}>dots = weigh-ins · line = 7-day avg</div>
               </div>
               <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: 10 }}>
-                <span style={{ fontSize: 26, fontWeight: 900, color: "#e8e8e8", fontFamily: MONO }}>{curAvg != null ? curAvg.toFixed(1) : "–"}</span>
-                <span style={{ fontSize: 12, color: "#a3a3a3", fontFamily: SANS }}>lbs</span>
-                <span style={{ fontSize: 12, fontFamily: MONO, fontWeight: 700, color: delta == null ? "#a3a3a3" : "#c4c4c4" }}>
+                <span style={{ ...HERO, color: C.text }}>{curAvg != null ? curAvg.toFixed(1) : "–"}</span>
+                <span style={{ fontSize: 12, color: C.textDim, fontFamily: SANS }}>lbs</span>
+                <span style={{ fontSize: 12, fontFamily: MONO, fontVariantNumeric: "tabular-nums", fontWeight: 600, color: delta == null ? C.textDim : C.textMid }}>
                   {delta == null ? "not enough data for last week" : `${delta > 0 ? "+" : ""}${delta.toFixed(1)} vs previous 7 days`}
                 </span>
               </div>
@@ -3114,32 +3112,32 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
                   const v = lo + f * (hi - lo);
                   return (
                     <g key={f}>
-                      <line x1={L} y1={y(v)} x2={W} y2={y(v)} stroke="#2e2e2e" strokeWidth="1" strokeDasharray="3,4" />
-                      <text x={L - 4} y={y(v) + 3} fontSize="9" fill="#a3a3a3" textAnchor="end" fontFamily="monospace">{v.toFixed(0)}</text>
+                      <line x1={L} y1={y(v)} x2={W} y2={y(v)} stroke={C.textFaint} strokeWidth="1" strokeDasharray="3,4" />
+                      <text x={L - 4} y={y(v) + 3} fontSize="12" fill={C.handle} textAnchor="end" fontFamily={MONO}>{v.toFixed(0)}</text>
                     </g>
                   );
                 })}
-                {shown.map((p, i) => <circle key={i} cx={x(p.date)} cy={y(p.v)} r="2.4" fill="#a3a3a3" />)}
-                <path d={line} fill="none" stroke="#e8e8e8" strokeWidth="2.2" strokeLinejoin="round" strokeLinecap="round" />
-                <text x={L} y={H - 4} fontSize="9" fill="#a3a3a3" fontFamily="monospace">{fmtD(shown[0].date)}</text>
-                <text x={W} y={H - 4} fontSize="9" fill="#a3a3a3" textAnchor="end" fontFamily="monospace">{fmtD(lastDate)}</text>
+                {shown.map((p, i) => <circle key={i} cx={x(p.date)} cy={y(p.v)} r="2.4" fill={C.handle} />)}
+                <path d={line} fill="none" stroke={C.text} strokeWidth="2.2" strokeLinejoin="round" strokeLinecap="round" />
+                <text x={L} y={H - 4} fontSize="12" fill={C.handle} fontFamily={MONO}>{fmtD(shown[0].date)}</text>
+                <text x={W} y={H - 4} fontSize="12" fill={C.handle} textAnchor="end" fontFamily={MONO}>{fmtD(lastDate)}</text>
               </svg>
             </div>
           );
         })()}
         <div style={{ padding: "14px 18px 4px" }}>
           <button onClick={() => { setWeightDate(todayStr()); setWeightInput(""); setShowWeightForm(true); }}
-            style={{ width: "100%", padding: "14px", borderRadius: 14, background: "#e8e8e8", border: "none", color: "#131313", fontSize: 15, fontWeight: 800, cursor: "pointer", fontFamily: SANS }}>
-            + LOG WEIGHT
+            style={{ width: "100%", padding: "14px", borderRadius: 14, background: STONE.primary, border: "none", color: C.ink, fontSize: 15, fontWeight: 600, cursor: "pointer", fontFamily: SANS }}>
+            + Log weight
           </button>
         </div>
         <div style={{ padding: "8px 18px 4px" }}>
-          <div style={{ fontSize: 11, letterSpacing: 2, color: "#a3a3a3", textTransform: "uppercase", fontFamily: SANS, fontWeight: 700 }}>History · {weightLog.length} entries</div>
+          <div style={{ fontSize: 12, letterSpacing: 0.2, color: C.textDim, fontFamily: SANS, fontWeight: 600 }}>History · {weightLog.length} entries</div>
         </div>
         {sorted_w.length === 0 ? (
-          <div style={{ margin: "20px 18px", padding: "32px 20px", borderRadius: 16, background: "#131313", textAlign: "center" }}>
+          <div style={{ margin: "20px 18px", padding: "32px 20px", borderRadius: 16, background: C.surface, border: C.cardBorder, textAlign: "center" }}>
             <div style={{ display: "flex", justifyContent: "center", marginBottom: 10 }}><Scale size={30} color={C.textDim} strokeWidth={1.8} /></div>
-            <div style={{ color: "#c4c4c4", fontSize: 14 }}>No weight entries yet</div>
+            <div style={{ color: C.textMid, fontSize: 15 }}>No weight entries yet</div>
           </div>
         ) : (
           <div style={{ padding: "4px 18px 100px" }}>
@@ -3147,21 +3145,21 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
               const prevW = sorted_w[i + 1];
               const d = prevW ? (parseFloat(w.weight) - parseFloat(prevW.weight)).toFixed(1) : null;
               return (
-                <div key={w.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", borderRadius: 14, background: "#131313", marginBottom: 8 }}>
+                <div key={w.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", borderRadius: 14, background: C.surface, border: C.cardBorder, marginBottom: 8 }}>
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 11, color: "#a3a3a3", fontFamily: SANS }}>{fmtDate(w.date)}</div>
+                    <div style={{ fontSize: 12, color: C.textDim, fontFamily: SANS }}>{fmtDate(w.date)}</div>
                     <div style={{ display: "flex", alignItems: "baseline", gap: 6, marginTop: 2 }}>
-                      <span style={{ fontSize: 22, fontWeight: 900, color: "#f2f2f2", fontFamily: SANS }}>{w.weight}</span>
-                      <span style={{ fontSize: 12, color: "#a3a3a3", fontFamily: SANS }}>{w.unit}</span>
+                      <span style={{ fontSize: 15, fontWeight: 600, color: C.text, fontFamily: SANS }}>{w.weight}</span>
+                      <span style={{ fontSize: 12, color: C.textDim, fontFamily: SANS }}>{w.unit}</span>
                       {d !== null && (
-                        <span style={{ fontSize: 12, fontFamily: SANS, fontWeight: 700, color: parseFloat(d) < 0 ? "#e8e8e8" : parseFloat(d) > 0 ? "#e05a4d" : "#c4c4c4" }}>
+                        <span style={{ fontSize: 12, fontFamily: SANS, fontWeight: 600, color: parseFloat(d) < 0 ? C.text : parseFloat(d) > 0 ? C.alert : C.textMid }}>
                           {parseFloat(d) > 0 ? "+" : ""}{d}
                         </span>
                       )}
                     </div>
                   </div>
                   <button onClick={() => setWeightLog(prev => { const updated = prev.filter(x => x.id !== w.id); saveWeights(updated); return updated; })}
-                    style={{ width: 30, height: 30, borderRadius: 8, background: "#2a1a18", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><X size={16} strokeWidth={2.5} color={C.red} /></button>
+                    style={{ width: 30, height: 30, borderRadius: 8, background: C.alertWash, border: "1px solid rgba(212,154,184,0.25)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><X size={16} strokeWidth={2.5} color={C.red} /></button>
                 </div>
               );
             })}
@@ -3170,10 +3168,10 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
         {showWeightForm && (
           <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.75)", display: "flex", alignItems: "flex-end", zIndex: 100 }}
             onClick={() => setShowWeightForm(false)}>
-            <div style={{ background: "#131313", width: "100%", borderRadius: "24px 24px 0 0", padding: "24px 18px 48px", borderBottom: "none" }}
+            <div style={{ background: C.sheet, width: "100%", borderRadius: "24px 24px 0 0", padding: "24px 18px 48px", borderBottom: "none" }}
               onClick={e => e.stopPropagation()}>
-              <div style={{ width: 36, height: 4, borderRadius: 2, background: "#a3a3a3", margin: "0 auto 20px" }} />
-              <div style={{ fontSize: 18, fontWeight: 800, color: "#f2f2f2", marginBottom: 16, fontFamily: SANS }}>Log Weight</div>
+              <div style={{ width: 36, height: 4, borderRadius: 2, background: C.handle, margin: "0 auto 20px" }} />
+              <div style={{ fontSize: 15, fontWeight: 600, color: C.text, marginBottom: 16, fontFamily: SANS }}>Log Weight</div>
               <div style={{ marginBottom: 14 }}>
                 <label style={labelStyle}>Date</label>
                 <input type="date" style={modalInput} value={weightDate} onChange={e => setWeightDate(e.target.value)} />
@@ -3183,15 +3181,15 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
                   <label style={labelStyle}>Weight</label>
                   <div style={{ display: "flex", gap: 6 }}>
                     {["lbs"].map(u => (
-                      <button key={u} onClick={() => setWeightUnit(u)} style={{ padding: "4px 12px", borderRadius: 8, border: "none", cursor: "pointer", fontFamily: SANS, fontSize: 12, fontWeight: 700, background: weightUnit === u ? "#e8e8e8" : "#2e2e2e", color: weightUnit === u ? "#131313" : "#c4c4c4" }}>{u}</button>
+                      <button key={u} onClick={() => setWeightUnit(u)} style={{ padding: "4px 12px", borderRadius: 8, border: "none", cursor: "pointer", fontFamily: SANS, fontSize: 12, fontWeight: 600, background: weightUnit === u ? STONE.carrara : C.surface3, color: weightUnit === u ? C.ink : C.textMid }}>{u}</button>
                     ))}
                   </div>
                 </div>
-                <input type="number" inputMode="decimal" style={{ ...modalInput, fontSize: 28, fontWeight: 900, textAlign: "center", padding: "14px" }}
+                <input type="number" inputMode="decimal" style={{ ...modalInput, ...HERO, textAlign: "center", padding: "10px 14px" }}
                   value={weightInput} onChange={e => setWeightInput(e.target.value)} placeholder="0.0" autoFocus />
               </div>
-              <button onClick={addWeight} style={{ width: "100%", padding: "15px", borderRadius: 14, background: "#e8e8e8", border: "none", color: "#131313", fontSize: 15, fontWeight: 800, cursor: "pointer", fontFamily: SANS }}>
-                SAVE →
+              <button onClick={addWeight} style={{ width: "100%", padding: "15px", borderRadius: 14, background: STONE.primary, border: "none", color: C.ink, fontSize: 15, fontWeight: 600, cursor: "pointer", fontFamily: SANS }}>
+                Save →
               </button>
             </div>
           </div>
@@ -3206,11 +3204,11 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
   // ── JOURNAL HOME ──────────────────────────────────────────────────────────
   return (
     <Shell>
-      <div style={{ padding: "52px 18px 20px", background: "linear-gradient(160deg,#131313 0%,#131313 100%)" }}>
-        <div style={{ fontSize: 11, letterSpacing: 3, color: "#a3a3a3", textTransform: "uppercase", fontFamily: SANS, marginBottom: 4 }}>Training Journal</div>
-        <div style={{ fontSize: 30, fontWeight: 900, color: "#f2f2f2", lineHeight: 1, fontFamily: SANS, letterSpacing: -0.5 }}>My Workouts</div>
+      <div style={{ padding: "52px 18px 20px", background: "transparent" }}>
+        <div style={{ fontSize: 12, letterSpacing: 0.2, color: C.textDim, fontFamily: SANS, marginBottom: 4 }}>Training Journal</div>
+        <div style={{ ...TITLE, color: C.text }}>My Workouts</div>
         <div style={{ marginTop: 6 }}>
-          <div style={{ fontSize: 13, color: "#a3a3a3" }}>{entries.filter(e => e.completedAt).length} session{entries.filter(e => e.completedAt).length !== 1 ? "s" : ""} logged</div>
+          <div style={{ fontSize: 12, color: C.textDim }}>{entries.filter(e => e.completedAt).length} session{entries.filter(e => e.completedAt).length !== 1 ? "s" : ""} logged</div>
         </div>
       </div>
 
@@ -3236,28 +3234,28 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
           : plan.kind === "train" ? (plan.overdue > 0 ? `${plan.overdue} day${plan.overdue !== 1 ? "s" : ""} overdue, do it today` : "Scheduled for today")
           : `Next: ${nextProg?.title ?? "training"} on ${new Date(plan.due + "T12:00:00").toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}`;
         const startToday = () => { setNewProgramDay(plan.day); setNewDate(today); setShowNewModal(true); };
-        const bigBtn = { width: "100%", marginTop: 14, padding: "16px", borderRadius: 14, border: "none", fontSize: 17, fontWeight: 800, cursor: "pointer", fontFamily: SANS, letterSpacing: 0.3, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 };
+        const bigBtn = { width: "100%", marginTop: 14, padding: "16px", borderRadius: 14, border: "none", fontSize: 15, fontWeight: 600, cursor: "pointer", fontFamily: SANS, letterSpacing: 0.3, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 };
         return (
-          <div style={{ margin: "4px 18px 4px", padding: "16px 16px 16px", borderRadius: 18, background: C.surface, boxShadow: shadow }}>
+          <div style={{ margin: "4px 18px 4px", padding: "16px 16px 16px", borderRadius: 18, background: C.surface, border: C.cardBorder, boxShadow: shadow }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
-              <div style={{ fontSize: 11, letterSpacing: 2, color: C.textDim, textTransform: "uppercase", fontFamily: SANS, fontWeight: 700 }}>Today</div>
+              <div style={{ fontSize: 12, letterSpacing: 0.2, color: C.textDim, fontFamily: SANS, fontWeight: 600 }}>Today</div>
               <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                <span style={{ fontSize: 11, fontFamily: MONO, color: C.textMid }}>Day {cycleDay} of {CYCLE_DAYS}</span>
-                <span style={{ fontSize: 11, color: C.textDim }}>·</span>
-                <span style={{ fontSize: 11, fontFamily: MONO, color: meso.isDeload ? C.amber : C.textMid, fontWeight: meso.isDeload ? 700 : 400 }}>
+                <span style={{ fontSize: 12, fontFamily: MONO, fontVariantNumeric: "tabular-nums", color: C.textMid }}>Day {cycleDay} of {CYCLE_DAYS}</span>
+                <span style={{ fontSize: 12, color: C.textDim }}>·</span>
+                <span style={{ fontSize: 12, fontFamily: MONO, fontVariantNumeric: "tabular-nums", color: meso.isDeload ? C.amber : C.textMid, fontWeight: meso.isDeload ? 600 : 400 }}>
                   Week {meso.week}{meso.isDeload ? " · Deload" : ""}
                 </span>
               </div>
             </div>
-            <div style={{ fontSize: 22, fontWeight: 900, color: C.text, fontFamily: SANS, letterSpacing: -0.3, marginTop: 8, lineHeight: 1.15 }}>{title}</div>
-            <div style={{ fontSize: 13, color: plan.kind === "done" ? C.green : C.textMid, fontFamily: SANS, marginTop: 4 }}>{sub}</div>
+            <div style={{ ...TITLE, color: C.text, marginTop: 8 }}>{title}</div>
+            <div style={{ fontSize: 12, color: plan.kind === "done" ? C.green : C.textMid, fontFamily: SANS, marginTop: 4 }}>{sub}</div>
             {resumeTarget ? (
               <button onClick={() => { setActiveId(resumeTarget.id); setView("entry"); }}
-                style={{ ...bigBtn, background: C.accent, color: "#0a0a0a" }}>
+                style={{ ...bigBtn, background: STONE.primary, color: C.ink }}>
                 <Play size={16} strokeWidth={2.4} /> Resume{resumeTarget.date !== today ? ` (${fmtDate(resumeTarget.date)})` : ""}
               </button>
             ) : plan.kind === "train" ? (
-              <button onClick={startToday} style={{ ...bigBtn, background: C.accent, color: "#0a0a0a" }}>
+              <button onClick={startToday} style={{ ...bigBtn, background: STONE.primary, color: C.ink }}>
                 <Dumbbell size={18} strokeWidth={2.2} /> Start
               </button>
             ) : plan.kind === "done" && doneEntry ? (
@@ -3266,7 +3264,7 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
                 View today's session
               </button>
             ) : plan.kind === "rest" ? (
-              <button onClick={startToday} style={{ ...bigBtn, background: C.surface2, color: C.textMid, fontSize: 14, padding: "13px" }}>
+              <button onClick={startToday} style={{ ...bigBtn, background: C.surface2, color: C.textMid, fontSize: 15, padding: "13px" }}>
                 Start {nextProg?.tag ?? "next session"} early
               </button>
             ) : null}
@@ -3284,30 +3282,30 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
         const fmtShort = d => new Date(d + "T12:00:00").toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
         if (!due) {
           return (
-            <div style={{ margin: "12px 18px 0", fontSize: 12, color: "#a3a3a3", fontFamily: SANS }}>
+            <div style={{ margin: "12px 18px 0", fontSize: 12, color: C.textDim, fontFamily: SANS }}>
               Next coach check-in with Claude: {fmtShort(next)}
             </div>
           );
         }
         const trend = weightTrend(weightLog, today);
         const advice = surplusAdvice(trend.rate);
-        const btn = { flex: 1, padding: "11px 8px", borderRadius: 12, border: "none", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: SANS };
+        const btn = { flex: 1, padding: "11px 8px", borderRadius: 12, border: "none", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: SANS };
         return (
-          <div style={{ margin: "12px 18px 4px", padding: "14px 16px", borderRadius: 14, background: "#e0a83a14", border: "1px solid #e0a83a44" }}>
-            <div style={{ fontSize: 11, letterSpacing: 2, color: "#e0a83a", textTransform: "uppercase", fontFamily: SANS, fontWeight: 700, marginBottom: 6 }}>
+          <div style={{ margin: "12px 18px 4px", padding: "14px 16px", borderRadius: 14, background: "rgba(218,214,211,0.08)", border: "1px solid rgba(201,166,190,0.27)" }}>
+            <div style={{ fontSize: 12, letterSpacing: 0.2, color: C.warn, fontFamily: SANS, fontWeight: 600, marginBottom: 6 }}>
               {blockReview ? "Block review due" : "Check-in due"} · {fmtShort(latest)}
             </div>
-            <div style={{ fontSize: 13, color: "#e8e8e8", fontFamily: SANS, lineHeight: 1.5 }}>
+            <div style={{ fontSize: 12, color: C.text, fontFamily: SANS, lineHeight: 1.5 }}>
               {trend.now != null && <div style={{ marginBottom: 4 }}>7-day avg weight: <b>{trend.now.toFixed(1)} lb</b>{trend.before != null ? ` (was ${trend.before.toFixed(1)} two weeks ago)` : ""}</div>}
               <div>{advice.text}</div>
-              <div style={{ marginTop: 8, color: "#c4c4c4", fontSize: 12 }}>
+              <div style={{ marginTop: 8, color: C.textMid, fontSize: 12 }}>
                 Export the coach report and backup, then send both to Claude in the Bodybuilding project with a line on energy, sleep, digestion and anything that felt off.
                 {blockReview ? " This one is the end-of-block review: bring progress photos too, and we'll plan the next block and deload." : ""}
               </div>
             </div>
             <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
-              <button onClick={() => downloadCoachPDF(entries, weightLog, meso)} style={{ ...btn, background: "#1c1c1c", color: "#e8e8e8" }}>Coach PDF</button>
-              <button onClick={() => downloadJSON(entries, weightLog, mesoOverride, cycleAnchor, macros, macroTargets)} style={{ ...btn, background: "#1c1c1c", color: "#e8e8e8" }}>Backup JSON</button>
+              <button onClick={() => downloadCoachPDF(entries, weightLog, meso)} style={{ ...btn, background: C.surface2, color: C.text }}>Coach PDF</button>
+              <button onClick={() => downloadJSON(entries, weightLog, mesoOverride, cycleAnchor, macros, macroTargets)} style={{ ...btn, background: C.surface2, color: C.text }}>Backup JSON</button>
             </div>
             <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
               {(advice.action === "add" || advice.action === "remove") && (
@@ -3315,11 +3313,11 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
                   const bump = t => ({ ...t, c: Math.max(0, t.c + advice.carbs) });
                   saveMacroTargets({ training: bump(macroTargets.training), rest: bump(macroTargets.rest) });
                   markCheckinDone(latest);
-                }} style={{ ...btn, background: "#e0a83a", color: "#131313" }}>
+                }} style={{ ...btn, background: STONE.venato, color: C.ink }}>
                   {advice.action === "add" ? "Add" : "Remove"} 38g carbs & done
                 </button>
               )}
-              <button onClick={() => markCheckinDone(latest)} style={{ ...btn, background: "#e8e8e8", color: "#131313" }}>Mark done</button>
+              <button onClick={() => markCheckinDone(latest)} style={{ ...btn, background: STONE.carrara, color: C.ink }}>Mark done</button>
             </div>
           </div>
         );
@@ -3328,16 +3326,16 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
       {/* Mesocycle banner */}
       {(() => {
         const meso = mesocycleWeek(entries, mesoOverride);
-        const dimColor = "#e8e8e8";
+        const dimColor = INK.stone;
         return (
-          <div onClick={() => setShowMesoEdit(true)} style={{ margin: "12px 18px 4px", padding: "14px 16px", borderRadius: 14, background: meso.isDeload ? C.amber + "1a" : "#1c1c1c", cursor: "pointer" }}>
+          <div onClick={() => setShowMesoEdit(true)} style={{ margin: "12px 18px 4px", padding: "14px 16px", borderRadius: 14, background: STONE.venato, cursor: "pointer", boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.25)" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
-              <div style={{ fontSize: 11, letterSpacing: 2, color: dimColor, textTransform: "uppercase", fontFamily: SANS, fontWeight: 700 }}>
+              <div style={{ fontSize: 12, letterSpacing: 0.2, color: dimColor, fontFamily: SANS, fontWeight: 600 }}>
                 <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}><Flame size={13} strokeWidth={2.2} /> Mesocycle {meso.cycle} · Week {meso.week} of {meso.total}</span>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ fontSize: 11, color: meso.isDeload ? C.amber : "#a3a3a3", fontFamily: SANS, fontWeight: meso.isDeload ? 700 : 400 }}>{meso.isDeload ? "DELOAD" : "ACCUMULATION"}</span>
-                <Pencil size={12} color="#a3a3a3" strokeWidth={2} />
+                <span style={{ fontSize: 12, color: INK.stone, fontFamily: SANS, fontWeight: meso.isDeload ? 600 : 500 }}>{meso.isDeload ? "Deload" : "Accumulation"}</span>
+                <Pencil size={12} color={INK.stone} strokeWidth={2} />
               </div>
             </div>
             <div style={{ display: "flex", gap: 5 }}>
@@ -3345,17 +3343,17 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
                 const wk = i + 1;
                 const isCurrent = wk === meso.week;
                 return (
-                  <div key={i} style={{ flex: 1, height: 6, borderRadius: 3, background: isCurrent ? (meso.isDeload ? C.amber : "#e8e8e8") : wk < meso.week ? "#1c1c1c" : "#2e2e2e" }} />
+                  <div key={i} style={{ flex: 1, height: 6, borderRadius: 3, background: isCurrent ? INK.stone : wk < meso.week ? "rgba(26,26,26,0.4)" : "rgba(26,26,26,0.12)" }} />
                 );
               })}
             </div>
             {meso.isDeload && (
-              <div style={{ fontSize: 12, color: C.amber, fontFamily: SANS, marginTop: 8 }}>
+              <div style={{ fontSize: 12, color: INK.stone, fontWeight: 600, fontFamily: SANS, marginTop: 8 }}>
                 Deload week: drop volume ~50%, keep weights, leave 3–4 RIR
               </div>
             )}
             {!meso.isDeload && meso.week >= 3 && (
-              <div style={{ fontSize: 12, color: "#c4c4c4", fontFamily: SANS, marginTop: 8 }}>
+              <div style={{ fontSize: 12, color: INK.stone, fontFamily: SANS, marginTop: 8 }}>
                 Add a set to lagging muscles this week · deload in {meso.total - meso.week} wk{meso.total - meso.week !== 1 ? "s" : ""}
               </div>
             )}
@@ -3395,13 +3393,13 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
         return (
           <div style={{ margin: "0 18px 12px", padding: "14px 16px", borderRadius: 16, background: C.surface }}>
             <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 12 }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: C.textMid, letterSpacing: 0.5, textTransform: "uppercase", fontFamily: SANS }}>This Cycle</div>
+              <div style={{ fontSize: 12, fontWeight: 600, color: C.textMid, letterSpacing: 0.2, fontFamily: SANS }}>This Cycle</div>
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <div style={{ fontSize: 12, fontFamily: MONO, color: doneCount === trainingDays.length ? C.green : C.textMid }}>
+                <div style={{ fontSize: 12, fontFamily: MONO, fontVariantNumeric: "tabular-nums", color: doneCount === trainingDays.length ? C.green : C.textMid }}>
                   {doneCount}/{trainingDays.length} done
                 </div>
                 <button onClick={() => { setAnchorEditValue(todayStr()); setShowAnchorEdit(true); }}
-                  style={{ fontSize: 10, fontWeight: 700, color: LAKE.sky, background: LAKE.sky + "22", borderRadius: 6, padding: "3px 8px", cursor: "pointer", fontFamily: SANS, letterSpacing: 0.3 }}>
+                  style={{ fontSize: 12, fontWeight: 600, color: LAKE.sky, background: LAKE.sky + "22", borderRadius: 6, padding: "3px 8px", cursor: "pointer", fontFamily: SANS, letterSpacing: 0.3 }}>
                   New Cycle
                 </button>
               </div>
@@ -3416,10 +3414,10 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
                       
                       opacity: done ? 0.7 : 1,
                     }}>
-                    <div style={{ fontSize: 15, fontWeight: 800, fontFamily: MONO, color: done ? d.color : C.text }}>
+                    <div style={{ fontSize: 15, fontWeight: 600, fontFamily: MONO, fontVariantNumeric: "tabular-nums", color: done ? d.color : C.text }}>
                       {done ? "✓" : dn}
                     </div>
-                    <div style={{ fontSize: 8, letterSpacing: 1, color: done ? d.color + "aa" : C.textDim, textTransform: "uppercase", marginTop: 2, fontFamily: SANS }}>{d.tag}</div>
+                    <div style={{ fontSize: 12, letterSpacing: 0.2, color: done ? d.color + "aa" : C.textDim, marginTop: 2, fontFamily: SANS }}>{d.tag}</div>
                   </div>
                 );
               })}
@@ -3435,9 +3433,9 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
 
       {showAnchorEdit && (
         <div onClick={() => setShowAnchorEdit(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)", display: "flex", alignItems: "flex-end", zIndex: 100 }}>
-          <div onClick={e => e.stopPropagation()} style={{ background: C.surface, width: "100%", borderRadius: "24px 24px 0 0", padding: "20px 18px 40px", boxSizing: "border-box", maxWidth: 430, margin: "0 auto" }}>
+          <div onClick={e => e.stopPropagation()} style={{ background: C.sheet, width: "100%", borderRadius: "24px 24px 0 0", padding: "20px 18px 40px", boxSizing: "border-box", maxWidth: 430, margin: "0 auto" }}>
             <div style={{ width: 36, height: 4, borderRadius: 2, background: C.line, margin: "0 auto 18px" }} />
-            <div style={{ fontSize: 17, fontWeight: 700, color: C.text, marginBottom: 6, fontFamily: SANS }}>Set Cycle Start Date</div>
+            <div style={{ fontSize: 15, fontWeight: 600, color: C.text, marginBottom: 6, fontFamily: SANS }}>Set Cycle Start Date</div>
             <div style={{ fontSize: 12, color: C.textDim, marginBottom: 16, fontFamily: SANS, lineHeight: 1.5 }}>
               Only sessions completed on or after this date count toward the current cycle. Use this to correct the tracker if it ever gets out of sync, or set it to today to deliberately start fresh.
             </div>
@@ -3445,11 +3443,11 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
               style={{ width: "100%", background: C.surface2, borderRadius: 10, padding: "12px 14px", fontSize: 16, color: C.text, outline: "none", fontFamily: SANS, boxSizing: "border-box", marginBottom: 16, border: "none" }} />
             <div style={{ display: "flex", gap: 8 }}>
               <button onClick={() => setShowAnchorEdit(false)}
-                style={{ flex: 1, padding: "14px", borderRadius: 12, background: C.surface2, color: C.textMid, fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: SANS }}>
+                style={{ flex: 1, padding: "14px", borderRadius: 12, background: C.surface2, color: C.textMid, fontSize: 15, fontWeight: 600, cursor: "pointer", fontFamily: SANS }}>
                 Cancel
               </button>
               <button onClick={() => { saveCycleAnchor(anchorEditValue); setShowAnchorEdit(false); }}
-                style={{ flex: 2, padding: "14px", borderRadius: 12, background: LAKE.sky, color: "#0a0a0a", fontSize: 15, fontWeight: 700, cursor: "pointer", fontFamily: SANS }}>
+                style={{ flex: 2, padding: "14px", borderRadius: 12, background: STONE.primary, color: C.ink, fontSize: 15, fontWeight: 600, cursor: "pointer", fontFamily: SANS }}>
                 Save
               </button>
             </div>
@@ -3459,70 +3457,70 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
 
       <div style={{ padding: "4px 18px 8px" }}>
         <button onClick={() => { setNewProgramDay(null); setNewDate(todayStr()); setShowNewModal(true); }}
-          style={{ width: "100%", padding: "15px", borderRadius: 14, background: LAKE.sky, border: "none", color: "#0a0a0a", fontSize: 15, fontWeight: 700, cursor: "pointer", fontFamily: SANS, letterSpacing: 0.2, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, boxShadow: "0 4px 20px rgba(184,212,232,0.2)" }}>
+          style={{ width: "100%", padding: "15px", borderRadius: 14, background: STONE.primary, border: "none", color: C.ink, fontSize: 15, fontWeight: 600, cursor: "pointer", fontFamily: SANS, letterSpacing: 0.2, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, boxShadow: "0 4px 20px rgba(184,212,232,0.2)" }}>
           <Dumbbell size={18} strokeWidth={2.2} /> Log Today's Session
         </button>
       </div>
 
       {sorted.length === 0 ? (
-        <div style={{ margin: "40px 18px", textAlign: "center", color: "#a3a3a3" }}>
+        <div style={{ margin: "40px 18px", textAlign: "center", color: C.textDim }}>
           <div style={{ display: "flex", justifyContent: "center", marginBottom: 10 }}><ClipboardList size={30} color={C.textDim} strokeWidth={1.8} /></div>
-          <div style={{ fontSize: 15, fontWeight: 600, color: "#c4c4c4" }}>No sessions yet</div>
-          <div style={{ fontSize: 13, marginTop: 4 }}>Tap a program day above or log a new session</div>
+          <div style={{ fontSize: 15, fontWeight: 600, color: C.textMid }}>No sessions yet</div>
+          <div style={{ fontSize: 12, marginTop: 4 }}>Tap a program day above or log a new session</div>
         </div>
       ) : (
         <div style={{ padding: "4px 18px 100px" }}>
           {sorted.map(entry => {
             const prog = entry.programDay ? PROGRAM[entry.programDay] : null;
-            const color = prog?.color ?? "#a3a3a3";
+            const color = prog?.color ?? C.textDim;
             const isRest = prog?.exercises?.length === 0;
             const mvDone = entry.movements.filter(m => m.sets.some(s => s.r)).length;
             const inProgress = !entry.completedAt && entry.date === today;
             return (
               <div key={entry.id}
                 onClick={() => { setActiveId(entry.id); setView("entry"); }}
-                style={{ marginBottom: 12, borderRadius: 18, overflow: "hidden", background: inProgress ? LAKE.sky + "14" : "#131313", cursor: "pointer", opacity: inProgress ? 0.9 : 1 }}>
-                <div style={{ height: 4, background: inProgress ? LAKE.sky + "66" : isRest ? "#2e2e2e" : color }} />
+                style={{ marginBottom: 12, borderRadius: 18, overflow: "hidden", background: inProgress ? LAKE.sky + "14" : C.surface, border: C.cardBorder, cursor: "pointer", opacity: inProgress ? 0.9 : 1 }}>
+                <div style={{ height: 4, background: inProgress ? LAKE.sky + "66" : isRest ? C.surface3 : color }} />
                 <div style={{ padding: "14px 16px" }}>
                   <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 11, color: "#a3a3a3", fontFamily: SANS, letterSpacing: 1, marginBottom: 3, display: "flex", alignItems: "center", gap: 6 }}>
+                      <div style={{ fontSize: 12, color: C.textDim, fontFamily: SANS, letterSpacing: 0.2, marginBottom: 3, display: "flex", alignItems: "center", gap: 6 }}>
                         {fmtDate(entry.date)}{prog ? ` · DAY ${entry.programDay}` : ""}
-                        {entry.completedAt && <span style={{ color: "#e8e8e8", fontWeight: 800 }}>✓</span>}
+                        {entry.completedAt && <span style={{ color: C.text, fontWeight: 600 }}>✓</span>}
                         {entry.location === "apartment" && (
-                          <span style={{ fontSize: 9, fontWeight: 700, color: "#e0a83a", background: "#e0a83a22", padding: "2px 7px", borderRadius: 4, letterSpacing: 0.5, textTransform: "uppercase" }}>
+                          <span style={{ fontSize: 12, fontWeight: 600, color: C.warn, background: "rgba(218,214,211,0.13)", padding: "2px 7px", borderRadius: 4, letterSpacing: 0.2 }}>
                             Apartment
                           </span>
                         )}
                         {inProgress && (
-                          <span style={{ fontSize: 9, fontWeight: 700, color: "#0a0a0a", background: LAKE.sky, padding: "2px 7px", borderRadius: 4, letterSpacing: 0.5, textTransform: "uppercase" }}>
+                          <span style={{ fontSize: 12, fontWeight: 600, color: C.ink, background: STONE.carrara, padding: "2px 7px", borderRadius: 4, letterSpacing: 0.2 }}>
                             In Progress
                           </span>
                         )}
                       </div>
-                      <div style={{ fontSize: 17, fontWeight: 800, color: "#f2f2f2", lineHeight: 1.2 }}>{entry.customTitle || "Untitled Session"}</div>
+                      <div style={{ fontSize: 15, fontWeight: 600, color: C.text, lineHeight: 1.2 }}>{entry.customTitle || "Untitled Session"}</div>
                       {entry.note ? (
-                        <div style={{ fontSize: 13, color: "#c4c4c4", marginTop: 5, lineHeight: 1.4, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>{entry.note}</div>
+                        <div style={{ fontSize: 12, color: C.textMid, marginTop: 5, lineHeight: 1.4, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>{entry.note}</div>
                       ) : null}
                     </div>
-                    <div style={{ fontSize: 20, color: "#2e2e2e" }}>›</div>
+                    <div style={{ fontSize: 15, color: C.textFaint }}>›</div>
                   </div>
                   {!isRest && entry.movements.length > 0 && (
                     <div style={{ marginTop: 10, display: "flex", flexWrap: "wrap", gap: 6 }}>
                       {entry.movements.slice(0, 5).map(mv => (
-                        <span key={mv.id} style={{ fontSize: 11, padding: "3px 9px", borderRadius: 7, background: "#1c1c1c", color: "#c4c4c4", fontFamily: SANS }}>
+                        <span key={mv.id} style={{ fontSize: 12, padding: "3px 9px", borderRadius: 7, background: C.surface2, color: C.textMid, fontFamily: SANS }}>
                           {mv.programRef ? `${mv.programRef}. ` : ""}{mv.name || "–"}
                         </span>
                       ))}
                       {entry.movements.length > 5 && (
-                        <span style={{ fontSize: 11, padding: "3px 9px", borderRadius: 7, background: "#1c1c1c", color: "#a3a3a3" }}>
+                        <span style={{ fontSize: 12, padding: "3px 9px", borderRadius: 7, background: C.surface2, color: C.textDim }}>
                           +{entry.movements.length - 5} more
                         </span>
                       )}
                     </div>
                   )}
                   {!isRest && (
-                    <div style={{ marginTop: 8, fontSize: 11, color: "#a3a3a3", fontFamily: SANS }}>
+                    <div style={{ marginTop: 8, fontSize: 12, color: C.textDim, fontFamily: SANS }}>
                       {entry.movements.length} movement{entry.movements.length !== 1 ? "s" : ""}
                       {mvDone > 0 && ` · ${mvDone} logged`}
                     </div>
@@ -3537,11 +3535,11 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
       {showMesoEdit && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)", display: "flex", alignItems: "flex-end", zIndex: 100 }}
           onClick={() => setShowMesoEdit(false)}>
-          <div style={{ background: "#131313", width: "100%", borderRadius: "24px 24px 0 0", padding: "24px 18px 44px", borderBottom: "none", boxSizing: "border-box" }}
+          <div style={{ background: C.sheet, width: "100%", borderRadius: "24px 24px 0 0", padding: "24px 18px 44px", borderBottom: "none", boxSizing: "border-box" }}
             onClick={e => e.stopPropagation()}>
-            <div style={{ width: 36, height: 4, borderRadius: 2, background: "#2e2e2e", margin: "0 auto 20px" }} />
-            <div style={{ fontSize: 18, fontWeight: 700, color: "#f2f2f2", marginBottom: 6, fontFamily: SANS }}>Set Mesocycle Week</div>
-            <div style={{ fontSize: 13, color: "#c4c4c4", marginBottom: 18, fontFamily: SANS, lineHeight: 1.5 }}>
+            <div style={{ width: 36, height: 4, borderRadius: 2, background: C.surface3, margin: "0 auto 20px" }} />
+            <div style={{ fontSize: 15, fontWeight: 600, color: C.text, marginBottom: 6, fontFamily: SANS }}>Set Mesocycle Week</div>
+            <div style={{ fontSize: 12, color: C.textMid, marginBottom: 18, fontFamily: SANS, lineHeight: 1.5 }}>
               Which week of the {MESO_LENGTH}-week block are you in right now? It'll count forward from today.
             </div>
             <div style={{ display: "flex", gap: 8, marginBottom: 20 }}>
@@ -3551,15 +3549,15 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
                 const current = mesocycleWeek(entries, mesoOverride).week === wk;
                 return (
                   <button key={wk} onClick={() => { saveMesoOverride({ anchorDate: todayStr(), weekAtAnchor: wk }); setShowMesoEdit(false); }}
-                    style={{ flex: 1, padding: "16px 0", borderRadius: 12, background: current ? "#e8e8e8" : "#1c1c1c", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
-                    <span style={{ fontSize: 20, fontWeight: 800, fontFamily: MONO, color: current ? "#0a0a0a" : "#f2f2f2" }}>{wk}</span>
-                    <span style={{ fontSize: 9, fontFamily: SANS, fontWeight: 700, letterSpacing: 0.5, color: current ? "#0a0a0a" : "#a3a3a3" }}>{isDeloadWk ? "DELOAD" : "WK"}</span>
+                    style={{ flex: 1, padding: "16px 0", borderRadius: 12, background: current ? STONE.carrara : C.surface2, cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+                    <span style={{ fontSize: 15, fontWeight: 600, fontFamily: MONO, fontVariantNumeric: "tabular-nums", color: current ? C.ink : C.text }}>{wk}</span>
+                    <span style={{ fontSize: 12, fontFamily: SANS, fontWeight: 600, letterSpacing: 0.2, color: current ? C.ink : C.textDim }}>{isDeloadWk ? "Deload" : "Wk"}</span>
                   </button>
                 );
               })}
             </div>
             <button onClick={() => { saveMesoOverride(null); setShowMesoEdit(false); }}
-              style={{ width: "100%", padding: "12px", borderRadius: 12, background: "transparent", color: "#c4c4c4", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: SANS }}>
+              style={{ width: "100%", padding: "12px", borderRadius: 12, background: "transparent", color: C.textMid, fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: SANS }}>
               Reset to automatic
             </button>
           </div>
@@ -3569,16 +3567,16 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
       {showNewModal && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.75)", display: "flex", alignItems: "flex-end", zIndex: 100 }}
           onClick={() => setShowNewModal(false)}>
-          <div style={{ background: "#131313", width: "100%", borderRadius: "24px 24px 0 0", padding: "24px 18px 44px", borderBottom: "none", boxSizing: "border-box", overflow: "hidden" }}
+          <div style={{ background: C.sheet, width: "100%", borderRadius: "24px 24px 0 0", padding: "24px 18px 44px", borderBottom: "none", boxSizing: "border-box", overflow: "hidden" }}
             onClick={e => e.stopPropagation()}>
-            <div style={{ width: 36, height: 4, borderRadius: 2, background: "#a3a3a3", margin: "0 auto 20px" }} />
-            <div style={{ fontSize: 18, fontWeight: 800, color: "#f2f2f2", marginBottom: 16, fontFamily: SANS }}>Log Session</div>
+            <div style={{ width: 36, height: 4, borderRadius: 2, background: C.handle, margin: "0 auto 20px" }} />
+            <div style={{ fontSize: 15, fontWeight: 600, color: C.text, marginBottom: 16, fontFamily: SANS }}>Log Session</div>
             <div style={{ marginBottom: 14 }}>
               <label style={labelStyle}>Date</label>
               <div style={{ position: "relative" }}>
                 <div style={{ ...modalInput, display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer" }}>
                   <span>{newDate ? new Date(newDate + "T12:00:00").toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", year: "numeric" }) : "Select date"}</span>
-                  <span style={{ fontSize: 11, color: "#c4c4c4" }}>tap to change</span>
+                  <span style={{ fontSize: 12, color: C.textMid }}>tap to change</span>
                 </div>
                 <input type="date" value={newDate} onChange={e => setNewDate(e.target.value)}
                   style={{ position: "absolute", inset: 0, opacity: 0, width: "100%", height: "100%", cursor: "pointer" }} />
@@ -3587,11 +3585,11 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
             <div style={{ marginBottom: 18 }}>
               <label style={labelStyle}>Program Day (optional)</label>
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 6 }}>
-                <div onClick={() => setNewProgramDay(null)} style={{ padding: "7px 14px", borderRadius: 10, cursor: "pointer", fontSize: 13, fontWeight: 700, fontFamily: SANS, background: newProgramDay === null ? "#e8e8e8" : "#1c1c1c", color: newProgramDay === null ? "#131313" : "#c4c4c4" }}>Custom</div>
+                <div onClick={() => setNewProgramDay(null)} style={{ padding: "7px 14px", borderRadius: 10, cursor: "pointer", fontSize: 12, fontWeight: 600, fontFamily: SANS, background: newProgramDay === null ? STONE.carrara : C.surface2, color: newProgramDay === null ? C.ink : C.textMid }}>Custom</div>
                 {Object.entries(PROGRAM).map(([dn, d]) => (
-                  <div key={dn} onClick={() => setNewProgramDay(Number(dn))} style={{ padding: "8px 12px", borderRadius: 10, cursor: "pointer", fontFamily: SANS, background: newProgramDay === Number(dn) ? d.color : "#1c1c1c", color: newProgramDay === Number(dn) ? "#131313" : d.color, textAlign: "center", minWidth: 56 }}>
-                    <div style={{ fontSize: 15, fontWeight: 800 }}>{dn}</div>
-                    <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: 0.5, marginTop: 2, opacity: 0.85 }}>
+                  <div key={dn} onClick={() => setNewProgramDay(Number(dn))} style={{ padding: "8px 12px", borderRadius: 10, cursor: "pointer", fontFamily: SANS, background: newProgramDay === Number(dn) ? fill(d.color) : C.surface2, color: newProgramDay === Number(dn) ? C.ink : d.color, textAlign: "center", minWidth: 56 }}>
+                    <div style={{ fontSize: 15, fontWeight: 600 }}>{dn}</div>
+                    <div style={{ fontSize: 12, fontWeight: 600, letterSpacing: 0.2, marginTop: 2, opacity: 0.85 }}>
                       {d.tag}
                     </div>
                   </div>
@@ -3602,14 +3600,14 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
                 const subCount = PROGRAM[newProgramDay].exercises.filter(ex => GYM_SUBS[`${newProgramDay}.${ex.id}`]).length;
                 return (
                   <div style={{ marginTop: 10 }}>
-                    <div style={{ fontSize: 12, color: "#a3a3a3", fontFamily: SANS }}>→ {PROGRAM[newProgramDay].title} · {PROGRAM[newProgramDay].exercises.length} exercises pre-loaded</div>
+                    <div style={{ fontSize: 12, color: C.textDim, fontFamily: SANS }}>→ {PROGRAM[newProgramDay].title} · {PROGRAM[newProgramDay].exercises.length} exercises pre-loaded</div>
                     {last ? (
-                      <div style={{ fontSize: 12, color: "#e8e8e877", fontFamily: SANS, marginTop: 4 }}>✓ Last session {fmtDate(last.date)} · weights carried forward</div>
+                      <div style={{ fontSize: 12, color: "rgba(238,233,224,0.47)", fontFamily: SANS, marginTop: 4 }}>✓ Last session {fmtDate(last.date)} · weights carried forward</div>
                     ) : (
-                      <div style={{ fontSize: 12, color: "#a3a3a3", fontFamily: SANS, marginTop: 4 }}>No previous session found · sets will start blank</div>
+                      <div style={{ fontSize: 12, color: C.textDim, fontFamily: SANS, marginTop: 4 }}>No previous session found · sets will start blank</div>
                     )}
                     {newLocation !== "equinox" && subCount > 0 && (
-                      <div style={{ fontSize: 12, color: "#e0a83a", fontFamily: SANS, marginTop: 4 }}>⇄ {subCount} exercise{subCount !== 1 ? "s" : ""} swapped for apartment equipment</div>
+                      <div style={{ fontSize: 12, color: C.warn, fontFamily: SANS, marginTop: 4 }}>⇄ {subCount} exercise{subCount !== 1 ? "s" : ""} swapped for apartment equipment</div>
                     )}
                   </div>
                 );
@@ -3620,19 +3618,19 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
               <div style={{ display: "flex", gap: 8, marginTop: 6 }}>
                 {Object.entries(LOCATIONS).map(([key, loc]) => (
                   <div key={key} onClick={() => setNewLocation(key)}
-                    style={{ flex: 1, padding: "10px 12px", borderRadius: 10, cursor: "pointer", fontFamily: SANS, fontSize: 13, fontWeight: 700, textAlign: "center", background: newLocation === key ? "#e8e8e8" : "#1c1c1c", color: newLocation === key ? "#131313" : "#c4c4c4" }}>
+                    style={{ flex: 1, padding: "10px 12px", borderRadius: 10, cursor: "pointer", fontFamily: SANS, fontSize: 12, fontWeight: 600, textAlign: "center", background: newLocation === key ? STONE.carrara : C.surface2, color: newLocation === key ? C.ink : C.textMid }}>
                     {loc.label}
                   </div>
                 ))}
               </div>
               {newLocation !== "equinox" && (
-                <div style={{ fontSize: 11, color: "#a3a3a3", fontFamily: SANS, marginTop: 6, lineHeight: 1.4 }}>
+                <div style={{ fontSize: 12, color: C.textDim, fontFamily: SANS, marginTop: 6, lineHeight: 1.4 }}>
                   Exercises with no apartment-friendly equivalent stay as programmed. Edit any movement name in-session if the swap still doesn't fit.
                 </div>
               )}
             </div>
-            <button onClick={createEntry} style={{ width: "100%", padding: "15px", borderRadius: 14, background: "#e8e8e8", border: "none", color: "#131313", fontSize: 15, fontWeight: 800, cursor: "pointer", fontFamily: SANS }}>
-              CREATE SESSION →
+            <button onClick={createEntry} style={{ width: "100%", padding: "15px", borderRadius: 14, background: STONE.primary, border: "none", color: C.ink, fontSize: 15, fontWeight: 600, cursor: "pointer", fontFamily: SANS }}>
+              Create session →
             </button>
           </div>
         </div>

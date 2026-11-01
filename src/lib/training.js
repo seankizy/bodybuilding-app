@@ -93,10 +93,10 @@ export function segmentPastCycles(entries) {
 export function volumeStatus(sets, muscle) {
   const lm = VOLUME_LANDMARKS[muscle];
   if (!lm) return { label: "—", color: C.textMid };
-  if (sets < lm.mev) return { label: "below MEV", color: C.textMid };
-  if (sets <= lm.mav) return { label: "productive", color: C.teal };
-  if (sets <= lm.mrv) return { label: "high", color: C.amber };
-  return { label: "over MRV", color: C.red };
+  if (sets < lm.mev) return { label: "below MEV", color: C.low };          // Grigio Bardiglio
+  if (sets <= lm.mav) return { label: "productive", color: C.productive }; // Arabescato Vagli
+  if (sets <= lm.mrv) return { label: "high", color: C.high };             // Venato
+  return { label: "over MRV", color: C.alert };                            // Breccia Viola
 }
 
 // ── PROGRESSION & PR HELPERS ──────────────────────────────────────────────────

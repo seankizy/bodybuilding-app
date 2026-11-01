@@ -1,5 +1,5 @@
 import { BarChart3, Camera, ChevronRight, ClipboardList, Database, MoreHorizontal, Scale, TrendingUp, Utensils, X } from "../icons.jsx";
-import { C, LAKE, SANS } from "../theme.js";
+import { C, LAKE, SANS, STONE, INK } from "../theme.js";
 import { fmtDate, todayStr } from "../lib/utils.js";
 
 export function MoreMenu({ open, onClose, onSelect }) {
@@ -12,7 +12,7 @@ export function MoreMenu({ open, onClose, onSelect }) {
   ];
   return (
     <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)", display: "flex", alignItems: "flex-end", zIndex: 100 }}>
-      <div onClick={e => e.stopPropagation()} style={{ background: C.surface, width: "100%", borderRadius: "24px 24px 0 0", padding: "10px 18px 40px", boxSizing: "border-box", maxWidth: 430, margin: "0 auto" }}>
+      <div onClick={e => e.stopPropagation()} style={{ background: C.sheet, width: "100%", borderRadius: "24px 24px 0 0", padding: "10px 18px 40px", boxSizing: "border-box", maxWidth: 430, margin: "0 auto" }}>
         <div style={{ width: 36, height: 4, borderRadius: 2, background: C.line, margin: "0 auto 18px" }} />
         {items.map(item => (
           <button key={item.id} onClick={() => onSelect(item.id)} style={{
@@ -44,31 +44,31 @@ export function ResumeBar({ session, onResume, onDismiss }) {
     <div style={{
       position: "fixed", bottom: 72, left: "50%", transform: "translateX(-50%)",
       width: "calc(100% - 36px)", maxWidth: 394,
-      background: "linear-gradient(135deg, #1c1c1c, #161616)",
+      background: C.sheet, border: C.cardBorder,
       borderRadius: 16, padding: "11px 16px",
       display: "flex", alignItems: "center", gap: 12,
       zIndex: 49,
-      boxShadow: `0 4px 24px rgba(0,0,0,0.5), 0 0 0 1px ${LAKE.sky}22`,
+      boxShadow: `0 4px 24px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.06)`,
     }}>
       <div onClick={onResume} style={{ display: "flex", alignItems: "center", gap: 12, flex: 1, minWidth: 0, cursor: "pointer" }}>
         {/* Animated pulse dot */}
         <div style={{ position: "relative", flexShrink: 0 }}>
-          <div style={{ width: 10, height: 10, borderRadius: "50%", background: LAKE.sky }} />
+          <div style={{ width: 10, height: 10, borderRadius: "50%", background: STONE.carrara }} />
           <div style={{ position: "absolute", inset: -3, borderRadius: "50%", border: `1.5px solid ${LAKE.sky}55`, animation: "pulse 2s infinite" }} />
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 13, fontWeight: 700, color: LAKE.sky, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          <div style={{ fontSize: 12, fontWeight: 600, color: LAKE.sky, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
             {session.customTitle || "Session in progress"}{dateLabel}
           </div>
-          <div style={{ fontSize: 11, color: "#c4c4c4", fontFamily: SANS, marginTop: 1 }}>
+          <div style={{ fontSize: 12, color: C.textMid, fontFamily: SANS, marginTop: 1 }}>
             {mvDone}/{mvTotal} movements done · tap to resume
           </div>
         </div>
-        <div style={{ fontSize: 18, color: LAKE.sky, flexShrink: 0 }}>›</div>
+        <div style={{ fontSize: 15, color: LAKE.sky, flexShrink: 0 }}>›</div>
       </div>
       <button onClick={(e) => { e.stopPropagation(); if (window.confirm("Dismiss this in-progress session? It stays in your history — this just stops the reminder.")) onDismiss(); }}
-        style={{ width: 26, height: 26, borderRadius: 8, background: "#2a2a2a", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-        <X size={13} color="#c4c4c4" strokeWidth={2.5} />
+        style={{ width: 26, height: 26, borderRadius: 8, background: C.surface3, border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+        <X size={13} color={C.textMid} strokeWidth={2.5} />
       </button>
     </div>
   );
@@ -81,19 +81,19 @@ export function BottomNav({ tab, setTab, onOpenMenu }) {
     { id: "weight", label: "Weight", Icon: Scale },
   ];
   return (
-    <div style={{ position: "fixed", bottom: 0, left: "50%", transform: "translateX(-50%)", width: "100%", maxWidth: 430, background: "rgba(13,13,15,0.94)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", display: "flex", padding: "12px 0 28px", zIndex: 50 }}>
+    <div style={{ position: "fixed", bottom: 0, left: "50%", transform: "translateX(-50%)", width: "100%", maxWidth: 430, background: "rgba(8,8,8,0.88)", borderTop: "1px solid rgba(255,255,255,0.08)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", display: "flex", padding: "12px 0 28px", zIndex: 50 }}>
       {tabs.map(t => {
         const active = tab === t.id;
         return (
           <button key={t.id} onClick={() => setTab(t.id)} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 5, background: "none", border: "none", cursor: "pointer", padding: "6px 0", transition: "transform 0.15s", transform: active ? "translateY(-1px)" : "none" }}>
-            <t.Icon size={26} strokeWidth={active ? 2.4 : 1.8} color={active ? C.accent : C.textDim} />
-            <span style={{ fontSize: 11, letterSpacing: 0.3, fontFamily: SANS, color: active ? C.accent : C.textDim, fontWeight: active ? 700 : 500 }}>{t.label}</span>
+            <span style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 44, height: 30, borderRadius: 10, background: active ? STONE.carrara : "transparent", boxShadow: active ? "inset 0 0 0 1px rgba(255,255,255,0.3)" : "none" }}><t.Icon size={22} strokeWidth={active ? 2.2 : 1.8} color={active ? INK.stone : C.textFaint} /></span>
+            <span style={{ fontSize: 12, letterSpacing: 0.3, fontFamily: SANS, color: active ? C.text : C.textFaint, fontWeight: 500 }}>{t.label}</span>
           </button>
         );
       })}
       <button onClick={onOpenMenu} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 5, background: "none", border: "none", cursor: "pointer", padding: "6px 0" }}>
-        <MoreHorizontal size={26} strokeWidth={1.8} color={C.textDim} />
-        <span style={{ fontSize: 11, letterSpacing: 0.3, fontFamily: SANS, color: C.textDim, fontWeight: 500 }}>More</span>
+        <span style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 44, height: 30 }}><MoreHorizontal size={22} strokeWidth={1.8} color={C.textFaint} /></span>
+        <span style={{ fontSize: 12, letterSpacing: 0.3, fontFamily: SANS, color: C.textFaint, fontWeight: 500 }}>More</span>
       </button>
     </div>
   );

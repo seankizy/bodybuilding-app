@@ -1,4 +1,4 @@
-const CACHE = "workout-v2";
+const CACHE = "workout-v3";
 const ASSETS = ["/", "/index.html"];
 
 // Install — cache core assets
