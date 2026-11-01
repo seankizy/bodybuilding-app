@@ -4294,6 +4294,47 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
             </div>
           );
         })()}
+        {/* Overview: sets per muscle as horizontal bars over MEV / MAV / MRV bands */}
+        {(() => {
+          const rowH = 26, labelW = 78, numW = 30, W = 340;
+          const barW = W - labelW - numW;
+          const H = allMuscles.length * rowH + 18;
+          return (
+            <div style={{ margin: "12px 18px 0", padding: "16px", borderRadius: 18, background: C.surface, boxShadow: shadow }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 10 }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: C.text }}>Sets per muscle</div>
+                <div style={{ fontSize: 10, color: C.textDim, fontFamily: SANS }}>{viewingPast ? "that cycle" : "this 8-day cycle"}</div>
+              </div>
+              <svg width="100%" viewBox={`0 0 ${W} ${H}`} style={{ display: "block" }}>
+                {allMuscles.map((muscle, idx) => {
+                  const lm = VOLUME_LANDMARKS[muscle];
+                  const sets = vol[muscle] || 0;
+                  const st = volumeStatus(sets, muscle);
+                  // Each row is scaled to its own landmarks so every muscle reads the same way
+                  const maxX = Math.max(lm.mrv * 1.25, sets + 1);
+                  const sx = v => labelW + (Math.min(v, maxX) / maxX) * barW;
+                  const y = idx * rowH + 4;
+                  return (
+                    <g key={muscle}>
+                      <text x={0} y={y + 13} fontSize="11" fill={C.textMid} fontFamily={SANS}>{muscle}</text>
+                      <rect x={labelW} y={y + 3} width={sx(lm.mev) - labelW} height={14} fill={C.surface2} rx="3" />
+                      <rect x={sx(lm.mev)} y={y + 3} width={sx(lm.mav) - sx(lm.mev)} height={14} fill={C.green} opacity="0.16" />
+                      <rect x={sx(lm.mav)} y={y + 3} width={sx(lm.mrv) - sx(lm.mav)} height={14} fill={C.amber} opacity="0.16" />
+                      <rect x={sx(lm.mrv)} y={y + 3} width={labelW + barW - sx(lm.mrv)} height={14} fill={C.red} opacity="0.10" />
+                      <rect x={labelW} y={y + 7} width={Math.max(0, sx(sets) - labelW)} height={6} fill={st.color === C.textMid ? C.textMid : st.color} rx="3" />
+                      <text x={W} y={y + 14} fontSize="12" fill={st.color} textAnchor="end" fontFamily="monospace" fontWeight="700">{sets}</text>
+                    </g>
+                  );
+                })}
+                <g fontSize="9" fontFamily={SANS} fill={C.textDim}>
+                  <rect x={labelW} y={H - 10} width="8" height="8" fill={C.green} opacity="0.5" rx="1" /><text x={labelW + 11} y={H - 3}>MEV to MAV</text>
+                  <rect x={labelW + 80} y={H - 10} width="8" height="8" fill={C.amber} opacity="0.5" rx="1" /><text x={labelW + 91} y={H - 3}>MAV to MRV</text>
+                  <rect x={labelW + 160} y={H - 10} width="8" height="8" fill={C.red} opacity="0.4" rx="1" /><text x={labelW + 171} y={H - 3}>over MRV</text>
+                </g>
+              </svg>
+            </div>
+          );
+        })()}
         <div style={{ padding: "12px 18px 100px" }}>
           {allMuscles.map(muscle => {
             const sets = vol[muscle] || 0;
@@ -4312,7 +4353,7 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
                   </div>
                 </div>
                 {/* Volume bar with MEV/MAV/MRV markers */}
-                <div style={{ position: "relative", height: 12, borderRadius: 6, background: C.surface2, overflow: "hidden" }}>
+                <div style={{ position: "relative", height: 12, borderRadius: 6, background: `linear-gradient(90deg, ${C.surface2} 0 ${mevPct}%, ${C.green}29 ${mevPct}% ${mavPct}%, ${C.amber}29 ${mavPct}% 100%)`, overflow: "hidden" }}>
                   <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: `${pct}%`, background: `linear-gradient(90deg, ${status.color}aa, ${status.color})`, borderRadius: 6, transition: "width 0.4s ease" }} />
                   <div style={{ position: "absolute", left: `${mevPct}%`, top: 0, bottom: 0, width: 1.5, background: "rgba(255,255,255,0.25)" }} />
                   <div style={{ position: "absolute", left: `${mavPct}%`, top: 0, bottom: 0, width: 1.5, background: "rgba(255,255,255,0.25)" }} />
@@ -4355,7 +4396,8 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
     }
     const completedSessions = heatDays.filter(d => d.count > 0).length;
 
-    // Mini SVG line chart for selected movement
+    // Inline SVG e1RM chart for the selected lift: gridlines with values, a point per
+    // session (best set by estimateOneRM via movementHistory), the all-time best in green.
     function LineChart({ data, color }) {
       if (data.length < 2) return (
         <div style={{ height: 80, display: "flex", alignItems: "center", justifyContent: "center", color: C.textDim, fontSize: 12, fontFamily: SANS }}>
@@ -4363,31 +4405,45 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
         </div>
       );
       const vals = data.map(d => d.e1rm);
-      const min = Math.min(...vals), max = Math.max(...vals);
+      const rawMin = Math.min(...vals), rawMax = Math.max(...vals);
+      const padV = Math.max(2, Math.round((rawMax - rawMin) * 0.1));
+      const min = rawMin - padV, max = rawMax + padV;
       const range = max - min || 1;
-      const W = 340, H = 80, PAD = 8;
+      const W = 340, H = 150, L = 34, R = 8, T = 10, B = 20;
+      const bestIdx = vals.lastIndexOf(rawMax);
       const pts = vals.map((v, i) => {
-        const x = PAD + (i / (vals.length - 1)) * (W - PAD * 2);
-        const y = H - PAD - ((v - min) / range) * (H - PAD * 2);
+        const x = L + (i / (vals.length - 1)) * (W - L - R);
+        const y = T + (1 - (v - min) / range) * (H - T - B);
         return [x, y];
       });
       const path = pts.map((p, i) => `${i === 0 ? "M" : "L"}${p[0].toFixed(1)},${p[1].toFixed(1)}`).join(" ");
-      const area = path + ` L${pts[pts.length-1][0]},${H} L${PAD},${H} Z`;
+      const area = path + ` L${pts[pts.length-1][0]},${H - B} L${L},${H - B} Z`;
+      const ticks = [0, 0.5, 1].map(f => min + f * range);
       return (
         <svg width="100%" viewBox={`0 0 ${W} ${H}`} style={{ display: "block" }}>
           <defs>
             <linearGradient id="lg" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor={color} stopOpacity="0.3" />
+              <stop offset="0%" stopColor={color} stopOpacity="0.22" />
               <stop offset="100%" stopColor={color} stopOpacity="0.02" />
             </linearGradient>
           </defs>
+          {ticks.map((v, i) => {
+            const y = T + (1 - (v - min) / range) * (H - T - B);
+            return (
+              <g key={i}>
+                <line x1={L} y1={y} x2={W - R} y2={y} stroke={C.line} strokeWidth="1" strokeDasharray="3,4" />
+                <text x={L - 5} y={y + 3} fontSize="9" fill={C.textDim} textAnchor="end" fontFamily="monospace">{Math.round(v)}</text>
+              </g>
+            );
+          })}
           <path d={area} fill="url(#lg)" />
           <path d={path} fill="none" stroke={color} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
           {pts.map(([x, y], i) => (
-            <circle key={i} cx={x} cy={y} r="3" fill={color} stroke={C.surface} strokeWidth="1.5" />
+            <circle key={i} cx={x} cy={y} r={i === bestIdx ? 4.5 : 3} fill={i === bestIdx ? C.green : color} stroke={C.surface} strokeWidth="1.5" />
           ))}
-          <text x={pts[0][0]} y={H - 2} fontSize="9" fill={C.textDim} textAnchor="middle" fontFamily="monospace">{data[0].date.slice(5)}</text>
-          <text x={pts[pts.length-1][0]} y={H - 2} fontSize="9" fill={C.textDim} textAnchor="middle" fontFamily="monospace">{data[data.length-1].date.slice(5)}</text>
+          <text x={pts[bestIdx][0]} y={Math.max(9, pts[bestIdx][1] - 8)} fontSize="9" fill={C.green} textAnchor={bestIdx === pts.length - 1 ? "end" : bestIdx === 0 ? "start" : "middle"} fontFamily="monospace" fontWeight="700">PR {rawMax}</text>
+          <text x={pts[0][0]} y={H - 4} fontSize="9" fill={C.textDim} textAnchor="start" fontFamily="monospace">{data[0].date.slice(5)}</text>
+          <text x={pts[pts.length-1][0]} y={H - 4} fontSize="9" fill={C.textDim} textAnchor="end" fontFamily="monospace">{data[data.length-1].date.slice(5)}</text>
         </svg>
       );
     }
@@ -4450,14 +4506,14 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
 
           {/* ── PER-LIFT PROGRESSION ── */}
           <div style={{ marginBottom: 14, padding: "16px", borderRadius: 18, background: C.surface, boxShadow: shadow }}>
-            <div style={{ fontSize: 13, fontWeight: 700, color: C.text, marginBottom: 10 }}>Lift Progression</div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: C.text, marginBottom: 10 }}>Lift Progression <span style={{ fontSize: 11, color: C.textDim, fontWeight: 400 }}>estimated 1RM per session</span></div>
             <select value={selMv || ""} onChange={e => setSelectedMovement(e.target.value)}
               style={{ width: "100%", padding: "10px 12px", borderRadius: 10, background: C.surface2, color: C.text, fontSize: 13, fontFamily: SANS, marginBottom: 12, outline: "none" }}>
               {mvNames.map(n => <option key={n} value={n}>{n}</option>)}
             </select>
             {history.length > 0 && (
               <>
-                <LineChart data={history} color={LAKE.lake} />
+                <LineChart data={history} color={C.text} />
                 <div style={{ display: "flex", justifyContent: "space-between", marginTop: 10 }}>
                   <div style={{ textAlign: "center" }}>
                     <div style={{ fontSize: 9, color: C.textDim, letterSpacing: 1, textTransform: "uppercase", fontFamily: SANS }}>First</div>
