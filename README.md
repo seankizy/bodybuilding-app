@@ -35,10 +35,31 @@ timers fire notifications even when you switch apps, and works offline.
 **Your data is safe** — it lives in localStorage on your phone, completely
 separate from the app code. Redeploying never touches your data.
 
-## Restoring data (new phone / cleared browser)
+## Backups (important)
 
-Your Google Drive file `workout_journal_export.csv` always has a full backup.
-The app exports to it automatically on every change.
+Your data lives only in Safari's storage on your phone. If it's cleared, it's gone.
+The app reminds you to back up when your last backup is 7 or more days old. Tap
+**Back up** and choose Google Drive or Files in the share sheet.
+
+To restore on a new phone, open the app and import the latest `workout_backup_*.json`.
+
+## Server settings (Vercel > Settings > Environment Variables)
+
+AI logging, Macro Chef, and Progress Photos run through `/api/*` functions so no
+key is ever sent to the browser.
+
+| Variable | What it is |
+| --- | --- |
+| `APP_PASSCODE` | Any passcode you choose. The app asks for it once per phone. |
+| `ANTHROPIC_API_KEY` | Your Anthropic key (server only, never `VITE_`). |
+| `GOOGLE_DRIVE_API_KEY` | A Google API key with the Drive API enabled (server only, never `VITE_`). |
+| `DRIVE_PHOTOS_FOLDER_ID` | The ID of your progress photos folder. |
+
+For photos: keep the Drive folder on "Anyone with the link". The folder ID and key
+stay on the server behind your passcode, so the link is never exposed in the app.
+
+Delete the old `VITE_ANTHROPIC_API_KEY` and `VITE_GOOGLE_DRIVE_API_KEY` variables,
+and rotate the Anthropic key, since the old one was visible in the app bundle.
 
 ## Local development
 
