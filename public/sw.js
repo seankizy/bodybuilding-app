@@ -1,4 +1,4 @@
-const CACHE = "workout-v1";
+const CACHE = "workout-v2";
 const ASSETS = ["/", "/index.html"];
 
 // Install — cache core assets
@@ -20,7 +20,7 @@ self.addEventListener("activate", e => {
 // Fetch — network first, fall back to cache
 self.addEventListener("fetch", e => {
   e.respondWith(
-    fetch(e.request).catch(() => caches.match(e.request))
+    fetch(e.request, e.request.mode === "navigate" ? { cache: "no-store" } : undefined).catch(() => caches.match(e.request))
   );
 });
 
