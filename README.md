@@ -52,11 +52,11 @@ key is ever sent to the browser.
 | --- | --- |
 | `APP_PASSCODE` | Any passcode you choose. The app asks for it once per phone. |
 | `ANTHROPIC_API_KEY` | Your Anthropic key (server only, never `VITE_`). |
-| `GOOGLE_SERVICE_ACCOUNT_JSON` | The full JSON key of a Google Cloud service account with the Drive API enabled. |
+| `GOOGLE_DRIVE_API_KEY` | A Google API key with the Drive API enabled (server only, never `VITE_`). |
 | `DRIVE_PHOTOS_FOLDER_ID` | The ID of your progress photos folder. |
 
-For photos: share the Drive folder with the service account's email as Viewer,
-then turn off "Anyone with the link" so the photos are private.
+For photos: keep the Drive folder on "Anyone with the link". The folder ID and key
+stay on the server behind your passcode, so the link is never exposed in the app.
 
 Delete the old `VITE_ANTHROPIC_API_KEY` and `VITE_GOOGLE_DRIVE_API_KEY` variables,
 and rotate the Anthropic key, since the old one was visible in the app bundle.
