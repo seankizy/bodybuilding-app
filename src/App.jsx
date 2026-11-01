@@ -2842,6 +2842,13 @@ function AppInner({ onBrief }) {
     const nextMv = allMvs[curIdx + 1] ?? null;
     const isLast = curIdx === allMvs.length - 1;
     const alreadyDone = !!activeMv.doneAt;
+    // Previous session's sets for this movement (same gym first), used as ghost
+    // placeholders in the set inputs. Falls back to the lastSets seeded at creation.
+    const ghostSets = (() => {
+      const prior = entries.filter(e => e.id !== activeEntry.id && e.date <= activeEntry.date);
+      const h = lastMovementByName(prior, activeMv.name, activeEntry.location ?? "equinox");
+      return h?.mv?.sets ?? activeMv.lastSets ?? [];
+    })();
 
     function finishAndAdvance() {
       const hasLoggedReps = activeMv.sets.some(s => s.r && String(s.r).trim() !== "");
@@ -3134,6 +3141,7 @@ function AppInner({ onBrief }) {
             <div key={i}>
               <SetRow
                 num={i + 1}
+                ghost={ghostSets[i] ?? null}
                 weight={s.w} reps={s.r} rir={s.rir ?? ""}
                 repsTarget={activeMv.repsTarget ?? null}
                 type={activeMv.type ?? (activeEntry.programDay && activeMv.programRef ? (programExFor(activeEntry, activeMv)?.type ?? "compound") : "compound")}
@@ -6117,7 +6125,8 @@ function DailyBrief({ brief, onClose }) {
 function Shell({ children }) {
   return (
     <div style={{ background: C.bg, minHeight: "100vh", color: C.text, fontFamily: SANS, maxWidth: 430, margin: "0 auto", overflowX: "hidden" }}>
-      <style>{`@keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.4;transform:scale(1.5)} }`}</style>
+      <style>{`@keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.4;transform:scale(1.5)} }
+.wj-set-input::placeholder { color: #4a4a4a; opacity: 1; font-weight: 700; }`}</style>
       {children}
     </div>
   );
@@ -6207,7 +6216,7 @@ function WarmupItem({ label, checked, onToggle }) {
 }
 
 // SetRow with weight, reps, RIR selector, and movement-type-aware feedback
-function SetRow({ num, weight, reps, rir, repsTarget, type, isLastSet, done, color, onW, onR, onRIR, onDelete, onDone }) {
+function SetRow({ num, weight, reps, rir, repsTarget, type, isLastSet, done, color, ghost, onW, onR, onRIR, onDelete, onDone }) {
   const repRange = (() => {
     if (!repsTarget) return null;
     // Handle split format: "2×10-12, 2×15-20" — pick the range for this set number
@@ -6236,6 +6245,18 @@ function SetRow({ num, weight, reps, rir, repsTarget, type, isLastSet, done, col
   const belowRange = repRange && !isNaN(repVal) && repVal < repRange.min;
   const aboveRange = repRange && !isNaN(repVal) && repVal > repRange.max;
   const rirFb = rirFeedback(rir, type, isLastSet);
+  // Ghost values: the previous session's numbers for this set, shown as placeholder
+  // text while a field is empty. "Repeat" copies them into the empty fields.
+  const has = v => v !== "" && v !== null && v !== undefined;
+  const gW = ghost && has(ghost.w) ? String(ghost.w) : null;
+  const gR = ghost && has(ghost.r) ? String(ghost.r) : null;
+  const gRIR = ghost && has(ghost.rir) ? String(ghost.rir) : null;
+  const canRepeat = (gW && !has(weight)) || (gR && !has(reps)) || (gRIR && !has(rir));
+  function repeatLast() {
+    if (gW && !has(weight)) onW(gW);
+    if (gRIR && !has(rir)) onRIR(gRIR);
+    if (gR && !has(reps)) onR(gR);
+  }
 
   return (
     <div style={{ margin: "0 18px 4px", padding: "12px 14px", borderRadius: 14, background: done ? color + "14" : "#1c1c1c", transition: "background 0.2s", opacity: done ? 0.75 : 1 }}>
@@ -6243,7 +6264,7 @@ function SetRow({ num, weight, reps, rir, repsTarget, type, isLastSet, done, col
         <div style={{ width: 34, height: 34, borderRadius: 9, background: "#1c1c1c", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 17, fontWeight: 800, color: "#9a9a9a", fontFamily: SANS, flexShrink: 0 }}>{num}</div>
         <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
           <div style={{ fontSize: 10, letterSpacing: 1.5, color: "#5c5c5c", textTransform: "uppercase", fontFamily: SANS }}>Weight</div>
-          <input type="number" inputMode="decimal" value={weight} onChange={e => onW(e.target.value)} placeholder="0" style={setInput(color)} />
+          <input className="wj-set-input" type="number" inputMode="decimal" value={weight} onChange={e => onW(e.target.value)} placeholder={gW ?? "0"} style={setInput(color)} />
           <div style={{ fontSize: 10, color: "#5c5c5c", fontFamily: SANS }}>lbs</div>
         </div>
         <div style={{ color: "#2e2e2e", fontSize: 16, fontWeight: 300 }}>×</div>
@@ -6251,8 +6272,8 @@ function SetRow({ num, weight, reps, rir, repsTarget, type, isLastSet, done, col
           <div style={{ fontSize: 10, letterSpacing: 1.5, color: "#5c5c5c", textTransform: "uppercase", fontFamily: SANS }}>
             Reps{repRange ? ` ${repRange.min}–${repRange.max}` : ""}
           </div>
-          <input type="number" inputMode="numeric" value={reps} onChange={e => onR(e.target.value)}
-            placeholder={repRange ? `${repRange.min}–${repRange.max}` : "0"}
+          <input className="wj-set-input" type="number" inputMode="numeric" value={reps} onChange={e => onR(e.target.value)}
+            placeholder={gR ?? (repRange ? `${repRange.min}–${repRange.max}` : "0")}
             style={{ ...setInput(color), borderColor: inRange ? C.green : belowRange ? C.red : aboveRange ? C.amber : undefined }} />
           <div style={{ fontSize: 10, fontFamily: SANS, fontWeight: 700, color: inRange ? C.green : belowRange ? C.red : aboveRange ? C.amber : "#5c5c5c" }}>
             {inRange ? "✓ in range" : belowRange ? "↓ go lighter" : aboveRange ? "↑ go heavier" : "reps"}
@@ -6270,11 +6291,13 @@ function SetRow({ num, weight, reps, rir, repsTarget, type, isLastSet, done, col
           <div style={{ display: "flex", gap: 5 }}>
             {["0", "1", "2", "3", "4"].map(v => {
               const sel = String(rir) === v;
+              const isGhost = !has(rir) && gRIR === v;
               return (
-                <button key={v} onClick={() => onRIR(sel ? "" : v)} style={{
+                <button key={v} onClick={() => onRIR(sel ? "" : v)} title={isGhost ? "Last session" : undefined} style={{
                   width: 30, height: 30, borderRadius: 8, cursor: "pointer",
                   background: sel ? color : "#1c1c1c",
-                  color: sel ? "#131313" : "#9a9a9a",
+                  color: sel ? "#131313" : isGhost ? "#c9c9c9" : "#9a9a9a",
+                  border: isGhost ? "1.5px dashed #5c5c5c" : "none", boxSizing: "border-box",
                   fontSize: 13, fontWeight: 800, fontFamily: SANS,
                 }}>{v}</button>
               );
@@ -6282,6 +6305,12 @@ function SetRow({ num, weight, reps, rir, repsTarget, type, isLastSet, done, col
           </div>
         </div>
         <div style={{ flex: 1, minWidth: 0, textAlign: "right", paddingLeft: 10 }}>
+          {canRepeat && !rirFb && (
+            <button onClick={repeatLast} title="Fill the empty fields with last session's numbers"
+              style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "6px 10px", borderRadius: 8, background: "#2a2a2a", border: "none", color: "#c9c9c9", fontSize: 11, fontWeight: 700, fontFamily: SANS, cursor: "pointer" }}>
+              <RotateCcw size={12} strokeWidth={2.4} /> Repeat
+            </button>
+          )}
           {rirFb && (
             <div style={{ fontSize: 10, fontFamily: SANS, fontWeight: 700, color: rirFb.color, lineHeight: 1.2 }}>
               {rirFb.msg}
