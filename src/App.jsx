@@ -60,7 +60,7 @@ function BackupNudge() {
   if (!show) return null;
   const days = daysSinceBackup();
   return (
-    <div style={{ position: "fixed", top: "calc(env(safe-area-inset-top) + 10px)", left: "50%", transform: "translateX(-50%)", width: "calc(100% - 36px)", maxWidth: 394, background: C.surface2, borderRadius: 14, padding: "10px 14px", display: "flex", alignItems: "center", gap: 10, zIndex: 60, boxShadow: `0 4px 24px rgba(0,0,0,0.5), 0 0 0 1px ${LAKE.sky}33`, fontFamily: SANS }}>
+    <div style={{ position: "fixed", top: "calc(env(safe-area-inset-top) + 10px)", left: "50%", transform: "translateX(-50%)", width: "calc(100% - 36px)", maxWidth: 394, background: "#161616", borderRadius: 14, padding: "10px 14px", display: "flex", alignItems: "center", gap: 10, zIndex: 60, boxShadow: `0 4px 24px rgba(0,0,0,0.5), 0 0 0 1px ${LAKE.sky}33`, fontFamily: SANS }}>
       <div style={{ flex: 1, fontSize: 12, color: C.text }}>
         {days === Infinity ? "Your journal has never been backed up." : `Last backup ${Math.floor(days)} days ago.`} Save a copy to Drive.
       </div>
@@ -3028,36 +3028,41 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
               width="100%" viewBox={`0 0 ${CHART_W} ${CHART_H + 20}`}
               style={{ display: "block", overflow: "visible", touchAction: "none" }}
             >
-              {[0, 0.25, 0.5, 0.75, 1].map(p => {
+              {[0, 0.5, 1].map(p => {
                 const y = CHART_H - p * CHART_H;
-                const val = (minV + p * range).toFixed(1);
+                const val = Math.round(minV + p * range);
                 return (
                   <g key={p}>
-                    <line x1="30" y1={y} x2={CHART_W} y2={y} stroke={C.textFaint} strokeWidth="1" strokeDasharray="3,4" />
-                    <text x="26" y={y + 4} fontSize="12" fill={C.handle} textAnchor="end" fontFamily={MONO}>{val}</text>
+                    <line x1="30" y1={y} x2={CHART_W} y2={y} stroke="rgba(255,255,255,0.08)" strokeWidth="1" />
+                    <text x="24" y={y + 4} fontSize="11" fill={C.textDim} textAnchor="end" fontFamily={SANS}>{val}</text>
                   </g>
                 );
               })}
-              {vals.length >= 2 && (
-                <polyline
-                  points={vals.map((v, i) => {
-                    const x = 30 + (i / (vals.length - 1)) * (CHART_W - 30);
-                    const y = CHART_H - ((v - minV) / range) * CHART_H;
-                    return `${x},${y}`;
-                  }).join(" ")}
-                  fill="none" stroke={C.text} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round"
-                />
-              )}
-              {vals.map((v, i) => {
-                const x = 30 + (i / Math.max(vals.length - 1, 1)) * (CHART_W - 30);
-                const y = CHART_H - ((v - minV) / range) * CHART_H;
-                return <circle key={i} cx={x} cy={y} r="3.5" fill={STONE.carrara} stroke={C.ink} strokeWidth="1.5" />;
-              })}
+              {(() => {
+                const pts = vals.map((v, i) => [30 + (i / Math.max(vals.length - 1, 1)) * (CHART_W - 30), CHART_H - ((v - minV) / range) * CHART_H]);
+                const lastPt = pts[pts.length - 1];
+                const fmtShort = d => new Date(d + "T12:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" });
+                return (
+                  <g>
+                    <defs>
+                      <linearGradient id="wjArea" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#EEE9E0" stopOpacity="0.18" />
+                        <stop offset="100%" stopColor="#EEE9E0" stopOpacity="0" />
+                      </linearGradient>
+                    </defs>
+                    <path d={`M${pts[0][0]},${CHART_H} ` + pts.map(([x, y]) => `L${x},${y}`).join(" ") + ` L${lastPt[0]},${CHART_H} Z`} fill="url(#wjArea)" />
+                    <polyline points={pts.map(([x, y]) => `${x},${y}`).join(" ")} fill="none" stroke={C.text} strokeOpacity="0.9" strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round" />
+                    <circle cx={lastPt[0]} cy={lastPt[1]} r="4.5" fill={C.text} />
+                    <text x="30" y={CHART_H + 16} fontSize="11" fill={C.textDim} fontFamily={SANS}>{fmtShort(chartData[0].date)}</text>
+                    <text x={CHART_W} y={CHART_H + 16} fontSize="11" fill={C.textDim} textAnchor="end" fontFamily={SANS}>{fmtShort(chartData[chartData.length - 1].date)}</text>
+                  </g>
+                );
+              })()}
               {/* Scrubber: vertical line + emphasized point at the touched index */}
               {activeX !== null && (
                 <g pointerEvents="none">
-                  <line x1={activeX} y1={0} x2={activeX} y2={CHART_H} stroke={LAKE.sky} strokeWidth="1.5" strokeDasharray="4,3" />
-                  <circle cx={activeX} cy={activeY} r="6" fill={LAKE.sky} stroke={C.ink} strokeWidth="2" />
+                  <line x1={activeX} y1={0} x2={activeX} y2={CHART_H} stroke="rgba(255,255,255,0.35)" strokeWidth="1" />
+                  <circle cx={activeX} cy={activeY} r="6" fill={C.text} stroke="#0b0b0b" strokeWidth="2" />
                 </g>
               )}
               {/* Invisible wide hit area so the whole chart height is touchable, not just the line */}
@@ -3112,7 +3117,7 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
                   const v = lo + f * (hi - lo);
                   return (
                     <g key={f}>
-                      <line x1={L} y1={y(v)} x2={W} y2={y(v)} stroke={C.textFaint} strokeWidth="1" strokeDasharray="3,4" />
+                      <line x1={L} y1={y(v)} x2={W} y2={y(v)} stroke="rgba(255,255,255,0.08)" strokeWidth="1" />
                       <text x={L - 4} y={y(v) + 3} fontSize="12" fill={C.handle} textAnchor="end" fontFamily={MONO}>{v.toFixed(0)}</text>
                     </g>
                   );
