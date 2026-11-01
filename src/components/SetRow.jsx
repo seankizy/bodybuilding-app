@@ -48,21 +48,21 @@ export function SetRow({ num, weight, reps, rir, repsTarget, type, isLastSet, do
   return (
     <div style={{ margin: "0 18px 4px", padding: "12px 14px", borderRadius: 14, background: done ? color + "14" : "#1c1c1c", transition: "background 0.2s", opacity: done ? 0.75 : 1 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-        <div style={{ width: 34, height: 34, borderRadius: 9, background: "#1c1c1c", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 17, fontWeight: 800, color: "#9a9a9a", fontFamily: SANS, flexShrink: 0 }}>{num}</div>
+        <div style={{ width: 34, height: 34, borderRadius: 9, background: "#1c1c1c", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 17, fontWeight: 800, color: "#c4c4c4", fontFamily: SANS, flexShrink: 0 }}>{num}</div>
         <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <div style={{ fontSize: 10, letterSpacing: 1.5, color: "#5c5c5c", textTransform: "uppercase", fontFamily: SANS }}>Weight</div>
+          <div style={{ fontSize: 10, letterSpacing: 1.5, color: "#a3a3a3", textTransform: "uppercase", fontFamily: SANS }}>Weight</div>
           <input className="wj-set-input" type="number" inputMode="decimal" value={weight} onChange={e => onW(e.target.value)} placeholder={gW ?? "0"} style={setInput(color)} />
-          <div style={{ fontSize: 10, color: "#5c5c5c", fontFamily: SANS }}>lbs</div>
+          <div style={{ fontSize: 10, color: "#a3a3a3", fontFamily: SANS }}>lbs</div>
         </div>
         <div style={{ color: "#2e2e2e", fontSize: 16, fontWeight: 300 }}>×</div>
         <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <div style={{ fontSize: 10, letterSpacing: 1.5, color: "#5c5c5c", textTransform: "uppercase", fontFamily: SANS }}>
+          <div style={{ fontSize: 10, letterSpacing: 1.5, color: "#a3a3a3", textTransform: "uppercase", fontFamily: SANS }}>
             Reps{repRange ? ` ${repRange.min}–${repRange.max}` : ""}
           </div>
           <input className="wj-set-input" type="number" inputMode="numeric" value={reps} onChange={e => onR(e.target.value)}
             placeholder={gR ?? (repRange ? `${repRange.min}–${repRange.max}` : "0")}
             style={{ ...setInput(color), borderColor: inRange ? C.green : belowRange ? C.red : aboveRange ? C.amber : undefined }} />
-          <div style={{ fontSize: 10, fontFamily: SANS, fontWeight: 700, color: inRange ? C.green : belowRange ? C.red : aboveRange ? C.amber : "#5c5c5c" }}>
+          <div style={{ fontSize: 10, fontFamily: SANS, fontWeight: 700, color: inRange ? C.green : belowRange ? C.red : aboveRange ? C.amber : "#a3a3a3" }}>
             {inRange ? "✓ in range" : belowRange ? "↓ go lighter" : aboveRange ? "↑ go heavier" : "reps"}
           </div>
         </div>
@@ -74,7 +74,7 @@ export function SetRow({ num, weight, reps, rir, repsTarget, type, isLastSet, do
       {/* RIR row: full-width 44px buttons; the feedback / Repeat line sits below in a fixed-height slot so nothing shifts */}
       <div style={{ marginTop: 10, paddingTop: 10, borderTop: "1px solid #262626" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <div style={{ fontSize: 10, letterSpacing: 1.5, color: "#5c5c5c", textTransform: "uppercase", fontFamily: SANS, flexShrink: 0, width: 26 }}>RIR</div>
+          <div style={{ fontSize: 10, letterSpacing: 1.5, color: "#a3a3a3", textTransform: "uppercase", fontFamily: SANS, flexShrink: 0, width: 26 }}>RIR</div>
           <div style={{ display: "flex", gap: 6, flex: 1 }}>
             {["0", "1", "2", "3", "4"].map(v => {
               const sel = String(rir) === v;
@@ -83,8 +83,8 @@ export function SetRow({ num, weight, reps, rir, repsTarget, type, isLastSet, do
                 <button key={v} onClick={() => onRIR(sel ? "" : v)} title={isGhost ? "Last session" : undefined} style={{
                   flex: 1, minWidth: 0, height: 44, borderRadius: 10, cursor: "pointer",
                   background: sel ? color : "#262626",
-                  color: sel ? "#131313" : isGhost ? "#c9c9c9" : "#9a9a9a",
-                  border: isGhost ? "1.5px dashed #5c5c5c" : "1.5px solid transparent", boxSizing: "border-box",
+                  color: sel ? "#131313" : isGhost ? "#c9c9c9" : "#c4c4c4",
+                  border: isGhost ? "1.5px dashed #a3a3a3" : "1.5px solid transparent", boxSizing: "border-box",
                   fontSize: 17, fontWeight: 800, fontFamily: SANS,
                 }}>{v}</button>
               );

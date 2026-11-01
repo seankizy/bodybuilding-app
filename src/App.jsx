@@ -66,7 +66,7 @@ function BackupNudge() {
       </div>
       <button onClick={async () => { if (await saveBackupFile(backupFromStorage())) setShow(false); }} style={{ padding: "7px 12px", borderRadius: 10, border: "none", background: LAKE.sky, color: "#080c0a", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: SANS }}>Back up</button>
       <button onClick={() => { try { localStorage.setItem("wj_backup_snooze", todayStr()); } catch {} setShow(false); }} style={{ width: 26, height: 26, borderRadius: 8, background: "#2a2a2a", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <X size={13} color="#9a9a9a" strokeWidth={2.5} />
+        <X size={13} color="#c4c4c4" strokeWidth={2.5} />
       </button>
     </div>
   );
@@ -642,7 +642,7 @@ function AppInner({ onBrief }) {
       <Shell>
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "100vh", gap: 12 }}>
           <div style={{ fontSize: 32 }}>🏋️</div>
-          <div style={{ fontSize: 14, color: "#5c5c5c", fontFamily: SANS, letterSpacing: 2 }}>LOADING…</div>
+          <div style={{ fontSize: 14, color: "#a3a3a3", fontFamily: SANS, letterSpacing: 2 }}>LOADING…</div>
         </div>
       </Shell>
     );
@@ -737,13 +737,13 @@ function AppInner({ onBrief }) {
                 </div>
               </div>
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 10, letterSpacing: 2, color: done ? color : "#9a9a9a", fontFamily: SANS, textTransform: "uppercase", marginBottom: 4 }}>
+                <div style={{ fontSize: 10, letterSpacing: 2, color: done ? color : "#c4c4c4", fontFamily: SANS, textTransform: "uppercase", marginBottom: 4 }}>
                   {done ? "✓ Rest complete — start!" : "Rest before this movement · 1m 30s"}
                 </div>
                 <div style={{ display: "flex", gap: 6 }}>
-                  {!done && running && <button onClick={pauseTimer} style={{ ...btnStyle("#2e2e2e", "#9a9a9a"), padding: "4px 10px", fontSize: 11 }}>⏸</button>}
+                  {!done && running && <button onClick={pauseTimer} style={{ ...btnStyle("#2e2e2e", "#c4c4c4"), padding: "4px 10px", fontSize: 11 }}>⏸</button>}
                   {!done && !running && <button onClick={resumeTimer} style={{ ...btnStyle(color + "22", color), padding: "4px 10px", fontSize: 11 }}>▶</button>}
-                  <button onClick={() => resetTimer(90)} style={{ ...btnStyle("#2e2e2e", "#9a9a9a"), padding: "4px 10px", fontSize: 11 }}>↺</button>
+                  <button onClick={() => resetTimer(90)} style={{ ...btnStyle("#2e2e2e", "#c4c4c4"), padding: "4px 10px", fontSize: 11 }}>↺</button>
                   {done && <button onClick={dismissTimer} style={{ ...btnStyle(color, "#131313"), padding: "4px 14px", fontSize: 12, fontWeight: 800 }}>Dismiss</button>}
                 </div>
               </div>
@@ -753,7 +753,7 @@ function AppInner({ onBrief }) {
 
         <div style={{ padding: "4px 18px 16px" }}>
           {activeMv.programRef && (
-            <div style={{ fontSize: 11, letterSpacing: 2, color: "#9a9a9a", textTransform: "uppercase", marginBottom: 6, fontFamily: SANS, display: "flex", alignItems: "center", gap: 8 }}>
+            <div style={{ fontSize: 11, letterSpacing: 2, color: "#c4c4c4", textTransform: "uppercase", marginBottom: 6, fontFamily: SANS, display: "flex", alignItems: "center", gap: 8 }}>
               <span>{prog?.title} · {activeMv.programRef}</span>
               {activeMv.substituted && <span style={{ color: "#ffb3d9", letterSpacing: 0.5 }}>· apartment swap</span>}
             </div>
@@ -804,14 +804,14 @@ function AppInner({ onBrief }) {
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 8 }}>
               <Pill color={color}>{activeMv.setsTarget} sets</Pill>
               <Pill color={color}>{activeMv.repsTarget} reps</Pill>
-              {activeMv.rest && <Pill color="#9a9a9a">Rest {activeMv.rest}</Pill>}
+              {activeMv.rest && <Pill color="#c4c4c4">Rest {activeMv.rest}</Pill>}
             </div>
           )}
           {(() => {
             const cue = activeMv.cue || programExFor(activeEntry, activeMv)?.cue;
             return cue ? (
               <div style={{ marginTop: 10, padding: "9px 12px", borderRadius: 10, background: "#1c1c1c", fontSize: 12, color: "#c9c9c9", fontFamily: SANS, lineHeight: 1.5 }}>
-                <span style={{ fontSize: 10, letterSpacing: 1.5, color: "#5c5c5c", textTransform: "uppercase", fontWeight: 700, marginRight: 6 }}>Cue</span>
+                <span style={{ fontSize: 10, letterSpacing: 1.5, color: "#a3a3a3", textTransform: "uppercase", fontWeight: 700, marginRight: 6 }}>Cue</span>
                 {cue}
               </div>
             ) : null;
@@ -820,7 +820,7 @@ function AppInner({ onBrief }) {
 
         {activeMv.lastSets && activeMv.lastDate && (
           <div style={{ margin: "0 18px 14px", padding: "10px 14px", borderRadius: 12, background: "#131313" }}>
-            <div style={{ fontSize: 10, letterSpacing: 2, color: "#5c5c5c", textTransform: "uppercase", fontFamily: SANS, marginBottom: 6 }}>
+            <div style={{ fontSize: 10, letterSpacing: 2, color: "#a3a3a3", textTransform: "uppercase", fontFamily: SANS, marginBottom: 6 }}>
               Last session · {fmtDate(activeMv.lastDate)}{activeMv.lastLocation ? ` · ${LOCATIONS[activeMv.lastLocation]?.short ?? ""}` : ""}
             </div>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
@@ -860,7 +860,7 @@ function AppInner({ onBrief }) {
           };
           // Emphasize only when the suggestion is a real change from last time
           const isChange = sug.action === "add_weight" || sug.action === "back_off" || sug.action === "deload" || sug.action === "block_start" || sug.action === "coach";
-          const accent = isChange ? LAKE.sky : "#5c5c5c";
+          const accent = isChange ? LAKE.sky : "#a3a3a3";
           const alreadyApplied = activeMv.sets.length > 0 && String(activeMv.sets[0].w) === String(sug.weight);
           return (
             <div style={{ margin: "0 18px 14px", padding: "12px 14px", borderRadius: 12, background: isChange ? LAKE.sky + "14" : "#131313" }}>
@@ -874,7 +874,7 @@ function AppInner({ onBrief }) {
                   </div>
                 )}
               </div>
-              <div style={{ fontSize: 11, color: "#9a9a9a", fontFamily: SANS, lineHeight: 1.5 }}>
+              <div style={{ fontSize: 11, color: "#c4c4c4", fontFamily: SANS, lineHeight: 1.5 }}>
                 {sug.reason}
               </div>
               {COACH_NOTES[canonName(activeMv.name)] && sug.action !== "coach" && !loggedSince(entries.filter(e => e.id !== activeEntry.id), activeMv.name, COACH_SINCE) && (
@@ -943,7 +943,7 @@ function AppInner({ onBrief }) {
                   {slotKey && progEx && smallBtn("From now on", () => applySets(setSug.to, true), true)}
                 </div>)}
               {progEx?.programSets != null && progEx.programSets !== progEx.sets && (
-                <div style={{ margin: "-6px 18px 14px", fontSize: 11, color: "#9a9a9a", fontFamily: SANS }}>
+                <div style={{ margin: "-6px 18px 14px", fontSize: 11, color: "#c4c4c4", fontFamily: SANS }}>
                   You set this slot to {progEx.sets} sets (program: {progEx.programSets}).{" "}
                   <span onClick={() => { saveSetOverride(slotKey, activeMv.name, null); applySets(progEx.programSets, false); }} style={{ color: "#ffb3d9", cursor: "pointer", fontWeight: 700 }}>Reset to program</span>
                 </div>
@@ -965,7 +965,7 @@ function AppInner({ onBrief }) {
               <button onClick={toggleStopwatch} style={{ ...btnStyle("#1c1c1c", "#e8e8e8"), padding: "8px 16px" }}>
                 {stopwatchRunning ? "⏸ Pause" : "▶ Resume"}
               </button>
-              <button onClick={resetStopwatch} style={{ ...btnStyle("#2e2e2e", "#9a9a9a"), padding: "8px 14px" }}>↺</button>
+              <button onClick={resetStopwatch} style={{ ...btnStyle("#2e2e2e", "#c4c4c4"), padding: "8px 14px" }}>↺</button>
               <button onClick={() => {
                 dismissStopwatch();
                 if (nextMv) { setActiveMvId(nextMv.id); setTimerState(null); }
@@ -1044,7 +1044,7 @@ function AppInner({ onBrief }) {
             {alreadyDone ? (
               <div style={{ display: "flex", gap: 10 }}>
                 <button onClick={() => updateMovement(activeEntry.id, activeMv.id, { doneAt: null })}
-                  style={{ flex: 1, padding: "13px", borderRadius: 14, background: "transparent", color: "#5c5c5c", fontSize: 13, fontFamily: SANS, fontWeight: 700, cursor: "pointer" }}>
+                  style={{ flex: 1, padding: "13px", borderRadius: 14, background: "transparent", color: "#a3a3a3", fontSize: 13, fontFamily: SANS, fontWeight: 700, cursor: "pointer" }}>
                   ↩ Undo Done
                 </button>
                 {nextMv && (
@@ -1098,7 +1098,7 @@ function AppInner({ onBrief }) {
           }
         />
         <div style={{ padding: "4px 18px 0" }}>
-          <input type="date" style={{ ...ghostInput, fontSize: 16, color: "#9a9a9a", marginBottom: 6 }}
+          <input type="date" style={{ ...ghostInput, fontSize: 16, color: "#c4c4c4", marginBottom: 6 }}
             value={activeEntry.date}
             onChange={e => updateEntry(activeEntry.id, { date: e.target.value })} />
           <input style={bigInput} value={activeEntry.customTitle}
@@ -1110,7 +1110,7 @@ function AppInner({ onBrief }) {
               <Pill color={color}>{prog.tag}</Pill>
               {!isRest && (
                 <div onClick={() => updateEntry(activeEntry.id, { location: activeEntry.location === "apartment" ? "equinox" : "apartment" })}
-                  style={{ cursor: "pointer", padding: "3px 10px", borderRadius: 999, fontSize: 11, fontWeight: 700, fontFamily: SANS, letterSpacing: 0.5, background: activeEntry.location === "apartment" ? "#ffb3d922" : "#1c1c1c", color: activeEntry.location === "apartment" ? "#ffb3d9" : "#9a9a9a", border: `1px solid ${activeEntry.location === "apartment" ? "#ffb3d955" : "#2e2e2e"}` }}>
+                  style={{ cursor: "pointer", padding: "3px 10px", borderRadius: 999, fontSize: 11, fontWeight: 700, fontFamily: SANS, letterSpacing: 0.5, background: activeEntry.location === "apartment" ? "#ffb3d922" : "#1c1c1c", color: activeEntry.location === "apartment" ? "#ffb3d9" : "#c4c4c4", border: `1px solid ${activeEntry.location === "apartment" ? "#ffb3d955" : "#2e2e2e"}` }}>
                   {LOCATIONS[activeEntry.location ?? "equinox"]?.short ?? "Equinox"} · tap to switch
                 </div>
               )}
@@ -1124,10 +1124,10 @@ function AppInner({ onBrief }) {
           const setR = (k, v) => updateEntry(activeEntry.id, { readiness: { ...r, [k]: r[k] === v ? null : v } });
           const row = (label, k, opts) => (
             <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
-              <div style={{ width: 64, fontSize: 12, color: "#9a9a9a", fontFamily: SANS }}>{label}</div>
+              <div style={{ width: 64, fontSize: 12, color: "#c4c4c4", fontFamily: SANS }}>{label}</div>
               {opts.map(([v, t]) => (
                 <button key={v} onClick={() => setR(k, v)}
-                  style={{ ...btnStyle(r[k] === v ? color : "#1c1c1c", r[k] === v ? "#131313" : "#9a9a9a"), flex: 1, padding: "8px 0", fontSize: 12, fontWeight: 700 }}>{t}</button>
+                  style={{ ...btnStyle(r[k] === v ? color : "#1c1c1c", r[k] === v ? "#131313" : "#c4c4c4"), flex: 1, padding: "8px 0", fontSize: 12, fontWeight: 700 }}>{t}</button>
               ))}
             </div>
           );
@@ -1152,7 +1152,7 @@ function AppInner({ onBrief }) {
           <div style={{ margin: "20px 18px", padding: "28px 20px", borderRadius: 16, background: "#1c1c1c", textAlign: "center" }}>
             <div style={{ display: "flex", justifyContent: "center", marginBottom: 10 }}><Moon size={34} color={C.textMid} strokeWidth={1.8} /></div>
             <div style={{ color: "#f2f2f2", fontWeight: 700, fontSize: 18 }}>Rest Day</div>
-            <div style={{ color: "#9a9a9a", fontSize: 13, marginTop: 4 }}>Recovery is part of the program</div>
+            <div style={{ color: "#c4c4c4", fontSize: 13, marginTop: 4 }}>Recovery is part of the program</div>
           </div>
         ) : (
           <>
@@ -1194,15 +1194,15 @@ function AppInner({ onBrief }) {
                         display: "flex", alignItems: "center", justifyContent: "center",
                         fontSize: 16, cursor: "pointer", transition: "all 0.15s",
                       }}>
-                        {mvDone ? <span style={{ color: "#131313" }}>✓</span> : <span style={{ fontSize: 11, fontFamily: SANS, fontWeight: 800, color: "#5c5c5c" }}>{mv.programRef ?? String(i + 1)}</span>}
+                        {mvDone ? <span style={{ color: "#131313" }}>✓</span> : <span style={{ fontSize: 11, fontFamily: SANS, fontWeight: 800, color: "#a3a3a3" }}>{mv.programRef ?? String(i + 1)}</span>}
                       </div>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ fontWeight: 700, fontSize: 15, color: mvDone ? "#e8e8e8" : "#f2f2f2", lineHeight: 1.3, textDecoration: mvDone ? "line-through" : "none", opacity: mvDone ? 0.7 : 1, display: "flex", alignItems: "center", gap: 6 }}>
-                          {mv.name || <span style={{ color: "#5c5c5c" }}>Unnamed movement</span>}
+                          {mv.name || <span style={{ color: "#a3a3a3" }}>Unnamed movement</span>}
                           {isPR && <span style={{ fontSize: 9, fontWeight: 800, color: "#0a0a0a", background: C.green, padding: "2px 6px", borderRadius: 4, letterSpacing: 0.5, flexShrink: 0 }}>PR</span>}
                           {mv.substituted && <span style={{ fontSize: 9, fontWeight: 800, color: "#ffb3d9", background: "#ffb3d922", padding: "2px 6px", borderRadius: 4, letterSpacing: 0.5, flexShrink: 0 }}>SWAP</span>}
                         </div>
-                        <div style={{ fontSize: 12, color: "#9a9a9a", marginTop: 3 }}>
+                        <div style={{ fontSize: 12, color: "#c4c4c4", marginTop: 3 }}>
                           {mv.repsTarget ? `${mv.setsTarget} sets · ${mv.repsTarget} reps` : `${mv.sets.length} sets logged`}
                           {mv.doneAt && <span style={{ color: "#e8e8e877", marginLeft: 6 }}>· done {new Date(mv.doneAt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}</span>}
                         </div>
@@ -1212,7 +1212,7 @@ function AppInner({ onBrief }) {
                               fontSize: 11, fontFamily: SANS,
                               padding: "3px 7px", borderRadius: 6,
                               background: s.r ? `${color}2a` : "#2e2e2e",
-                              color: s.r ? color : "#5c5c5c", fontWeight: 600,
+                              color: s.r ? color : "#a3a3a3", fontWeight: 600,
                             }}>
                               {s.w ? `${s.w}×` : ""}{s.r || "–"}
                             </span>
@@ -1223,12 +1223,12 @@ function AppInner({ onBrief }) {
                       <div style={{ display: "flex", flexDirection: "column", gap: 4, flexShrink: 0 }} onClick={e => e.stopPropagation()}>
                         <button
                           onClick={() => canMoveUp && reorderMovements(activeEntry.id, i, i - 1)}
-                          style={{ width: 32, height: 32, borderRadius: 8, background: canMoveUp ? "#1c1c1c" : "transparent", color: canMoveUp ? "#9a9a9a" : "#5c5c5c", fontSize: 14, cursor: canMoveUp ? "pointer" : "default", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: SANS }}>
+                          style={{ width: 32, height: 32, borderRadius: 8, background: canMoveUp ? "#1c1c1c" : "transparent", color: canMoveUp ? "#c4c4c4" : "#a3a3a3", fontSize: 14, cursor: canMoveUp ? "pointer" : "default", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: SANS }}>
                           ↑
                         </button>
                         <button
                           onClick={() => canMoveDown && reorderMovements(activeEntry.id, i, i + 1)}
-                          style={{ width: 32, height: 32, borderRadius: 8, background: canMoveDown ? "#1c1c1c" : "transparent", color: canMoveDown ? "#9a9a9a" : "#5c5c5c", fontSize: 14, cursor: canMoveDown ? "pointer" : "default", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: SANS }}>
+                          style={{ width: 32, height: 32, borderRadius: 8, background: canMoveDown ? "#1c1c1c" : "transparent", color: canMoveDown ? "#c4c4c4" : "#a3a3a3", fontSize: 14, cursor: canMoveDown ? "pointer" : "default", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: SANS }}>
                           ↓
                         </button>
                       </div>
@@ -1254,13 +1254,13 @@ function AppInner({ onBrief }) {
               <div style={{ padding: "18px", borderRadius: 16, background: "#e8e8e822", textAlign: "center" }}>
                 <div style={{ display: "flex", justifyContent: "center", marginBottom: 8 }}><Trophy size={30} color={C.accent} strokeWidth={2} /></div>
                 <div style={{ fontSize: 16, fontWeight: 800, color: "#e8e8e8", fontFamily: SANS }}>WORKOUT COMPLETE</div>
-                <div style={{ fontSize: 12, color: "#5c5c5c", marginTop: 4, fontFamily: SANS }}>
+                <div style={{ fontSize: 12, color: "#a3a3a3", marginTop: 4, fontFamily: SANS }}>
                   {new Date(activeEntry.completedAt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}
                   {" · "}
                   {activeEntry.movements.filter(m => m.doneAt).length}/{activeEntry.movements.length} movements done
                 </div>
                 <button onClick={() => updateEntry(activeEntry.id, { completedAt: null })}
-                  style={{ marginTop: 10, padding: "6px 16px", borderRadius: 8, background: "transparent", color: "#5c5c5c", fontSize: 12, fontFamily: SANS, cursor: "pointer" }}>
+                  style={{ marginTop: 10, padding: "6px 16px", borderRadius: 8, background: "transparent", color: "#a3a3a3", fontSize: 12, fontFamily: SANS, cursor: "pointer" }}>
                   Undo
                 </button>
               </div>
@@ -2087,9 +2087,9 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
     return (
       <Shell>
         <div style={{ padding: "52px 18px 20px", background: "linear-gradient(160deg,#131313 0%,#131313 100%)" }}>
-          <div style={{ fontSize: 11, letterSpacing: 3, color: "#5c5c5c", textTransform: "uppercase", fontFamily: SANS, marginBottom: 4 }}>Sets Per Muscle</div>
+          <div style={{ fontSize: 11, letterSpacing: 3, color: "#a3a3a3", textTransform: "uppercase", fontFamily: SANS, marginBottom: 4 }}>Sets Per Muscle</div>
           <div style={{ fontSize: 30, fontWeight: 900, color: "#f2f2f2", lineHeight: 1, fontFamily: SANS, letterSpacing: -0.5 }}>Volume</div>
-          <div style={{ fontSize: 13, color: "#5c5c5c", marginTop: 6, fontFamily: SANS }}>
+          <div style={{ fontSize: 13, color: "#a3a3a3", marginTop: 6, fontFamily: SANS }}>
             {viewingPast ? cycleLabel : `Since ${cycleLabel} · resets with each new cycle`}
           </div>
         </div>
@@ -2212,7 +2212,7 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
               </div>
             );
           })}
-          <div style={{ padding: "8px 4px", fontSize: 11, color: "#5c5c5c", fontFamily: SANS, lineHeight: 1.6 }}>
+          <div style={{ padding: "8px 4px", fontSize: 11, color: "#a3a3a3", fontFamily: SANS, lineHeight: 1.6 }}>
             MEV = minimum effective volume · MAV = max adaptive (the productive zone) · MRV = max recoverable. Stay in the green band for growth; back off if you're over MRV repeatedly.
           </div>
         </div>
@@ -2324,7 +2324,7 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
             <div style={{ fontSize: 13, fontWeight: 700, color: C.text, marginBottom: 12 }}>Push / Pull Balance <span style={{ fontSize: 11, color: C.textDim, fontWeight: 400 }}>last 8 days</span></div>
             {[
               { label: "Push", val: balance.push, color: C.accent },
-              { label: "Pull", val: balance.pull, color: "#9a9a9a" },
+              { label: "Pull", val: balance.pull, color: "#c4c4c4" },
               { label: "Legs", val: balance.legs, color: "#e8e8e8" },
             ].map(({ label, val, color }) => {
               const total = balance.push + balance.pull + balance.legs || 1;
@@ -2819,18 +2819,18 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
     return (
       <Shell>
         <div style={{ padding: "52px 18px 20px", background: "linear-gradient(160deg,#131313 0%,#131313 100%)" }}>
-          <div style={{ fontSize: 11, letterSpacing: 3, color: "#5c5c5c", textTransform: "uppercase", fontFamily: SANS, marginBottom: 4 }}>Backup & History</div>
+          <div style={{ fontSize: 11, letterSpacing: 3, color: "#a3a3a3", textTransform: "uppercase", fontFamily: SANS, marginBottom: 4 }}>Backup & History</div>
           <div style={{ fontSize: 30, fontWeight: 900, color: "#f2f2f2", lineHeight: 1, fontFamily: SANS, letterSpacing: -0.5 }}>Data</div>
           <div style={{ display: "flex", gap: 20, marginTop: 10 }}>
-            <div><div style={{ fontSize: 22, fontWeight: 900, color: "#e8e8e8", fontFamily: SANS }}>{totalSessions}</div><div style={{ fontSize: 10, color: "#5c5c5c", letterSpacing: 1, textTransform: "uppercase", fontFamily: SANS }}>Sessions</div></div>
-            <div><div style={{ fontSize: 22, fontWeight: 900, color: "#e8e8e8", fontFamily: SANS }}>{totalSets}</div><div style={{ fontSize: 10, color: "#5c5c5c", letterSpacing: 1, textTransform: "uppercase", fontFamily: SANS }}>Sets Logged</div></div>
-            <div><div style={{ fontSize: 22, fontWeight: 900, color: "#e05a4d", fontFamily: SANS }}>{weightLog.length}</div><div style={{ fontSize: 10, color: "#5c5c5c", letterSpacing: 1, textTransform: "uppercase", fontFamily: SANS }}>Weigh-ins</div></div>
+            <div><div style={{ fontSize: 22, fontWeight: 900, color: "#e8e8e8", fontFamily: SANS }}>{totalSessions}</div><div style={{ fontSize: 10, color: "#a3a3a3", letterSpacing: 1, textTransform: "uppercase", fontFamily: SANS }}>Sessions</div></div>
+            <div><div style={{ fontSize: 22, fontWeight: 900, color: "#e8e8e8", fontFamily: SANS }}>{totalSets}</div><div style={{ fontSize: 10, color: "#a3a3a3", letterSpacing: 1, textTransform: "uppercase", fontFamily: SANS }}>Sets Logged</div></div>
+            <div><div style={{ fontSize: 22, fontWeight: 900, color: "#e05a4d", fontFamily: SANS }}>{weightLog.length}</div><div style={{ fontSize: 10, color: "#a3a3a3", letterSpacing: 1, textTransform: "uppercase", fontFamily: SANS }}>Weigh-ins</div></div>
           </div>
         </div>
 
         {/* Export / Import + Coach Export */}
         <div style={{ padding: "16px 18px 8px" }}>
-          <div style={{ fontSize: 11, letterSpacing: 2, color: "#5c5c5c", textTransform: "uppercase", fontFamily: SANS, fontWeight: 700, marginBottom: 10 }}>Backup</div>
+          <div style={{ fontSize: 11, letterSpacing: 2, color: "#a3a3a3", textTransform: "uppercase", fontFamily: SANS, fontWeight: 700, marginBottom: 10 }}>Backup</div>
           <div style={{ display: "flex", gap: 10, marginBottom: 10 }}>
             <button onClick={() => downloadJSON(entries, weightLog, mesoOverride, cycleAnchor, macros, macroTargets)} style={{ flex: 1, padding: "13px", borderRadius: 14, background: "#e8e8e822", color: "#e8e8e8", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: SANS }}>
               Export JSON
@@ -2872,13 +2872,13 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
 
         {/* Filter by day */}
         <div style={{ padding: "8px 18px 4px" }}>
-          <div style={{ fontSize: 11, letterSpacing: 2, color: "#5c5c5c", textTransform: "uppercase", fontFamily: SANS, fontWeight: 700, marginBottom: 8 }}>Session History · {filtered.filter(e => {
+          <div style={{ fontSize: 11, letterSpacing: 2, color: "#a3a3a3", textTransform: "uppercase", fontFamily: SANS, fontWeight: 700, marginBottom: 8 }}>Session History · {filtered.filter(e => {
             if (!searchQuery) return true;
             const q = searchQuery.toLowerCase();
             return e.customTitle?.toLowerCase().includes(q) || e.note?.toLowerCase().includes(q) || e.movements.some(m => m.name?.toLowerCase().includes(q) || m.note?.toLowerCase().includes(q));
           }).length} shown</div>
           <div style={{ display: "flex", gap: 6, overflowX: "auto", paddingBottom: 4, scrollbarWidth: "none" }}>
-            <button onClick={() => setFilterDay(null)} style={{ flexShrink: 0, padding: "5px 12px", borderRadius: 8, border: "none", cursor: "pointer", fontFamily: SANS, fontSize: 11, fontWeight: 700, background: filterDay === null ? "#e8e8e8" : "#2e2e2e", color: filterDay === null ? "#131313" : "#9a9a9a" }}>All</button>
+            <button onClick={() => setFilterDay(null)} style={{ flexShrink: 0, padding: "5px 12px", borderRadius: 8, border: "none", cursor: "pointer", fontFamily: SANS, fontSize: 11, fontWeight: 700, background: filterDay === null ? "#e8e8e8" : "#2e2e2e", color: filterDay === null ? "#131313" : "#c4c4c4" }}>All</button>
             {Object.entries(PROGRAM).filter(([,d]) => d.exercises.length > 0).map(([dn, d]) => (
               <button key={dn} onClick={() => setFilterDay(filterDay === Number(dn) ? null : Number(dn))}
                 style={{ flexShrink: 0, padding: "5px 12px", borderRadius: 8, border: "none", cursor: "pointer", fontFamily: SANS, fontSize: 11, fontWeight: 700, background: filterDay === Number(dn) ? d.color : "#2e2e2e", color: filterDay === Number(dn) ? "#131313" : d.color }}>
@@ -2898,10 +2898,10 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
           return (
             <div style={{ padding: "4px 18px 100px" }}>
               {displayed.length === 0 ? (
-                <div style={{ padding: "40px 0", textAlign: "center", color: "#5c5c5c", fontSize: 13, fontFamily: SANS }}>No sessions found</div>
+                <div style={{ padding: "40px 0", textAlign: "center", color: "#a3a3a3", fontSize: 13, fontFamily: SANS }}>No sessions found</div>
               ) : displayed.map(entry => {
                 const prog = entry.programDay ? PROGRAM[entry.programDay] : null;
-                const color = prog?.color ?? "#5c5c5c";
+                const color = prog?.color ?? "#a3a3a3";
                 const expanded = expandedId === entry.id;
                 const entryColor = prog?.color ?? "#e8e8e8";
                 const totalVol = entry.movements.reduce((n, mv) =>
@@ -2912,33 +2912,33 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
                     <div onClick={() => setExpandedId(expanded ? null : entry.id)}
                       style={{ padding: "12px 14px", cursor: "pointer", display: "flex", alignItems: "center", gap: 12 }}>
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: 10, color: "#5c5c5c", fontFamily: SANS, letterSpacing: 1, marginBottom: 2 }}>
+                        <div style={{ fontSize: 10, color: "#a3a3a3", fontFamily: SANS, letterSpacing: 1, marginBottom: 2 }}>
                           {fmtDate(entry.date)}{entry.programDay ? ` · DAY ${entry.programDay}` : ""}
                           {entry.completedAt && <span style={{ color: "#e8e8e8", marginLeft: 6 }}>✓</span>}
                         </div>
                         <div style={{ fontSize: 15, fontWeight: 700, color: "#f2f2f2" }}>{entry.customTitle || "Custom Session"}</div>
-                        <div style={{ fontSize: 11, color: "#5c5c5c", fontFamily: SANS, marginTop: 2 }}>
+                        <div style={{ fontSize: 11, color: "#a3a3a3", fontFamily: SANS, marginTop: 2 }}>
                           {entry.movements.length} movements
-                          {totalVol > 0 && <span style={{ color: "#9a9a9a", marginLeft: 8 }}>{Math.round(totalVol).toLocaleString()} lbs total vol</span>}
+                          {totalVol > 0 && <span style={{ color: "#c4c4c4", marginLeft: 8 }}>{Math.round(totalVol).toLocaleString()} lbs total vol</span>}
                         </div>
                       </div>
-                      <div style={{ color: "#5c5c5c", fontSize: 14, fontFamily: SANS, transition: "transform 0.2s", transform: expanded ? "rotate(90deg)" : "none" }}>›</div>
+                      <div style={{ color: "#a3a3a3", fontSize: 14, fontFamily: SANS, transition: "transform 0.2s", transform: expanded ? "rotate(90deg)" : "none" }}>›</div>
                     </div>
                     {expanded && (
                       <div style={{ borderTop: "1px solid #2e2e2e", padding: "10px 14px 14px" }}>
-                        {entry.note && <div style={{ fontSize: 12, color: "#9a9a9a", marginBottom: 10, fontStyle: "italic" }}>{entry.note}</div>}
+                        {entry.note && <div style={{ fontSize: 12, color: "#c4c4c4", marginBottom: 10, fontStyle: "italic" }}>{entry.note}</div>}
                         {entry.movements.map(mv => (
                           <div key={mv.id} style={{ marginBottom: 10 }}>
-                            <div style={{ fontSize: 12, fontWeight: 700, color: "#9a9a9a", marginBottom: 4, fontFamily: SANS }}>
+                            <div style={{ fontSize: 12, fontWeight: 700, color: "#c4c4c4", marginBottom: 4, fontFamily: SANS }}>
                               {mv.programRef ? `${mv.programRef}. ` : ""}{mv.name}
                             </div>
                             <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
                               {mv.sets.map((s, si) => (
-                                <span key={si} style={{ fontSize: 11, fontFamily: SANS, padding: "3px 8px", borderRadius: 6, background: s.r ? entryColor + "22" : "#2e2e2e", color: s.r ? entryColor : "#5c5c5c" }}>
+                                <span key={si} style={{ fontSize: 11, fontFamily: SANS, padding: "3px 8px", borderRadius: 6, background: s.r ? entryColor + "22" : "#2e2e2e", color: s.r ? entryColor : "#a3a3a3" }}>
                                   {s.w ? `${s.w}×` : "BW×"}{s.r || "–"}
                                 </span>
                               ))}
-                              {mv.note && <span style={{ fontSize: 10, color: "#5c5c5c", fontStyle: "italic", alignSelf: "center", marginLeft: 4 }}>{mv.note}</span>}
+                              {mv.note && <span style={{ fontSize: 10, color: "#a3a3a3", fontStyle: "italic", alignSelf: "center", marginLeft: 4 }}>{mv.note}</span>}
                             </div>
                           </div>
                         ))}
@@ -2986,21 +2986,21 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
     return (
       <Shell>
         <div style={{ padding: "52px 18px 16px", background: "linear-gradient(160deg,#131313 0%,#131313 100%)" }}>
-          <div style={{ fontSize: 11, letterSpacing: 3, color: "#5c5c5c", textTransform: "uppercase", fontFamily: SANS, marginBottom: 4 }}>Body Weight</div>
+          <div style={{ fontSize: 11, letterSpacing: 3, color: "#a3a3a3", textTransform: "uppercase", fontFamily: SANS, marginBottom: 4 }}>Body Weight</div>
           <div style={{ fontSize: 30, fontWeight: 900, color: "#f2f2f2", lineHeight: 1, fontFamily: SANS, letterSpacing: -0.5 }}>Weight Tracker</div>
           {latest && (
             <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginTop: 8 }}>
               <span style={{ fontSize: 36, fontWeight: 900, color: "#e8e8e8", fontFamily: SANS }}>{latest.weight}</span>
-              <span style={{ fontSize: 16, color: "#5c5c5c", fontFamily: SANS }}>{latest.unit}</span>
+              <span style={{ fontSize: 16, color: "#a3a3a3", fontFamily: SANS }}>{latest.unit}</span>
               {diff !== null && (
-                <span style={{ fontSize: 14, fontFamily: SANS, fontWeight: 700, color: parseFloat(diff) < 0 ? "#e8e8e8" : parseFloat(diff) > 0 ? "#e05a4d" : "#9a9a9a" }}>
+                <span style={{ fontSize: 14, fontFamily: SANS, fontWeight: 700, color: parseFloat(diff) < 0 ? "#e8e8e8" : parseFloat(diff) > 0 ? "#e05a4d" : "#c4c4c4" }}>
                   {parseFloat(diff) > 0 ? "+" : ""}{diff} vs last
                 </span>
               )}
             </div>
           )}
           {totalDiff !== null && (
-            <div style={{ fontSize: 12, color: "#5c5c5c", fontFamily: SANS, marginTop: 4 }}>
+            <div style={{ fontSize: 12, color: "#a3a3a3", fontFamily: SANS, marginTop: 4 }}>
               Total change: {parseFloat(totalDiff) > 0 ? "+" : ""}{totalDiff} {sorted_w[0]?.unit} over {weightLog.length} entries
             </div>
           )}
@@ -3015,14 +3015,14 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
           return (
           <div style={{ margin: "16px 18px 0", padding: "16px", borderRadius: 16, background: "#131313" }}>
             <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 10 }}>
-              <div style={{ fontSize: 11, letterSpacing: 2, color: "#5c5c5c", textTransform: "uppercase", fontFamily: SANS }}>Progress</div>
+              <div style={{ fontSize: 11, letterSpacing: 2, color: "#a3a3a3", textTransform: "uppercase", fontFamily: SANS }}>Progress</div>
               {active ? (
                 <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
                   <span style={{ fontSize: 17, fontWeight: 800, color: "#e8e8e8", fontFamily: MONO }}>{active.weight}</span>
-                  <span style={{ fontSize: 11, color: "#9a9a9a", fontFamily: SANS }}>{fmtDate(active.date)}</span>
+                  <span style={{ fontSize: 11, color: "#c4c4c4", fontFamily: SANS }}>{fmtDate(active.date)}</span>
                 </div>
               ) : (
-                <div style={{ fontSize: 10, color: "#5c5c5c", fontFamily: SANS }}>Touch & drag to scrub</div>
+                <div style={{ fontSize: 10, color: "#a3a3a3", fontFamily: SANS }}>Touch & drag to scrub</div>
               )}
             </div>
             <svg
@@ -3036,7 +3036,7 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
                 return (
                   <g key={p}>
                     <line x1="30" y1={y} x2={CHART_W} y2={y} stroke="#2e2e2e" strokeWidth="1" strokeDasharray="3,4" />
-                    <text x="26" y={y + 4} fontSize="9" fill="#5c5c5c" textAnchor="end" fontFamily="monospace">{val}</text>
+                    <text x="26" y={y + 4} fontSize="9" fill="#a3a3a3" textAnchor="end" fontFamily="monospace">{val}</text>
                   </g>
                 );
               })}
@@ -3099,13 +3099,13 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
           return (
             <div style={{ margin: "12px 18px 0", padding: "16px", borderRadius: 16, background: "#131313" }}>
               <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 6 }}>
-                <div style={{ fontSize: 11, letterSpacing: 2, color: "#5c5c5c", textTransform: "uppercase", fontFamily: SANS }}>7-Day Average</div>
-                <div style={{ fontSize: 10, color: "#5c5c5c", fontFamily: SANS }}>dots = weigh-ins · line = 7-day avg</div>
+                <div style={{ fontSize: 11, letterSpacing: 2, color: "#a3a3a3", textTransform: "uppercase", fontFamily: SANS }}>7-Day Average</div>
+                <div style={{ fontSize: 10, color: "#a3a3a3", fontFamily: SANS }}>dots = weigh-ins · line = 7-day avg</div>
               </div>
               <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: 10 }}>
                 <span style={{ fontSize: 26, fontWeight: 900, color: "#e8e8e8", fontFamily: MONO }}>{curAvg != null ? curAvg.toFixed(1) : "–"}</span>
-                <span style={{ fontSize: 12, color: "#5c5c5c", fontFamily: SANS }}>lbs</span>
-                <span style={{ fontSize: 12, fontFamily: MONO, fontWeight: 700, color: delta == null ? "#5c5c5c" : "#9a9a9a" }}>
+                <span style={{ fontSize: 12, color: "#a3a3a3", fontFamily: SANS }}>lbs</span>
+                <span style={{ fontSize: 12, fontFamily: MONO, fontWeight: 700, color: delta == null ? "#a3a3a3" : "#c4c4c4" }}>
                   {delta == null ? "not enough data for last week" : `${delta > 0 ? "+" : ""}${delta.toFixed(1)} vs previous 7 days`}
                 </span>
               </div>
@@ -3115,14 +3115,14 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
                   return (
                     <g key={f}>
                       <line x1={L} y1={y(v)} x2={W} y2={y(v)} stroke="#2e2e2e" strokeWidth="1" strokeDasharray="3,4" />
-                      <text x={L - 4} y={y(v) + 3} fontSize="9" fill="#5c5c5c" textAnchor="end" fontFamily="monospace">{v.toFixed(0)}</text>
+                      <text x={L - 4} y={y(v) + 3} fontSize="9" fill="#a3a3a3" textAnchor="end" fontFamily="monospace">{v.toFixed(0)}</text>
                     </g>
                   );
                 })}
-                {shown.map((p, i) => <circle key={i} cx={x(p.date)} cy={y(p.v)} r="2.4" fill="#5c5c5c" />)}
+                {shown.map((p, i) => <circle key={i} cx={x(p.date)} cy={y(p.v)} r="2.4" fill="#a3a3a3" />)}
                 <path d={line} fill="none" stroke="#e8e8e8" strokeWidth="2.2" strokeLinejoin="round" strokeLinecap="round" />
-                <text x={L} y={H - 4} fontSize="9" fill="#5c5c5c" fontFamily="monospace">{fmtD(shown[0].date)}</text>
-                <text x={W} y={H - 4} fontSize="9" fill="#5c5c5c" textAnchor="end" fontFamily="monospace">{fmtD(lastDate)}</text>
+                <text x={L} y={H - 4} fontSize="9" fill="#a3a3a3" fontFamily="monospace">{fmtD(shown[0].date)}</text>
+                <text x={W} y={H - 4} fontSize="9" fill="#a3a3a3" textAnchor="end" fontFamily="monospace">{fmtD(lastDate)}</text>
               </svg>
             </div>
           );
@@ -3134,12 +3134,12 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
           </button>
         </div>
         <div style={{ padding: "8px 18px 4px" }}>
-          <div style={{ fontSize: 11, letterSpacing: 2, color: "#5c5c5c", textTransform: "uppercase", fontFamily: SANS, fontWeight: 700 }}>History · {weightLog.length} entries</div>
+          <div style={{ fontSize: 11, letterSpacing: 2, color: "#a3a3a3", textTransform: "uppercase", fontFamily: SANS, fontWeight: 700 }}>History · {weightLog.length} entries</div>
         </div>
         {sorted_w.length === 0 ? (
           <div style={{ margin: "20px 18px", padding: "32px 20px", borderRadius: 16, background: "#131313", textAlign: "center" }}>
             <div style={{ display: "flex", justifyContent: "center", marginBottom: 10 }}><Scale size={30} color={C.textDim} strokeWidth={1.8} /></div>
-            <div style={{ color: "#9a9a9a", fontSize: 14 }}>No weight entries yet</div>
+            <div style={{ color: "#c4c4c4", fontSize: 14 }}>No weight entries yet</div>
           </div>
         ) : (
           <div style={{ padding: "4px 18px 100px" }}>
@@ -3149,12 +3149,12 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
               return (
                 <div key={w.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", borderRadius: 14, background: "#131313", marginBottom: 8 }}>
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 11, color: "#5c5c5c", fontFamily: SANS }}>{fmtDate(w.date)}</div>
+                    <div style={{ fontSize: 11, color: "#a3a3a3", fontFamily: SANS }}>{fmtDate(w.date)}</div>
                     <div style={{ display: "flex", alignItems: "baseline", gap: 6, marginTop: 2 }}>
                       <span style={{ fontSize: 22, fontWeight: 900, color: "#f2f2f2", fontFamily: SANS }}>{w.weight}</span>
-                      <span style={{ fontSize: 12, color: "#5c5c5c", fontFamily: SANS }}>{w.unit}</span>
+                      <span style={{ fontSize: 12, color: "#a3a3a3", fontFamily: SANS }}>{w.unit}</span>
                       {d !== null && (
-                        <span style={{ fontSize: 12, fontFamily: SANS, fontWeight: 700, color: parseFloat(d) < 0 ? "#e8e8e8" : parseFloat(d) > 0 ? "#e05a4d" : "#9a9a9a" }}>
+                        <span style={{ fontSize: 12, fontFamily: SANS, fontWeight: 700, color: parseFloat(d) < 0 ? "#e8e8e8" : parseFloat(d) > 0 ? "#e05a4d" : "#c4c4c4" }}>
                           {parseFloat(d) > 0 ? "+" : ""}{d}
                         </span>
                       )}
@@ -3172,7 +3172,7 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
             onClick={() => setShowWeightForm(false)}>
             <div style={{ background: "#131313", width: "100%", borderRadius: "24px 24px 0 0", padding: "24px 18px 48px", borderBottom: "none" }}
               onClick={e => e.stopPropagation()}>
-              <div style={{ width: 36, height: 4, borderRadius: 2, background: "#5c5c5c", margin: "0 auto 20px" }} />
+              <div style={{ width: 36, height: 4, borderRadius: 2, background: "#a3a3a3", margin: "0 auto 20px" }} />
               <div style={{ fontSize: 18, fontWeight: 800, color: "#f2f2f2", marginBottom: 16, fontFamily: SANS }}>Log Weight</div>
               <div style={{ marginBottom: 14 }}>
                 <label style={labelStyle}>Date</label>
@@ -3183,7 +3183,7 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
                   <label style={labelStyle}>Weight</label>
                   <div style={{ display: "flex", gap: 6 }}>
                     {["lbs"].map(u => (
-                      <button key={u} onClick={() => setWeightUnit(u)} style={{ padding: "4px 12px", borderRadius: 8, border: "none", cursor: "pointer", fontFamily: SANS, fontSize: 12, fontWeight: 700, background: weightUnit === u ? "#e8e8e8" : "#2e2e2e", color: weightUnit === u ? "#131313" : "#9a9a9a" }}>{u}</button>
+                      <button key={u} onClick={() => setWeightUnit(u)} style={{ padding: "4px 12px", borderRadius: 8, border: "none", cursor: "pointer", fontFamily: SANS, fontSize: 12, fontWeight: 700, background: weightUnit === u ? "#e8e8e8" : "#2e2e2e", color: weightUnit === u ? "#131313" : "#c4c4c4" }}>{u}</button>
                     ))}
                   </div>
                 </div>
@@ -3207,10 +3207,10 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
   return (
     <Shell>
       <div style={{ padding: "52px 18px 20px", background: "linear-gradient(160deg,#131313 0%,#131313 100%)" }}>
-        <div style={{ fontSize: 11, letterSpacing: 3, color: "#5c5c5c", textTransform: "uppercase", fontFamily: SANS, marginBottom: 4 }}>Training Journal</div>
+        <div style={{ fontSize: 11, letterSpacing: 3, color: "#a3a3a3", textTransform: "uppercase", fontFamily: SANS, marginBottom: 4 }}>Training Journal</div>
         <div style={{ fontSize: 30, fontWeight: 900, color: "#f2f2f2", lineHeight: 1, fontFamily: SANS, letterSpacing: -0.5 }}>My Workouts</div>
         <div style={{ marginTop: 6 }}>
-          <div style={{ fontSize: 13, color: "#5c5c5c" }}>{entries.filter(e => e.completedAt).length} session{entries.filter(e => e.completedAt).length !== 1 ? "s" : ""} logged</div>
+          <div style={{ fontSize: 13, color: "#a3a3a3" }}>{entries.filter(e => e.completedAt).length} session{entries.filter(e => e.completedAt).length !== 1 ? "s" : ""} logged</div>
         </div>
       </div>
 
@@ -3284,7 +3284,7 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
         const fmtShort = d => new Date(d + "T12:00:00").toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
         if (!due) {
           return (
-            <div style={{ margin: "12px 18px 0", fontSize: 12, color: "#5c5c5c", fontFamily: SANS }}>
+            <div style={{ margin: "12px 18px 0", fontSize: 12, color: "#a3a3a3", fontFamily: SANS }}>
               Next coach check-in with Claude: {fmtShort(next)}
             </div>
           );
@@ -3300,7 +3300,7 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
             <div style={{ fontSize: 13, color: "#e8e8e8", fontFamily: SANS, lineHeight: 1.5 }}>
               {trend.now != null && <div style={{ marginBottom: 4 }}>7-day avg weight: <b>{trend.now.toFixed(1)} lb</b>{trend.before != null ? ` (was ${trend.before.toFixed(1)} two weeks ago)` : ""}</div>}
               <div>{advice.text}</div>
-              <div style={{ marginTop: 8, color: "#9a9a9a", fontSize: 12 }}>
+              <div style={{ marginTop: 8, color: "#c4c4c4", fontSize: 12 }}>
                 Export the coach report and backup, then send both to Claude in the Bodybuilding project with a line on energy, sleep, digestion and anything that felt off.
                 {blockReview ? " This one is the end-of-block review: bring progress photos too, and we'll plan the next block and deload." : ""}
               </div>
@@ -3336,8 +3336,8 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
                 <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}><Flame size={13} strokeWidth={2.2} /> Mesocycle {meso.cycle} · Week {meso.week} of {meso.total}</span>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ fontSize: 11, color: meso.isDeload ? C.amber : "#5c5c5c", fontFamily: SANS, fontWeight: meso.isDeload ? 700 : 400 }}>{meso.isDeload ? "DELOAD" : "ACCUMULATION"}</span>
-                <Pencil size={12} color="#5c5c5c" strokeWidth={2} />
+                <span style={{ fontSize: 11, color: meso.isDeload ? C.amber : "#a3a3a3", fontFamily: SANS, fontWeight: meso.isDeload ? 700 : 400 }}>{meso.isDeload ? "DELOAD" : "ACCUMULATION"}</span>
+                <Pencil size={12} color="#a3a3a3" strokeWidth={2} />
               </div>
             </div>
             <div style={{ display: "flex", gap: 5 }}>
@@ -3355,7 +3355,7 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
               </div>
             )}
             {!meso.isDeload && meso.week >= 3 && (
-              <div style={{ fontSize: 12, color: "#9a9a9a", fontFamily: SANS, marginTop: 8 }}>
+              <div style={{ fontSize: 12, color: "#c4c4c4", fontFamily: SANS, marginTop: 8 }}>
                 Add a set to lagging muscles this week · deload in {meso.total - meso.week} wk{meso.total - meso.week !== 1 ? "s" : ""}
               </div>
             )}
@@ -3465,16 +3465,16 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
       </div>
 
       {sorted.length === 0 ? (
-        <div style={{ margin: "40px 18px", textAlign: "center", color: "#5c5c5c" }}>
+        <div style={{ margin: "40px 18px", textAlign: "center", color: "#a3a3a3" }}>
           <div style={{ display: "flex", justifyContent: "center", marginBottom: 10 }}><ClipboardList size={30} color={C.textDim} strokeWidth={1.8} /></div>
-          <div style={{ fontSize: 15, fontWeight: 600, color: "#9a9a9a" }}>No sessions yet</div>
+          <div style={{ fontSize: 15, fontWeight: 600, color: "#c4c4c4" }}>No sessions yet</div>
           <div style={{ fontSize: 13, marginTop: 4 }}>Tap a program day above or log a new session</div>
         </div>
       ) : (
         <div style={{ padding: "4px 18px 100px" }}>
           {sorted.map(entry => {
             const prog = entry.programDay ? PROGRAM[entry.programDay] : null;
-            const color = prog?.color ?? "#5c5c5c";
+            const color = prog?.color ?? "#a3a3a3";
             const isRest = prog?.exercises?.length === 0;
             const mvDone = entry.movements.filter(m => m.sets.some(s => s.r)).length;
             const inProgress = !entry.completedAt && entry.date === today;
@@ -3486,7 +3486,7 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
                 <div style={{ padding: "14px 16px" }}>
                   <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 11, color: "#5c5c5c", fontFamily: SANS, letterSpacing: 1, marginBottom: 3, display: "flex", alignItems: "center", gap: 6 }}>
+                      <div style={{ fontSize: 11, color: "#a3a3a3", fontFamily: SANS, letterSpacing: 1, marginBottom: 3, display: "flex", alignItems: "center", gap: 6 }}>
                         {fmtDate(entry.date)}{prog ? ` · DAY ${entry.programDay}` : ""}
                         {entry.completedAt && <span style={{ color: "#e8e8e8", fontWeight: 800 }}>✓</span>}
                         {entry.location === "apartment" && (
@@ -3502,7 +3502,7 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
                       </div>
                       <div style={{ fontSize: 17, fontWeight: 800, color: "#f2f2f2", lineHeight: 1.2 }}>{entry.customTitle || "Untitled Session"}</div>
                       {entry.note ? (
-                        <div style={{ fontSize: 13, color: "#9a9a9a", marginTop: 5, lineHeight: 1.4, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>{entry.note}</div>
+                        <div style={{ fontSize: 13, color: "#c4c4c4", marginTop: 5, lineHeight: 1.4, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>{entry.note}</div>
                       ) : null}
                     </div>
                     <div style={{ fontSize: 20, color: "#2e2e2e" }}>›</div>
@@ -3510,19 +3510,19 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
                   {!isRest && entry.movements.length > 0 && (
                     <div style={{ marginTop: 10, display: "flex", flexWrap: "wrap", gap: 6 }}>
                       {entry.movements.slice(0, 5).map(mv => (
-                        <span key={mv.id} style={{ fontSize: 11, padding: "3px 9px", borderRadius: 7, background: "#1c1c1c", color: "#9a9a9a", fontFamily: SANS }}>
+                        <span key={mv.id} style={{ fontSize: 11, padding: "3px 9px", borderRadius: 7, background: "#1c1c1c", color: "#c4c4c4", fontFamily: SANS }}>
                           {mv.programRef ? `${mv.programRef}. ` : ""}{mv.name || "–"}
                         </span>
                       ))}
                       {entry.movements.length > 5 && (
-                        <span style={{ fontSize: 11, padding: "3px 9px", borderRadius: 7, background: "#1c1c1c", color: "#5c5c5c" }}>
+                        <span style={{ fontSize: 11, padding: "3px 9px", borderRadius: 7, background: "#1c1c1c", color: "#a3a3a3" }}>
                           +{entry.movements.length - 5} more
                         </span>
                       )}
                     </div>
                   )}
                   {!isRest && (
-                    <div style={{ marginTop: 8, fontSize: 11, color: "#5c5c5c", fontFamily: SANS }}>
+                    <div style={{ marginTop: 8, fontSize: 11, color: "#a3a3a3", fontFamily: SANS }}>
                       {entry.movements.length} movement{entry.movements.length !== 1 ? "s" : ""}
                       {mvDone > 0 && ` · ${mvDone} logged`}
                     </div>
@@ -3541,7 +3541,7 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
             onClick={e => e.stopPropagation()}>
             <div style={{ width: 36, height: 4, borderRadius: 2, background: "#2e2e2e", margin: "0 auto 20px" }} />
             <div style={{ fontSize: 18, fontWeight: 700, color: "#f2f2f2", marginBottom: 6, fontFamily: SANS }}>Set Mesocycle Week</div>
-            <div style={{ fontSize: 13, color: "#9a9a9a", marginBottom: 18, fontFamily: SANS, lineHeight: 1.5 }}>
+            <div style={{ fontSize: 13, color: "#c4c4c4", marginBottom: 18, fontFamily: SANS, lineHeight: 1.5 }}>
               Which week of the {MESO_LENGTH}-week block are you in right now? It'll count forward from today.
             </div>
             <div style={{ display: "flex", gap: 8, marginBottom: 20 }}>
@@ -3553,13 +3553,13 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
                   <button key={wk} onClick={() => { saveMesoOverride({ anchorDate: todayStr(), weekAtAnchor: wk }); setShowMesoEdit(false); }}
                     style={{ flex: 1, padding: "16px 0", borderRadius: 12, background: current ? "#e8e8e8" : "#1c1c1c", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
                     <span style={{ fontSize: 20, fontWeight: 800, fontFamily: MONO, color: current ? "#0a0a0a" : "#f2f2f2" }}>{wk}</span>
-                    <span style={{ fontSize: 9, fontFamily: SANS, fontWeight: 700, letterSpacing: 0.5, color: current ? "#0a0a0a" : "#5c5c5c" }}>{isDeloadWk ? "DELOAD" : "WK"}</span>
+                    <span style={{ fontSize: 9, fontFamily: SANS, fontWeight: 700, letterSpacing: 0.5, color: current ? "#0a0a0a" : "#a3a3a3" }}>{isDeloadWk ? "DELOAD" : "WK"}</span>
                   </button>
                 );
               })}
             </div>
             <button onClick={() => { saveMesoOverride(null); setShowMesoEdit(false); }}
-              style={{ width: "100%", padding: "12px", borderRadius: 12, background: "transparent", color: "#9a9a9a", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: SANS }}>
+              style={{ width: "100%", padding: "12px", borderRadius: 12, background: "transparent", color: "#c4c4c4", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: SANS }}>
               Reset to automatic
             </button>
           </div>
@@ -3571,14 +3571,14 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
           onClick={() => setShowNewModal(false)}>
           <div style={{ background: "#131313", width: "100%", borderRadius: "24px 24px 0 0", padding: "24px 18px 44px", borderBottom: "none", boxSizing: "border-box", overflow: "hidden" }}
             onClick={e => e.stopPropagation()}>
-            <div style={{ width: 36, height: 4, borderRadius: 2, background: "#5c5c5c", margin: "0 auto 20px" }} />
+            <div style={{ width: 36, height: 4, borderRadius: 2, background: "#a3a3a3", margin: "0 auto 20px" }} />
             <div style={{ fontSize: 18, fontWeight: 800, color: "#f2f2f2", marginBottom: 16, fontFamily: SANS }}>Log Session</div>
             <div style={{ marginBottom: 14 }}>
               <label style={labelStyle}>Date</label>
               <div style={{ position: "relative" }}>
                 <div style={{ ...modalInput, display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer" }}>
                   <span>{newDate ? new Date(newDate + "T12:00:00").toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", year: "numeric" }) : "Select date"}</span>
-                  <span style={{ fontSize: 11, color: "#9a9a9a" }}>tap to change</span>
+                  <span style={{ fontSize: 11, color: "#c4c4c4" }}>tap to change</span>
                 </div>
                 <input type="date" value={newDate} onChange={e => setNewDate(e.target.value)}
                   style={{ position: "absolute", inset: 0, opacity: 0, width: "100%", height: "100%", cursor: "pointer" }} />
@@ -3587,7 +3587,7 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
             <div style={{ marginBottom: 18 }}>
               <label style={labelStyle}>Program Day (optional)</label>
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 6 }}>
-                <div onClick={() => setNewProgramDay(null)} style={{ padding: "7px 14px", borderRadius: 10, cursor: "pointer", fontSize: 13, fontWeight: 700, fontFamily: SANS, background: newProgramDay === null ? "#e8e8e8" : "#1c1c1c", color: newProgramDay === null ? "#131313" : "#9a9a9a" }}>Custom</div>
+                <div onClick={() => setNewProgramDay(null)} style={{ padding: "7px 14px", borderRadius: 10, cursor: "pointer", fontSize: 13, fontWeight: 700, fontFamily: SANS, background: newProgramDay === null ? "#e8e8e8" : "#1c1c1c", color: newProgramDay === null ? "#131313" : "#c4c4c4" }}>Custom</div>
                 {Object.entries(PROGRAM).map(([dn, d]) => (
                   <div key={dn} onClick={() => setNewProgramDay(Number(dn))} style={{ padding: "8px 12px", borderRadius: 10, cursor: "pointer", fontFamily: SANS, background: newProgramDay === Number(dn) ? d.color : "#1c1c1c", color: newProgramDay === Number(dn) ? "#131313" : d.color, textAlign: "center", minWidth: 56 }}>
                     <div style={{ fontSize: 15, fontWeight: 800 }}>{dn}</div>
@@ -3602,11 +3602,11 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
                 const subCount = PROGRAM[newProgramDay].exercises.filter(ex => GYM_SUBS[`${newProgramDay}.${ex.id}`]).length;
                 return (
                   <div style={{ marginTop: 10 }}>
-                    <div style={{ fontSize: 12, color: "#5c5c5c", fontFamily: SANS }}>→ {PROGRAM[newProgramDay].title} · {PROGRAM[newProgramDay].exercises.length} exercises pre-loaded</div>
+                    <div style={{ fontSize: 12, color: "#a3a3a3", fontFamily: SANS }}>→ {PROGRAM[newProgramDay].title} · {PROGRAM[newProgramDay].exercises.length} exercises pre-loaded</div>
                     {last ? (
                       <div style={{ fontSize: 12, color: "#e8e8e877", fontFamily: SANS, marginTop: 4 }}>✓ Last session {fmtDate(last.date)} · weights carried forward</div>
                     ) : (
-                      <div style={{ fontSize: 12, color: "#5c5c5c", fontFamily: SANS, marginTop: 4 }}>No previous session found · sets will start blank</div>
+                      <div style={{ fontSize: 12, color: "#a3a3a3", fontFamily: SANS, marginTop: 4 }}>No previous session found · sets will start blank</div>
                     )}
                     {newLocation !== "equinox" && subCount > 0 && (
                       <div style={{ fontSize: 12, color: "#ff3fc8", fontFamily: SANS, marginTop: 4 }}>⇄ {subCount} exercise{subCount !== 1 ? "s" : ""} swapped for apartment equipment</div>
@@ -3620,13 +3620,13 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
               <div style={{ display: "flex", gap: 8, marginTop: 6 }}>
                 {Object.entries(LOCATIONS).map(([key, loc]) => (
                   <div key={key} onClick={() => setNewLocation(key)}
-                    style={{ flex: 1, padding: "10px 12px", borderRadius: 10, cursor: "pointer", fontFamily: SANS, fontSize: 13, fontWeight: 700, textAlign: "center", background: newLocation === key ? "#e8e8e8" : "#1c1c1c", color: newLocation === key ? "#131313" : "#9a9a9a" }}>
+                    style={{ flex: 1, padding: "10px 12px", borderRadius: 10, cursor: "pointer", fontFamily: SANS, fontSize: 13, fontWeight: 700, textAlign: "center", background: newLocation === key ? "#e8e8e8" : "#1c1c1c", color: newLocation === key ? "#131313" : "#c4c4c4" }}>
                     {loc.label}
                   </div>
                 ))}
               </div>
               {newLocation !== "equinox" && (
-                <div style={{ fontSize: 11, color: "#5c5c5c", fontFamily: SANS, marginTop: 6, lineHeight: 1.4 }}>
+                <div style={{ fontSize: 11, color: "#a3a3a3", fontFamily: SANS, marginTop: 6, lineHeight: 1.4 }}>
                   Exercises with no apartment-friendly equivalent stay as programmed. Edit any movement name in-session if the swap still doesn't fit.
                 </div>
               )}

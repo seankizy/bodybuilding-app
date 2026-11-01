@@ -34,7 +34,7 @@ export const PROGRAM = {
       { id: "F", name: "Cable Pushdown", sets: 3, reps: "10–15", rest: "1m", type: "isolation", muscle: "Triceps" },
     ],
   },
-  3: { title: "Rest Day", tag: "REST", color: "#9a9a9a", exercises: [] },
+  3: { title: "Rest Day", tag: "REST", color: "#c4c4c4", exercises: [] },
   4: {
     title: "Pull, Delts & Biceps",
     tag: "PULL",
@@ -49,7 +49,7 @@ export const PROGRAM = {
       { id: "G", name: "DB Hammer Curl", sets: 3, reps: "10–12", rest: "1m", type: "isolation", muscle: "Biceps" },
     ],
   },
-  5: { title: "Rest Day", tag: "REST", color: "#9a9a9a", exercises: [] },
+  5: { title: "Rest Day", tag: "REST", color: "#c4c4c4", exercises: [] },
   6: {
     title: "Lower B: Quads & Glutes",
     tag: "LOWER B",

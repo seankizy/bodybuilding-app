@@ -60,7 +60,7 @@ export function ResumeBar({ session, onResume, onDismiss }) {
           <div style={{ fontSize: 13, fontWeight: 700, color: LAKE.sky, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
             {session.customTitle || "Session in progress"}{dateLabel}
           </div>
-          <div style={{ fontSize: 11, color: "#9a9a9a", fontFamily: SANS, marginTop: 1 }}>
+          <div style={{ fontSize: 11, color: "#c4c4c4", fontFamily: SANS, marginTop: 1 }}>
             {mvDone}/{mvTotal} movements done · tap to resume
           </div>
         </div>
@@ -68,7 +68,7 @@ export function ResumeBar({ session, onResume, onDismiss }) {
       </div>
       <button onClick={(e) => { e.stopPropagation(); if (window.confirm("Dismiss this in-progress session? It stays in your history — this just stops the reminder.")) onDismiss(); }}
         style={{ width: 26, height: 26, borderRadius: 8, background: "#2a2a2a", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-        <X size={13} color="#9a9a9a" strokeWidth={2.5} />
+        <X size={13} color="#c4c4c4" strokeWidth={2.5} />
       </button>
     </div>
   );

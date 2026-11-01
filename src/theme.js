@@ -10,7 +10,7 @@ export const MONO = "'DM Mono', 'SF Mono', ui-monospace, monospace";
 // inversion of the same print design — near-black bg, off-white text, light-gray rules.
 export const LAKE = {
   sky:       "#e8e8e8",  // near-white — primary accent / CTAs (was sky blue)
-  peak:      "#9a9a9a",  // mid-gray — secondary / info (was atmospheric blue)
+  peak:      "#c4c4c4",  // mid-gray — secondary / info (was atmospheric blue)
   ochre:     "#c9c9c9",  // light gray — warnings / deload (was ochre)
   forest:    "#ffffff",  // pure white — success / in-range / PRs (was forest green)
   lake:      "#b8b8b8",  // light-mid gray — volume productive zone (was lake teal)
@@ -23,8 +23,8 @@ export const C = {
   line: "#2e2e2e",
   lineSoft: "#1c1c1c",
   text: "#f2f2f2",
-  textMid: "#9a9a9a",
-  textDim: "#5c5c5c",
+  textMid: "#c4c4c4",   // brighter secondary text for readability (Nov 1, 2026)
+  textDim: "#a3a3a3",   // was #5c5c5c, too faint on black
   accent: LAKE.sky,      // near-white — primary interactive
   // Status hues (Nov 2026): the base stays black/gray with a near-white accent, but
   // status needs a real color so success, warnings and alerts read at a glance.

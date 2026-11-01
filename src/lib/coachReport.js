@@ -21,7 +21,7 @@ export async function downloadCoachPDF(entries, weightLog, mesoInfo, windowDays 
   const CONTENT_W = PAGE_W - MARGIN * 2;
   let y = MARGIN;
 
-  const BLACK = "#111111", DARK = "#333333", MID = "#767676", LIGHTG = "#b8b8b8", FAINT = "#e8e8e8", PANEL = "#f5f5f5";
+  const BLACK = "#111111", DARK = "#333333", MID = "#a3a3a3", LIGHTG = "#b8b8b8", FAINT = "#e8e8e8", PANEL = "#f5f5f5";
 
   function checkPageBreak(needed) {
     if (y + needed > PAGE_H - MARGIN) { doc.addPage(); y = MARGIN; }
