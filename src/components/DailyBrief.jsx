@@ -5,7 +5,7 @@ export function DailyBrief({ brief, onClose }) {
   const tile = { flex: 1, padding: "12px 10px", borderRadius: 12, background: "#1c1c1c", textAlign: "center" };
   const big = { fontSize: 22, fontWeight: 800, color: "#f2f2f2", fontFamily: SANS, lineHeight: 1.1 };
   const small = { fontSize: 11, color: "#c4c4c4", fontFamily: SANS, marginTop: 4, lineHeight: 1.3 };
-  const gold = "#ff3fc8";
+  const gold = "#e0a83a";
   const { week, session, recovery, upcoming } = brief;
   const wt = week.weight;
   const dateLabel = new Date(brief.today + "T12:00:00").toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
@@ -24,7 +24,7 @@ export function DailyBrief({ brief, onClose }) {
       </div>
       <div style={{ fontSize: 13, fontWeight: 700, color: gold, fontFamily: SANS, marginTop: 3 }}>{l.target}</div>
       {l.pr && <div style={{ fontSize: 12, fontWeight: 700, color: "#f2f2f2", fontFamily: SANS, marginTop: 3 }}>{l.pr}</div>}
-      {l.plateau && <div style={{ fontSize: 12, color: "#ffb3d9", fontFamily: SANS, marginTop: 3, lineHeight: 1.4 }}>{l.plateau}</div>}
+      {l.plateau && <div style={{ fontSize: 12, color: "#f0c97a", fontFamily: SANS, marginTop: 3, lineHeight: 1.4 }}>{l.plateau}</div>}
     </div>
   );
   const bullet = (lead, text) => (

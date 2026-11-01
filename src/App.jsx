@@ -755,7 +755,7 @@ function AppInner({ onBrief }) {
           {activeMv.programRef && (
             <div style={{ fontSize: 11, letterSpacing: 2, color: "#c4c4c4", textTransform: "uppercase", marginBottom: 6, fontFamily: SANS, display: "flex", alignItems: "center", gap: 8 }}>
               <span>{prog?.title} · {activeMv.programRef}</span>
-              {activeMv.substituted && <span style={{ color: "#ffb3d9", letterSpacing: 0.5 }}>· apartment swap</span>}
+              {activeMv.substituted && <span style={{ color: "#f0c97a", letterSpacing: 0.5 }}>· apartment swap</span>}
             </div>
           )}
           {(() => {
@@ -778,7 +778,7 @@ function AppInner({ onBrief }) {
             placeholder="Movement name…"
           />
           {activeMv.swappedFrom && (
-            <div style={{ marginTop: 6, fontSize: 11, color: "#ffb3d9", fontFamily: SANS, letterSpacing: 0.3 }}>
+            <div style={{ marginTop: 6, fontSize: 11, color: "#f0c97a", fontFamily: SANS, letterSpacing: 0.3 }}>
               swapped from {activeMv.swappedFrom}{activeMv.swapReason && activeMv.swapReason !== "Renamed" ? ` (${activeMv.swapReason.toLowerCase()})` : ""}
             </div>
           )}
@@ -878,7 +878,7 @@ function AppInner({ onBrief }) {
                 {sug.reason}
               </div>
               {COACH_NOTES[canonName(activeMv.name)] && sug.action !== "coach" && !loggedSince(entries.filter(e => e.id !== activeEntry.id), activeMv.name, COACH_SINCE) && (
-                <div style={{ fontSize: 11, color: "#ff3fc8", fontFamily: SANS, lineHeight: 1.5, marginTop: 6 }}>
+                <div style={{ fontSize: 11, color: "#e0a83a", fontFamily: SANS, lineHeight: 1.5, marginTop: 6 }}>
                   {COACH_NOTES[canonName(activeMv.name)]}
                 </div>
               )}
@@ -929,15 +929,15 @@ function AppInner({ onBrief }) {
             if (forward && slotKey && progEx) saveSetOverride(slotKey, activeMv.name, to === (progEx.programSets ?? -1) ? null : to);
           };
           const smallBtn = (txt, onClick, filled) => (
-            <button onClick={onClick} style={{ ...btnStyle(filled ? "#ffb3d9" : "#2e2e2e", filled ? "#131313" : "#e8e8e8"), padding: "7px 12px", fontSize: 12, fontWeight: 800, marginTop: 10, marginRight: 8 }}>{txt}</button>
+            <button onClick={onClick} style={{ ...btnStyle(filled ? "#f0c97a" : "#2e2e2e", filled ? "#131313" : "#e8e8e8"), padding: "7px 12px", fontSize: 12, fontWeight: 800, marginTop: 10, marginRight: 8 }}>{txt}</button>
           );
           return (
             <>
-              {level && level !== "good" && card("#ffb3d9", `Recovery · ${level}`, READINESS_TEXT[level])}
+              {level && level !== "good" && card("#f0c97a", `Recovery · ${level}`, READINESS_TEXT[level])}
               {pr && card("#e8e8e8", "PR in reach", `${pr.weight} × ${pr.reps} beats your best ever (${pr.bestW} × ${pr.bestR}, ${fmtDate(pr.bestDate)}).`)}
-              {plateau && card("#ff3fc8", `Stalled · ${plateau.sessions} sessions`, `No new best since ${fmtDate(plateau.since)}. ${plateau.fix}`,
+              {plateau && card("#e0a83a", `Stalled · ${plateau.sessions} sessions`, `No new best since ${fmtDate(plateau.since)}. ${plateau.fix}`,
                 plateau.kind === "reset" && plateau.weight ? smallBtn(`Use ${plateau.weight} today`, () => updateMovement(activeEntry.id, activeMv.id, { sets: activeMv.sets.map(st => (st.r !== "" && st.r != null) ? st : { ...st, w: String(plateau.weight) }) }), true) : null)}
-              {setSug && card("#ffb3d9", setSug.dir === "add" ? `Add a set · ${setSug.to} sets` : `Drop a set · ${setSug.to} sets`, setSug.reason,
+              {setSug && card("#f0c97a", setSug.dir === "add" ? `Add a set · ${setSug.to} sets` : `Drop a set · ${setSug.to} sets`, setSug.reason,
                 <div>
                   {smallBtn("Today only", () => applySets(setSug.to, false), false)}
                   {slotKey && progEx && smallBtn("From now on", () => applySets(setSug.to, true), true)}
@@ -945,7 +945,7 @@ function AppInner({ onBrief }) {
               {progEx?.programSets != null && progEx.programSets !== progEx.sets && (
                 <div style={{ margin: "-6px 18px 14px", fontSize: 11, color: "#c4c4c4", fontFamily: SANS }}>
                   You set this slot to {progEx.sets} sets (program: {progEx.programSets}).{" "}
-                  <span onClick={() => { saveSetOverride(slotKey, activeMv.name, null); applySets(progEx.programSets, false); }} style={{ color: "#ffb3d9", cursor: "pointer", fontWeight: 700 }}>Reset to program</span>
+                  <span onClick={() => { saveSetOverride(slotKey, activeMv.name, null); applySets(progEx.programSets, false); }} style={{ color: "#f0c97a", cursor: "pointer", fontWeight: 700 }}>Reset to program</span>
                 </div>
               )}
             </>
@@ -1110,7 +1110,7 @@ function AppInner({ onBrief }) {
               <Pill color={color}>{prog.tag}</Pill>
               {!isRest && (
                 <div onClick={() => updateEntry(activeEntry.id, { location: activeEntry.location === "apartment" ? "equinox" : "apartment" })}
-                  style={{ cursor: "pointer", padding: "3px 10px", borderRadius: 999, fontSize: 11, fontWeight: 700, fontFamily: SANS, letterSpacing: 0.5, background: activeEntry.location === "apartment" ? "#ffb3d922" : "#1c1c1c", color: activeEntry.location === "apartment" ? "#ffb3d9" : "#c4c4c4", border: `1px solid ${activeEntry.location === "apartment" ? "#ffb3d955" : "#2e2e2e"}` }}>
+                  style={{ cursor: "pointer", padding: "3px 10px", borderRadius: 999, fontSize: 11, fontWeight: 700, fontFamily: SANS, letterSpacing: 0.5, background: activeEntry.location === "apartment" ? "#f0c97a22" : "#1c1c1c", color: activeEntry.location === "apartment" ? "#f0c97a" : "#c4c4c4", border: `1px solid ${activeEntry.location === "apartment" ? "#f0c97a55" : "#2e2e2e"}` }}>
                   {LOCATIONS[activeEntry.location ?? "equinox"]?.short ?? "Equinox"} · tap to switch
                 </div>
               )}
@@ -1137,7 +1137,7 @@ function AppInner({ onBrief }) {
               <div style={{ margin: "0 18px 6px" }}>
                 {row("Sleep", "sleep", READINESS_SLEEP)}
                 {row("Soreness", "soreness", READINESS_SORE)}
-                {level && <div style={{ fontSize: 12, color: level === "good" ? "#c9c9c9" : "#ffb3d9", fontFamily: SANS, lineHeight: 1.5, marginTop: 2 }}>{READINESS_TEXT[level]}</div>}
+                {level && <div style={{ fontSize: 12, color: level === "good" ? "#c9c9c9" : "#f0c97a", fontFamily: SANS, lineHeight: 1.5, marginTop: 2 }}>{READINESS_TEXT[level]}</div>}
               </div>
             </>
           );
@@ -1200,7 +1200,7 @@ function AppInner({ onBrief }) {
                         <div style={{ fontWeight: 700, fontSize: 15, color: mvDone ? "#e8e8e8" : "#f2f2f2", lineHeight: 1.3, textDecoration: mvDone ? "line-through" : "none", opacity: mvDone ? 0.7 : 1, display: "flex", alignItems: "center", gap: 6 }}>
                           {mv.name || <span style={{ color: "#a3a3a3" }}>Unnamed movement</span>}
                           {isPR && <span style={{ fontSize: 9, fontWeight: 800, color: "#0a0a0a", background: C.green, padding: "2px 6px", borderRadius: 4, letterSpacing: 0.5, flexShrink: 0 }}>PR</span>}
-                          {mv.substituted && <span style={{ fontSize: 9, fontWeight: 800, color: "#ffb3d9", background: "#ffb3d922", padding: "2px 6px", borderRadius: 4, letterSpacing: 0.5, flexShrink: 0 }}>SWAP</span>}
+                          {mv.substituted && <span style={{ fontSize: 9, fontWeight: 800, color: "#f0c97a", background: "#f0c97a22", padding: "2px 6px", borderRadius: 4, letterSpacing: 0.5, flexShrink: 0 }}>SWAP</span>}
                         </div>
                         <div style={{ fontSize: 12, color: "#c4c4c4", marginTop: 3 }}>
                           {mv.repsTarget ? `${mv.setsTarget} sets · ${mv.repsTarget} reps` : `${mv.sets.length} sets logged`}
@@ -3293,8 +3293,8 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
         const advice = surplusAdvice(trend.rate);
         const btn = { flex: 1, padding: "11px 8px", borderRadius: 12, border: "none", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: SANS };
         return (
-          <div style={{ margin: "12px 18px 4px", padding: "14px 16px", borderRadius: 14, background: "#ff3fc814", border: "1px solid #ff3fc844" }}>
-            <div style={{ fontSize: 11, letterSpacing: 2, color: "#ff3fc8", textTransform: "uppercase", fontFamily: SANS, fontWeight: 700, marginBottom: 6 }}>
+          <div style={{ margin: "12px 18px 4px", padding: "14px 16px", borderRadius: 14, background: "#e0a83a14", border: "1px solid #e0a83a44" }}>
+            <div style={{ fontSize: 11, letterSpacing: 2, color: "#e0a83a", textTransform: "uppercase", fontFamily: SANS, fontWeight: 700, marginBottom: 6 }}>
               {blockReview ? "Block review due" : "Check-in due"} · {fmtShort(latest)}
             </div>
             <div style={{ fontSize: 13, color: "#e8e8e8", fontFamily: SANS, lineHeight: 1.5 }}>
@@ -3315,7 +3315,7 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
                   const bump = t => ({ ...t, c: Math.max(0, t.c + advice.carbs) });
                   saveMacroTargets({ training: bump(macroTargets.training), rest: bump(macroTargets.rest) });
                   markCheckinDone(latest);
-                }} style={{ ...btn, background: "#ff3fc8", color: "#131313" }}>
+                }} style={{ ...btn, background: "#e0a83a", color: "#131313" }}>
                   {advice.action === "add" ? "Add" : "Remove"} 38g carbs & done
                 </button>
               )}
@@ -3490,7 +3490,7 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
                         {fmtDate(entry.date)}{prog ? ` · DAY ${entry.programDay}` : ""}
                         {entry.completedAt && <span style={{ color: "#e8e8e8", fontWeight: 800 }}>✓</span>}
                         {entry.location === "apartment" && (
-                          <span style={{ fontSize: 9, fontWeight: 700, color: "#ff3fc8", background: "#ff3fc822", padding: "2px 7px", borderRadius: 4, letterSpacing: 0.5, textTransform: "uppercase" }}>
+                          <span style={{ fontSize: 9, fontWeight: 700, color: "#e0a83a", background: "#e0a83a22", padding: "2px 7px", borderRadius: 4, letterSpacing: 0.5, textTransform: "uppercase" }}>
                             Apartment
                           </span>
                         )}
@@ -3609,7 +3609,7 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
                       <div style={{ fontSize: 12, color: "#a3a3a3", fontFamily: SANS, marginTop: 4 }}>No previous session found · sets will start blank</div>
                     )}
                     {newLocation !== "equinox" && subCount > 0 && (
-                      <div style={{ fontSize: 12, color: "#ff3fc8", fontFamily: SANS, marginTop: 4 }}>⇄ {subCount} exercise{subCount !== 1 ? "s" : ""} swapped for apartment equipment</div>
+                      <div style={{ fontSize: 12, color: "#e0a83a", fontFamily: SANS, marginTop: 4 }}>⇄ {subCount} exercise{subCount !== 1 ? "s" : ""} swapped for apartment equipment</div>
                     )}
                   </div>
                 );
