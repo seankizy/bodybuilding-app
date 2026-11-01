@@ -2298,6 +2298,11 @@ function AppInner({ onBrief }) {
   const [macroFlashKey, setMacroFlashKey] = useState(null);
   const [macroHighlightId, setMacroHighlightId] = useState(null);
   const macroFlashTimer = useRef(null);
+  // PR moments: a toast + haptic the first time a logged set beats the movement's
+  // previous best e1RM. Tracked per entry+movement so the same PR never toasts twice.
+  const [prToast, setPrToast] = useState(null);
+  const prToastTimer = useRef(null);
+  const prToastShown = useRef({});
   const [checkinsDone, setCheckinsDone] = useState(() => {
     try { return JSON.parse(localStorage.getItem("wj_checkins_done") || "[]"); } catch { return []; }
   });
@@ -2838,6 +2843,23 @@ function AppInner({ onBrief }) {
     );
   }
 
+  function checkSetPR(entry, mv, set) {
+    if (!mv?.name || !set) return;
+    const e1 = estimateOneRM(set.w, set.r, set.rir);
+    if (!e1) return;
+    const prior = movementHistory(entries.filter(e => e.date < entry.date), mv.name);
+    if (prior.length === 0) return; // first time on this movement is a baseline, not a PR
+    const priorBest = Math.max(...prior.map(p => p.e1rm));
+    const key = `${entry.id}|${mv.id}`;
+    const already = prToastShown.current[key] ?? 0;
+    if (e1 <= priorBest || e1 <= already) return;
+    prToastShown.current[key] = e1;
+    try { navigator.vibrate?.([20, 40, 20]); } catch {}
+    setPrToast({ id: Date.now(), text: `New PR: ${set.w} x ${set.r}, e1RM ${e1}` });
+    clearTimeout(prToastTimer.current);
+    prToastTimer.current = setTimeout(() => setPrToast(null), 2800);
+  }
+
   // ── MOVEMENT DETAIL ───────────────────────────────────────────────────────
   if (view === "movement" && activeEntry && activeMv) {
     const prog = activeEntry.programDay ? PROGRAM[activeEntry.programDay] : null;
@@ -2862,6 +2884,8 @@ function AppInner({ onBrief }) {
         return;
       }
       const ts = new Date().toISOString();
+      const best = bestSetForMovement(activeMv);
+      if (best) checkSetPR(activeEntry, activeMv, activeMv.sets[best.setIdx]);
       updateMovement(activeEntry.id, activeMv.id, { doneAt: ts });
       dismissTimer();
       if (nextMv) {
@@ -2929,6 +2953,16 @@ function AppInner({ onBrief }) {
               {activeMv.substituted && <span style={{ color: "#ffb3d9", letterSpacing: 0.5 }}>· apartment swap</span>}
             </div>
           )}
+          {(() => {
+            const pr = detailedPRForMovement(activeEntry, activeMv, entries);
+            const best = pr ? bestSetForMovement(activeMv) : null;
+            return pr && best ? (
+              <div style={{ display: "inline-flex", alignItems: "center", gap: 6, marginBottom: 8, padding: "4px 10px", borderRadius: 8, background: C.green + "22" }}>
+                <Trophy size={13} color={C.green} strokeWidth={2.2} />
+                <span style={{ fontSize: 11, fontWeight: 800, color: C.green, fontFamily: SANS, letterSpacing: 0.5 }}>PR THIS SESSION · {best.w} x {best.r} · e1RM {best.e1rm}</span>
+              </div>
+            ) : null;
+          })()}
           {/* CHANGE 3: Editable movement name inline */}
           <input
             style={bigInput}
@@ -3165,6 +3199,7 @@ function AppInner({ onBrief }) {
                 onDone={() => {
                   const ts = s.done ? null : new Date().toISOString();
                   updateSet(activeEntry.id, activeMv.id, i, "done", ts);
+                  if (!s.done) checkSetPR(activeEntry, activeMv, s);
                   if (!s.done && i < activeMv.sets.length - 1) {
                     startTimer(i, restSecs);
                   }
@@ -3228,6 +3263,12 @@ function AppInner({ onBrief }) {
                 {isLast ? "✓ FINISH LAST MOVEMENT" : `✓ DONE · NEXT: ${(nextMv?.name || "Next").toUpperCase()}`}
               </button>
             )}
+          </div>
+        )}
+        {prToast && (
+          <div key={prToast.id} onClick={() => setPrToast(null)} role="status"
+            style={{ position: "fixed", top: 18, left: "50%", transform: "translateX(-50%)", zIndex: 300, display: "flex", alignItems: "center", gap: 10, padding: "12px 18px", borderRadius: 14, background: C.green, color: "#0a0a0a", boxShadow: "0 8px 30px rgba(76,195,138,0.35)", fontFamily: SANS, fontSize: 15, fontWeight: 800, whiteSpace: "nowrap", animation: "wjToast 2800ms ease-out forwards" }}>
+            <Trophy size={18} color="#0a0a0a" strokeWidth={2.4} /> {prToast.text}
           </div>
         )}
         <BottomNav tab={tab} setTab={t => { setTab(t); if (t !== "journal") setView("journal"); }} onOpenMenu={() => setShowMoreMenu(true)} />
@@ -6221,7 +6262,8 @@ function Shell({ children }) {
 .wj-set-input::placeholder { color: #4a4a4a; opacity: 1; font-weight: 700; }
 @keyframes wjFlash { 0% { background-color: rgba(76,195,138,0.45); } 100% { background-color: rgba(76,195,138,0); } }
 @keyframes wjHighlight { 0% { box-shadow: inset 0 0 0 1.5px rgba(76,195,138,0.9); background-color: rgba(76,195,138,0.18); } 100% { box-shadow: inset 0 0 0 1.5px rgba(76,195,138,0); background-color: rgba(76,195,138,0); } }
-@keyframes wjPop { 0% { transform: scale(0.6); } 60% { transform: scale(1.15); } 100% { transform: scale(1); } }`}</style>
+@keyframes wjPop { 0% { transform: scale(0.6); } 60% { transform: scale(1.15); } 100% { transform: scale(1); } }
+@keyframes wjToast { 0% { opacity: 0; transform: translate(-50%, -16px) scale(0.96); } 12% { opacity: 1; transform: translate(-50%, 0) scale(1.02); } 20% { transform: translate(-50%, 0) scale(1); } 85% { opacity: 1; transform: translate(-50%, 0); } 100% { opacity: 0; transform: translate(-50%, -8px); } }`}</style>
       {children}
     </div>
   );
