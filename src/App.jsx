@@ -6279,43 +6279,42 @@ function SetRow({ num, weight, reps, rir, repsTarget, type, isLastSet, done, col
             {inRange ? "✓ in range" : belowRange ? "↓ go lighter" : aboveRange ? "↑ go heavier" : "reps"}
           </div>
         </div>
-        <button onClick={onDone} style={{ width: 44, height: 44, borderRadius: 12, flexShrink: 0, background: done ? C.green : C.surface2, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "transform 0.12s, background 0.15s", transform: done ? "scale(1.05)" : "scale(1)" }}><Check size={20} strokeWidth={3} color={done ? C.bg : C.textDim} /></button>
+        <button onClick={onDone} style={{ width: 52, height: 52, borderRadius: 12, flexShrink: 0, background: done ? C.green : C.surface2, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "transform 0.12s, background 0.15s", transform: done ? "scale(1.05)" : "scale(1)" }}><Check size={20} strokeWidth={3} color={done ? C.bg : C.textDim} /></button>
         {onDelete && (
-          <button onClick={onDelete} style={{ width: 28, height: 28, borderRadius: 8, background: "#2a1a18", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><X size={15} strokeWidth={2.5} color={C.red} /></button>
+          <button onClick={onDelete} style={{ width: 36, height: 36, borderRadius: 10, background: "#2a1a18", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><X size={16} strokeWidth={2.5} color={C.red} /></button>
         )}
       </div>
-      {/* RIR row — left-justified, aligned under "Weight" label above; feedback text sits in its own fixed-position slot so it never shifts the RIR buttons */}
-      <div style={{ display: "flex", alignItems: "center", marginTop: 10, paddingTop: 10, borderTop: "1px solid #1c1c1c", paddingLeft: 44 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
-          <div style={{ fontSize: 10, letterSpacing: 1.5, color: "#5c5c5c", textTransform: "uppercase", fontFamily: SANS, flexShrink: 0 }}>RIR</div>
-          <div style={{ display: "flex", gap: 5 }}>
+      {/* RIR row: full-width 44px buttons; the feedback / Repeat line sits below in a fixed-height slot so nothing shifts */}
+      <div style={{ marginTop: 10, paddingTop: 10, borderTop: "1px solid #262626" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <div style={{ fontSize: 10, letterSpacing: 1.5, color: "#5c5c5c", textTransform: "uppercase", fontFamily: SANS, flexShrink: 0, width: 26 }}>RIR</div>
+          <div style={{ display: "flex", gap: 6, flex: 1 }}>
             {["0", "1", "2", "3", "4"].map(v => {
               const sel = String(rir) === v;
               const isGhost = !has(rir) && gRIR === v;
               return (
                 <button key={v} onClick={() => onRIR(sel ? "" : v)} title={isGhost ? "Last session" : undefined} style={{
-                  width: 30, height: 30, borderRadius: 8, cursor: "pointer",
-                  background: sel ? color : "#1c1c1c",
+                  flex: 1, minWidth: 0, height: 44, borderRadius: 10, cursor: "pointer",
+                  background: sel ? color : "#262626",
                   color: sel ? "#131313" : isGhost ? "#c9c9c9" : "#9a9a9a",
-                  border: isGhost ? "1.5px dashed #5c5c5c" : "none", boxSizing: "border-box",
-                  fontSize: 13, fontWeight: 800, fontFamily: SANS,
+                  border: isGhost ? "1.5px dashed #5c5c5c" : "1.5px solid transparent", boxSizing: "border-box",
+                  fontSize: 17, fontWeight: 800, fontFamily: SANS,
                 }}>{v}</button>
               );
             })}
           </div>
         </div>
-        <div style={{ flex: 1, minWidth: 0, textAlign: "right", paddingLeft: 10 }}>
-          {canRepeat && !rirFb && (
+        <div style={{ minHeight: 30, marginTop: 8, display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 10 }}>
+          {canRepeat ? (
             <button onClick={repeatLast} title="Fill the empty fields with last session's numbers"
-              style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "6px 10px", borderRadius: 8, background: "#2a2a2a", border: "none", color: "#c9c9c9", fontSize: 11, fontWeight: 700, fontFamily: SANS, cursor: "pointer" }}>
-              <RotateCcw size={12} strokeWidth={2.4} /> Repeat
+              style={{ display: "inline-flex", alignItems: "center", gap: 6, minHeight: 30, padding: "6px 12px", borderRadius: 8, background: "#2a2a2a", border: "none", color: "#c9c9c9", fontSize: 12, fontWeight: 700, fontFamily: SANS, cursor: "pointer" }}>
+              <RotateCcw size={13} strokeWidth={2.4} /> Repeat last
             </button>
-          )}
-          {rirFb && (
-            <div style={{ fontSize: 10, fontFamily: SANS, fontWeight: 700, color: rirFb.color, lineHeight: 1.2 }}>
+          ) : rirFb ? (
+            <div style={{ fontSize: 11, fontFamily: SANS, fontWeight: 700, color: rirFb.color, lineHeight: 1.2 }}>
               {rirFb.msg}
             </div>
-          )}
+          ) : null}
         </div>
       </div>
     </div>
@@ -6323,7 +6322,9 @@ function SetRow({ num, weight, reps, rir, repsTarget, type, isLastSet, done, col
 }
 
 function setInput(color) {
-  return { width: "100%", background: "#1c1c1c", borderRadius: 10, padding: "8px 6px", fontSize: 20, fontWeight: 800, color: "#f2f2f2", textAlign: "center", outline: "none", border: "none", WebkitAppearance: "none", fontFamily: MONO };
+  // Big tap targets for logging mid-set: 52px tall, 24px numbers. The transparent
+  // border lets the reps field show its in-range / out-of-range color.
+  return { width: "100%", minHeight: 52, boxSizing: "border-box", background: "#262626", borderRadius: 12, padding: "10px 6px", fontSize: 24, fontWeight: 800, color: "#f2f2f2", textAlign: "center", outline: "none", border: "1.5px solid transparent", WebkitAppearance: "none", fontFamily: MONO };
 }
 const bigInput = { width: "100%", background: "transparent", border: "none", borderBottom: "1.5px solid #2e2e2e", padding: "6px 0", fontSize: 22, fontWeight: 800, color: "#f2f2f2", outline: "none", fontFamily: SANS, letterSpacing: -0.5, boxSizing: "border-box" };
 const ghostInput = { width: "100%", background: "transparent", border: "none", padding: "4px 0", outline: "none", fontFamily: SANS, boxSizing: "border-box", color: "#9a9a9a" };
