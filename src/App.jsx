@@ -1,2220 +1,26 @@
 import { useState, useEffect, useRef } from "react";
-
-// ── INLINE ICONS (no external dependency) ─────────────────────────────────────
-// Minimal SVG icons matching the lucide API (size, color, strokeWidth props).
-function Icon({ size = 20, color = "currentColor", strokeWidth = 2, children }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color}
-      strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round"
-      style={{ display: "block", flexShrink: 0 }}>
-      {children}
-    </svg>
-  );
-}
-const ClipboardList = (p) => <Icon {...p}><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4M12 16h4M8 11h.01M8 16h.01"/></Icon>;
-const BarChart3 = (p) => <Icon {...p}><path d="M3 3v18h18"/><rect x="7" y="10" width="3" height="8"/><rect x="12" y="6" width="3" height="12"/><rect x="17" y="13" width="3" height="5"/></Icon>;
-const Scale = (p) => <Icon {...p}><path d="M12 3v18M7 7h10M5 21h14"/><path d="M7 7l-3 7h6zM17 7l-3 7h6z"/></Icon>;
-const Database = (p) => <Icon {...p}><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14a9 3 0 0 0 18 0V5"/><path d="M3 12a9 3 0 0 0 18 0"/></Icon>;
-const MoreHorizontal = (p) => <Icon {...p}><circle cx="5" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.5" fill="currentColor" stroke="none"/></Icon>;
-const Dumbbell = (p) => <Icon {...p}><path d="M6.5 6.5l11 11M21 21l-1-1M3 3l1 1M18 22l4-4M2 6l4-4M7 17l-5 5M17 7l5-5"/></Icon>;
-const Timer = (p) => <Icon {...p}><path d="M10 2h4M12 14l3-3"/><circle cx="12" cy="14" r="8"/></Icon>;
-const Check = (p) => <Icon {...p}><path d="M20 6L9 17l-5-5"/></Icon>;
-const X = (p) => <Icon {...p}><path d="M18 6L6 18M6 6l12 12"/></Icon>;
-const Plus = (p) => <Icon {...p}><path d="M12 5v14M5 12h14"/></Icon>;
-const ChevronRight = (p) => <Icon {...p}><path d="M9 18l6-6-6-6"/></Icon>;
-const ChevronLeft = (p) => <Icon {...p}><path d="M15 18l-6-6 6-6"/></Icon>;
-const RotateCcw = (p) => <Icon {...p}><path d="M3 2v6h6"/><path d="M3 8a9 9 0 1 0 3-6.7L3 8"/></Icon>;
-const Pause = (p) => <Icon {...p}><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></Icon>;
-const Play = (p) => <Icon {...p}><path d="M6 4l14 8-14 8z"/></Icon>;
-const TrendingUp = (p) => <Icon {...p}><path d="M22 7l-8.5 8.5-5-5L2 17"/><path d="M16 7h6v6"/></Icon>;
-const Trophy = (p) => <Icon {...p}><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6M18 9h1.5a2.5 2.5 0 0 0 0-5H18M4 22h16M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22M18 2H6v7a6 6 0 0 0 12 0V2z"/></Icon>;
-const Moon = (p) => <Icon {...p}><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9z"/></Icon>;
-const Flame = (p) => <Icon {...p}><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></Icon>;
-const ArrowDown = (p) => <Icon {...p}><path d="M12 5v14M19 12l-7 7-7-7"/></Icon>;
-const ArrowUp = (p) => <Icon {...p}><path d="M12 19V5M5 12l7-7 7 7"/></Icon>;
-const Download = (p) => <Icon {...p}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></Icon>;
-const Upload = (p) => <Icon {...p}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></Icon>;
-const Pencil = (p) => <Icon {...p}><path d="M17 3a2.83 2.83 0 0 1 4 4L7.5 20.5 2 22l1.5-5.5z"/></Icon>;
-const Utensils = (p) => <Icon {...p}><path d="M3 2v7c0 1.1.9 2 2 2h1v11M6 2v9M9 2v9M17 2c-2.2 0-4 2.7-4 6s1.8 6 4 6v10"/></Icon>;
-const Search = (p) => <Icon {...p}><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></Icon>;
-const Camera = (p) => <Icon {...p}><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></Icon>;
-const Mic = (p) => <Icon {...p}><path d="M12 2a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v1a7 7 0 0 1-14 0v-1M12 18v4M8 22h8"/></Icon>;
-
-// ── DESIGN TOKENS ─────────────────────────────────────────────────────────────
-// Typography: clean sans for labels/body, monospace reserved for NUMBERS (data is the hero)
-const SANS = "'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
-const MONO = "'DM Mono', 'SF Mono', ui-monospace, monospace";
-// ── EDITORIAL GRAYSCALE PALETTE ────────────────────────────────────────────────
-// Matches the Coach Report PDF: black/white/grayscale, generous whitespace, thin
-// hairlines instead of boxes, bold headlines, muted secondary text. Dark-mode
-// inversion of the same print design — near-black bg, off-white text, light-gray rules.
-const LAKE = {
-  sky:       "#e8e8e8",  // near-white — primary accent / CTAs (was sky blue)
-  peak:      "#9a9a9a",  // mid-gray — secondary / info (was atmospheric blue)
-  ochre:     "#c9c9c9",  // light gray — warnings / deload (was ochre)
-  forest:    "#ffffff",  // pure white — success / in-range / PRs (was forest green)
-  lake:      "#b8b8b8",  // light-mid gray — volume productive zone (was lake teal)
-  darkwood:  "#d4d4d4",  // pale gray — completion states (was dark forest)
-};
-const C = {
-  bg: "#0a0a0a",
-  surface: "#131313",
-  surface2: "#1c1c1c",
-  line: "#2e2e2e",
-  lineSoft: "#1c1c1c",
-  text: "#f2f2f2",
-  textMid: "#9a9a9a",
-  textDim: "#5c5c5c",
-  accent: LAKE.sky,      // near-white — primary interactive
-  amber: LAKE.ochre,     // light gray — warnings, deload
-  blue: LAKE.peak,       // mid-gray — secondary info
-  green: LAKE.forest,    // white — success, PRs, in-range
-  teal: LAKE.lake,       // light gray — volume productive
-  red: "#e05a4d",        // keep red as the single non-grayscale accent for true alerts
-};
-const shadow = "0 2px 12px rgba(0,0,0,0.5), 0 1px 3px rgba(0,0,0,0.4)";
-const shadowLg = "0 8px 30px rgba(0,0,0,0.6)";
-
-// ── PROGRAM DATA ──────────────────────────────────────────────────────────────
-// type: "compound" (leave 1–2 RIR) or "isolation" (failure OK on last set)
-// muscle: primary muscle group for weekly volume tracking
-const PROGRAM = {
-  // Restructured Sep 29, 2026: chest and glutes each trained twice per cycle, side
-  // delts up to ~11 sets, longer rest on heavy compounds. Exercise names match the
-  // old program wherever the movement is the same, so history and the progression
-  // engine carry straight over (seeding looks up the name across all days).
-  1: {
-    title: "Lower A: Glutes & Hamstrings",
-    tag: "LOWER A",
-    color: "#e8e8e8",
-    exercises: [
-      { id: "A", name: "Barbell Hip Thrust", sets: 4, reps: "8–12", rest: "2m 30s", type: "compound", muscle: "Glutes", loadStep: 10, cue: "Glute bridge primer first. Pause 1 second at the top with a posterior pelvic tilt. Load it so 12 is hard." },
-      { id: "B", name: "Romanian Deadlift", sets: 3, reps: "6–10", rest: "2m 30s", type: "compound", muscle: "Hamstrings" },
-      { id: "C", name: "Hack Squat Machine", sets: 3, reps: "8–10", rest: "2m 30s", type: "compound", muscle: "Quads" },
-      { id: "D", name: "DB Bulgarian Split Squat", sets: 3, reps: "8–12 each leg", rest: "1m 30s", type: "compound", muscle: "Glutes", cue: "Long stride, torso leaning forward to bias the glutes." },
-      { id: "E", name: "Seated Leg Curl Machine", sets: 3, reps: "10–15", rest: "1m", type: "isolation", muscle: "Hamstrings" },
-      { id: "F", name: "Leg Press Calf Raise", sets: 4, reps: "10–15", rest: "1m", type: "isolation", muscle: "Calves", cue: "Knees straight, full stretch at the bottom, pause at the top." },
-    ],
-  },
-  2: {
-    title: "Upper A: Chest (Heavy)",
-    tag: "UPPER A",
-    color: "#f0f0f0",
-    exercises: [
-      { id: "A", name: "Smith Machine Incline Press", sets: 4, reps: "6–10", rest: "3m", type: "compound", muscle: "Chest", cue: "Take the full 3 minutes. Your chest was running out of recovery, not strength." },
-      { id: "B", name: "Smith Machine Bench Press", sets: 3, reps: "6–10", rest: "3m", type: "compound", muscle: "Chest" },
-      { id: "C", name: "Cable Fly", sets: 3, reps: "10–15", rest: "1m 30s", type: "isolation", muscle: "Chest" },
-      { id: "D", name: "DB Lateral Raise", sets: 3, reps: "12–20", rest: "1m", type: "isolation", muscle: "Shoulders" },
-      { id: "E", name: "EZ Bar Curl", sets: 3, reps: "8–12", rest: "1m 30s", type: "isolation", muscle: "Biceps" },
-      { id: "F", name: "Cable Pushdown", sets: 3, reps: "10–15", rest: "1m", type: "isolation", muscle: "Triceps" },
-    ],
-  },
-  3: { title: "Rest Day", tag: "REST", color: "#9a9a9a", exercises: [] },
-  4: {
-    title: "Pull, Delts & Biceps",
-    tag: "PULL",
-    color: "#c9c9c9",
-    exercises: [
-      { id: "A", name: "Lat Pulldown (Wide Overhand, Flat Bar)", sets: 3, reps: "8–12", rest: "2m", type: "compound", muscle: "Back", startWeight: 130 },
-      { id: "B", name: "Barbell Bent Over Row", sets: 3, reps: "6–10", rest: "2m", type: "compound", muscle: "Back" },
-      { id: "C", name: "Seated Cable Row", sets: 2, reps: "10–12", rest: "1m 30s", type: "compound", muscle: "Back" },
-      { id: "D", name: "Cable Lateral Raise", sets: 4, reps: "12–20", rest: "1m", type: "isolation", muscle: "Shoulders" },
-      { id: "E", name: "Reverse Pec Deck", sets: 3, reps: "12–20", rest: "1m", type: "isolation", muscle: "Shoulders" },
-      { id: "F", name: "Incline DB Curl", sets: 3, reps: "10–12", rest: "1m", type: "isolation", muscle: "Biceps" },
-      { id: "G", name: "DB Hammer Curl", sets: 3, reps: "10–12", rest: "1m", type: "isolation", muscle: "Biceps" },
-    ],
-  },
-  5: { title: "Rest Day", tag: "REST", color: "#9a9a9a", exercises: [] },
-  6: {
-    title: "Lower B: Quads & Glutes",
-    tag: "LOWER B",
-    color: "#b8b8b8",
-    exercises: [
-      { id: "A", name: "Barbell Squat", sets: 4, reps: "6–10", rest: "3m", type: "compound", muscle: "Quads", startWeight: 110 },
-      { id: "B", name: "Leg Press Machine", sets: 3, reps: "10–15", rest: "2m", type: "compound", muscle: "Glutes", cue: "Feet high and wide on the platform to bias the glutes." },
-      { id: "C", name: "Glute-Bias 45° Back Extension", sets: 3, reps: "12–15", rest: "1m 30s", type: "isolation", muscle: "Glutes", cue: "Round the upper back, drive with the glutes, squeeze at the top. A lighter hip thrust works as a swap." },
-      { id: "D", name: "Leg Extension Machine", sets: 2, reps: "12–15", rest: "1m", type: "isolation", muscle: "Quads" },
-      { id: "E", name: "Hip Abduction Machine", sets: 3, reps: "15–20", rest: "1m", type: "isolation", muscle: "Glutes" },
-      { id: "F", name: "Seated Calf Raise Machine", sets: 4, reps: "10–15", rest: "1m", type: "isolation", muscle: "Calves" },
-      { id: "G", name: "Hanging Leg Raise", sets: 3, reps: "10–15", rest: "1m", type: "isolation", muscle: "Abs", bodyweight: true, cue: "Posterior pelvic tilt at the top. Curl the pelvis up, don't just lift the legs." },
-    ],
-  },
-  7: {
-    title: "Upper B: Chest, Shoulders & Arms",
-    tag: "UPPER B",
-    color: "#ffffff",
-    exercises: [
-      { id: "A", name: "DB Shoulder Press", sets: 3, reps: "6–10", rest: "2m 30s", type: "compound", muscle: "Shoulders" },
-      { id: "B", name: "Decline Bench Press", sets: 3, reps: "8–12", rest: "2m 30s", type: "compound", muscle: "Chest", startWeight: 120, cue: "Flat DB Press is a fine swap if the decline bench is taken." },
-      { id: "C", name: "Weighted Dip Machine", sets: 3, reps: "8–12", rest: "2m", type: "compound", muscle: "Chest" },
-      { id: "D", name: "Pec Deck", sets: 3, reps: "12–15", rest: "1m", type: "isolation", muscle: "Chest" },
-      { id: "E", name: "DB Lateral Raise", sets: 4, reps: "12–20", rest: "1m", type: "isolation", muscle: "Shoulders" },
-      { id: "F", name: "Cable Curl", sets: 3, reps: "10–15", rest: "1m", type: "isolation", muscle: "Biceps" },
-      { id: "G", name: "DB Overhead Tricep Extension", sets: 3, reps: "10–15", rest: "1m", type: "isolation", muscle: "Triceps" },
-    ],
-  },
-};
-
-
-// Mesocycle config: 6 training weeks then a deload week (week 7). That's a deload
-// roughly every 5 to 6 eight-day cycles, per the Sep 29, 2026 program review.
-const MESO_LENGTH = 7; // weeks per block, last week is the deload
-const MESO_START = "2026-05-07"; // week 1 anchor (first logged session)
-
-// Start of the current training block (lean bulk, Sep 2026). Exercises with a
-// `startWeight` seed that load on their FIRST session on or after this date;
-// once one session is logged in the block, normal last-session seeding and the
-// progression engine take over. Change this date when starting a new block.
-const BLOCK_START = "2026-09-21";
-
-// True if this movement already has a logged working set on or after `sinceDate`.
-function loggedSince(entries, mvName, sinceDate) {
-  if (!mvName) return false;
-  const target = nameKey(mvName);
-  return entries.some(e =>
-    e.date >= sinceDate &&
-    e.movements.some(m =>
-      m.name && nameKey(m.name) === target &&
-      m.sets.some(s => s.w !== "" && s.w != null && s.r !== "" && s.r != null)
-    )
-  );
-}
-
-// ── COACH CHECK-IN, OCT 5 2026 ──────────────────────────────────────────────
-// One-time weight targets for the next session of each movement, from the coach's
-// review of the first full cycle on the new program. Each applies until that
-// movement is logged on or after COACH_SINCE, then the normal engine takes over.
-const COACH_SINCE = "2026-10-05";
-const COACH_TARGETS = {
-  "Smith Machine Incline Press": { weight: 135, note: "Coach: start all sets at 135. RIR 4, 3 and 2 on the first three sets last time means they were too light, and chest is the top priority." },
-  "Cable Fly": { weight: 20, note: "Coach: use 20 on every set. 20 x 13 hit RIR 0 while 15 x 15 sat at RIR 4." },
-  "Barbell Squat": { weight: 120, note: "Coach: go to 120. Three of your four sets at 115 had RIR 2 or more." },
-  "Barbell Hip Thrust": { weight: 135, note: "Coach: all three working sets at 135, aim for 12 reps, then go to 145 next time. Keep the 65 and 115 sets as warm-ups." },
-  "DB Lateral Raise": { weight: 17.5, note: "Coach: 15 x 20 at RIR 3 says you can move up. Use 17.5, or 20 if 17.5 feels easy." },
-};
-// Advisory notes shown on the suggestion card until the movement is logged again.
-const COACH_NOTES = {
-  "Lat Pulldown (Wide Overhand, Flat Bar)": "Coach: if you hit 12 on the first set again, move to 135 or 140.",
-  "Barbell Bent Over Row": "Coach: the dip to 6 reps on set 2 last time looked like a rest or setup issue, not strength. Take the full rest and set up the same way every set.",
-  "Smith Machine Bench Press": "Coach: 175 has sat at 8 to 9 reps for two weeks because it follows four heavy incline sets. Bench and incline now swap order each cycle, so this is the cycle to go bench first when it shows up first.",
-};
-// Upper A alternates which press goes first each cycle. Starting with the next Upper A
-// after the check-in, the Smith bench press leads, then incline leads, and so on.
-function coachOrder(day, exercises, entries) {
-  if (day !== 2 || exercises.length < 2) return exercises;
-  const n = entries.filter(e => e.programDay === 2 && e.date >= COACH_SINCE).length;
-  if (n % 2 !== 0) return exercises;
-  const out = [...exercises];
-  [out[0], out[1]] = [out[1], out[0]];
-  return out;
-}
-
-// ── TRAINING LOCATIONS ─────────────────────────────────────────────────────
-// Sean trains at two spots: Equinox (full equipment, the default the PROGRAM
-// above is written for) and his apartment building's gym (ARC). The apartment
-// gym has a Smith machine (also usable as a free barbell cage), barbell, hex
-// bar, dumbbell rack, flat and adjustable benches, a preacher bench, a dual
-// adjustable cable trainer (rope, V bar, D handles, EZ bar), a lat pulldown, a
-// seated chest press, a leg press with calf raise, a leg extension and curl
-// machine, an assisted dip and pull-up machine, a captain's chair, pull-up bars,
-// kettlebells, suspension straps, ab wheels and cardio. It has no hack squat,
-// pec deck, hip abduction machine, standing or seated calf machine, or 45 degree
-// back extension. Rather than
-// hand-editing the session every time, a session can be flagged with a
-// `location`, and GYM_SUBS below swaps in an apartment-friendly version of
-// any exercise that needs one, keyed by program day + the exercise's slot id
-// (so the slot letter, and therefore last-session seeding and volume
-// tracking, never shifts). An exercise not listed here has no substitute and
-// is used as-is at either location (e.g. DB and barbell work needs no swap).
-//
-// Each substitute carries its own name/sets/reps/rest/type/muscle/cue so it
-// behaves exactly like a normal PROGRAM exercise once seeded onto a movement.
-// Edit these entries directly as the apartment gym's equipment becomes
-// better known — no other code needs to change.
-const LOCATIONS = {
-  equinox: { label: "Equinox", short: "Equinox" },
-  apartment: { label: "Apartment Gym", short: "Apartment" },
-};
-const GYM_SUBS = {
-  // Only slots the apartment gym cannot do as programmed are listed. Everything
-  // else (cable work, leg press, leg extension and curl, lat pulldown, EZ bar,
-  // DB and barbell lifts) runs as written. Keyed to the Sep 29, 2026 program.
-  // Day 1: Lower A
-  "1.C": { name: "Smith Machine Squat (feet forward)", sets: 3, reps: "8–10", rest: "2m 30s", type: "compound", muscle: "Quads", cue: "Feet 6 to 12 inches in front of the bar, heels flat or on a plate, torso upright. Closest thing to a hack squat." },
-  // Day 4: Pull
-  "4.C": { name: "Low Cable Row (functional trainer)", sets: 2, reps: "10–12", rest: "1m 30s", type: "compound", muscle: "Back", cue: "Low pulley, V bar, chest up, pull to the lower ribs and pause." },
-  "4.E": { name: "Cable Reverse Fly (high pulleys)", sets: 3, reps: "12–20", rest: "1m", type: "isolation", muscle: "Shoulders", cue: "Cross the cables, arms slightly bent, sweep out and back at shoulder height." },
-  // Day 6: Lower B
-  "6.C": { name: "Cable Pull-Through (rope)", sets: 3, reps: "12–15", rest: "1m 30s", type: "isolation", muscle: "Glutes", cue: "Low pulley, rope between the legs, hinge back, then squeeze the glutes to stand." },
-  "6.E": { name: "Cable Hip Abduction (ankle strap)", sets: 3, reps: "15–20", rest: "1m", type: "isolation", muscle: "Glutes", cue: "Low pulley, hold the frame, lift the leg out to the side without leaning. Needs an ankle strap." },
-  "6.F": { name: "Seated DB Calf Raise (on bench)", sets: 4, reps: "10–15", rest: "1m", type: "isolation", muscle: "Calves", cue: "Dumbbell across the knees, toes on a plate, full stretch and pause. Bent knees keep the soleus working." },
-  // Day 7: Upper B
-  "7.B": { name: "Flat DB Press", sets: 3, reps: "8–12", rest: "2m 30s", type: "compound", muscle: "Chest" },
-  "7.C": { name: "Captain's Chair Dip (weighted)", sets: 3, reps: "8–12", rest: "2m", type: "compound", muscle: "Chest", cue: "Lean the torso forward for chest. Squeeze a dumbbell between the feet to add load." },
-  "7.D": { name: "Cable Crossover Fly", sets: 3, reps: "12–15", rest: "1m", type: "isolation", muscle: "Chest", cue: "Pulleys at shoulder height, slight forward lean, hands meet in front of the chest." },
-};
-
-
-// Returns the exercise definition to use for this program day + slot id, given
-// a session's location: the substitute if one exists and location is not
-// Equinox, otherwise the normal PROGRAM exercise. Always keeps the original
-// `id` (slot letter) so programRef never changes between locations.
-function resolveExercise(programDay, exId, location) {
-  const r = resolveExerciseRaw(programDay, exId, location);
-  // A set count you accepted from a set-count suggestion replaces the program's,
-  // but only while the slot still holds the exercise it was accepted for.
-  const ov = r ? setOverrides()[`${programDay}.${exId}`] : null;
-  if (ov && exKey(ov.name) === exKey(r.name)) return { ...r, sets: ov.sets, programSets: r.sets };
-  return r;
-}
-let SET_OVERRIDES = null;
-function setOverrides() {
-  if (!SET_OVERRIDES) {
-    try { SET_OVERRIDES = JSON.parse(localStorage.getItem("wj_set_overrides") || "{}") || {}; } catch { SET_OVERRIDES = {}; }
-  }
-  return SET_OVERRIDES;
-}
-function saveSetOverride(slotKey, name, sets) {
-  const o = { ...setOverrides() };
-  if (sets == null) delete o[slotKey]; else o[slotKey] = { name, sets };
-  SET_OVERRIDES = o;
-  try { localStorage.setItem("wj_set_overrides", JSON.stringify(o)); } catch {}
-}
-function resolveExerciseRaw(programDay, exId, location) {
-  const base = PROGRAM[programDay]?.exercises.find(x => x.id === exId);
-  if (!base) return null;
-  if (location && location !== "equinox") {
-    const sub = GYM_SUBS[`${programDay}.${exId}`];
-    if (sub) {
-      // Start from the slot but clear the Equinox exercise's own starting weight,
-      // load step, bodyweight flag and cue, so a swapped exercise never inherits
-      // them (a DB press should not start at the decline bench's 120 lb).
-      return { ...base, startWeight: undefined, loadStep: undefined, bodyweight: false, cue: "", ...sub, id: base.id, substituted: true };
-    }
-  }
-  return base;
-}
-
-// The program definition for a logged movement, but only if it still describes
-// the same exercise. Sessions logged before a program change keep their old slot
-// letters, and without the name check an old "Day 1 slot A" (Barbell Squat) would
-// pick up the new slot A's cue, type and load step (Hip Thrust).
-function programExFor(entry, mv) {
-  if (!entry?.programDay || !mv?.programRef || !mv.name) return null;
-  const ex = resolveExercise(entry.programDay, mv.programRef, entry.location);
-  if (!ex) return null;
-  return nameKey(ex.name) === nameKey(mv.name) ? ex : null;
-}
-
-// Any current program exercise (Equinox or apartment swap) with this exact name.
-function programExByName(name) {
-  if (!name) return null;
-  const n = name.toLowerCase().trim();
-  for (const [dn, day] of Object.entries(PROGRAM)) {
-    for (const ex of day.exercises) {
-      if (ex.name.toLowerCase().trim() === n) return ex;
-      const sub = GYM_SUBS[`${dn}.${ex.id}`];
-      if (sub && sub.name.toLowerCase().trim() === n) return { ...ex, ...sub };
-    }
-  }
-  return null;
-}
-
-// Older names for the same movement, so seeding can find the history when a
-// program change renames an exercise.
-const NAME_ALIASES = {
-  "DB Lateral Raise": ["DB Lateral Raise (leaning)"],
-  "DB Overhead Tricep Extension": ["Tricep Overhead Extension", "Overhead Rope Extension"],
-};
-
-
-// ── EXERCISE LIBRARY ────────────────────────────────────────────────────────
-// One official name per exercise. History, last-session weights, PRs and the
-// progression engine all match on the OFFICIAL name, so a typed variant such as
-// "Seated Calf Raise" resolves to "Seated Calf Raise Machine" instead of starting a
-// second history. The library is built from the program, the apartment swaps, the
-// extras below and any custom exercises added in the app.
-const MUSCLES = ["Chest", "Back", "Shoulders", "Biceps", "Triceps", "Quads", "Hamstrings", "Glutes", "Calves", "Abs"];
-const exKey = s => String(s ?? "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
-
-// Other names people type or older builds used, keyed by the official name.
-const LIB_ALIASES = {
-  "Seated Calf Raise Machine": ["Seated Calf Raise", "Seated Calf Raises", "Seated Calf Machine", "Seated Calf"],
-  "Standing Calf Raise Machine": ["Standing Calf Raise", "Standing Calf Raises", "Standing Calf Machine"],
-  "Leg Press Calf Raise": ["Leg Press Calf Raises", "Calf Raise on Leg Press"],
-  "Leg Press Machine": ["Leg Press"],
-  "Hack Squat Machine": ["Hack Squat"],
-  "Seated Leg Curl Machine": ["Seated Leg Curl", "Leg Curl"],
-  "Leg Extension Machine": ["Leg Extension"],
-  "Hip Abduction Machine": ["Hip Abduction"],
-  "Lat Pulldown (Wide Overhand, Flat Bar)": ["Lat Pulldown", "Wide Lat Pulldown", "Wide Grip Lat Pulldown"],
-  "Barbell Bent Over Row": ["Barbell Row", "Bent Over Row"],
-  "Smith Machine Incline Press": ["Smith Incline Press", "Smith Incline", "Incline Smith Press"],
-  "Smith Machine Bench Press": ["Smith Bench Press", "Smith Flat Bench", "Smith Bench"],
-  "EZ Bar Curl": ["EZ Curl", "EZ Bar Curls"],
-  "Cable Pushdown": ["Tricep Pushdown", "Triceps Pushdown", "Cable Tricep Pushdown"],
-  "Decline Bench Press": ["Decline Bench"],
-  "Weighted Dip Machine": ["Dip Machine"],
-  "Pec Deck": ["Pec Deck Machine"],
-};
-
-// Sensible alternatives that are not in the program itself. Each carries its own
-// defaults, used when it is picked from a swap menu or created by typing its name.
-const EXERCISE_EXTRAS = [
-  { name: "Standing Calf Raise Machine", muscle: "Calves", type: "isolation", sets: 4, reps: "10–15", rest: "1m" },
-  { name: "Smith Machine Calf Raise", muscle: "Calves", type: "isolation", sets: 4, reps: "10–15", rest: "1m" },
-  { name: "Smith Machine Hip Thrust", muscle: "Glutes", type: "compound", sets: 4, reps: "8–12", rest: "2m 30s", loadStep: 10 },
-  { name: "Hip Thrust Machine", muscle: "Glutes", type: "compound", sets: 4, reps: "8–12", rest: "2m 30s", loadStep: 10 },
-  { name: "Dumbbell Romanian Deadlift", muscle: "Hamstrings", type: "compound", sets: 3, reps: "8–12", rest: "2m" },
-  { name: "Smith Machine Romanian Deadlift", muscle: "Hamstrings", type: "compound", sets: 3, reps: "6–10", rest: "2m 30s" },
-  { name: "Hex Bar Deadlift", muscle: "Hamstrings", type: "compound", sets: 3, reps: "5–8", rest: "3m" },
-  { name: "Dumbbell Goblet Squat", muscle: "Quads", type: "compound", sets: 3, reps: "8–12", rest: "2m" },
-  { name: "Dumbbell Walking Lunge", muscle: "Glutes", type: "compound", sets: 3, reps: "8–12 each leg", rest: "1m 30s" },
-  { name: "Smith Machine Split Squat", muscle: "Glutes", type: "compound", sets: 3, reps: "8–12 each leg", rest: "1m 30s" },
-  { name: "Lying Leg Curl Machine", muscle: "Hamstrings", type: "isolation", sets: 3, reps: "10–15", rest: "1m" },
-  { name: "Nordic Hamstring Curl", muscle: "Hamstrings", type: "isolation", sets: 3, reps: "5–10", rest: "1m 30s", bodyweight: true },
-  { name: "Incline Dumbbell Press", muscle: "Chest", type: "compound", sets: 4, reps: "6–10", rest: "3m" },
-  { name: "Incline Barbell Press", muscle: "Chest", type: "compound", sets: 4, reps: "6–10", rest: "3m" },
-  { name: "Incline Chest Press Machine", muscle: "Chest", type: "compound", sets: 4, reps: "8–12", rest: "2m 30s" },
-  { name: "Barbell Bench Press", muscle: "Chest", type: "compound", sets: 3, reps: "6–10", rest: "3m" },
-  { name: "Chest Press Machine", muscle: "Chest", type: "compound", sets: 3, reps: "8–12", rest: "2m 30s" },
-  { name: "Decline Dumbbell Press", muscle: "Chest", type: "compound", sets: 3, reps: "8–12", rest: "2m 30s" },
-  { name: "Dumbbell Fly", muscle: "Chest", type: "isolation", sets: 3, reps: "10–15", rest: "1m 30s" },
-  { name: "Machine Lateral Raise", muscle: "Shoulders", type: "isolation", sets: 3, reps: "12–20", rest: "1m" },
-  { name: "Barbell Curl", muscle: "Biceps", type: "isolation", sets: 3, reps: "8–12", rest: "1m 30s" },
-  { name: "Preacher Curl (EZ Bar)", muscle: "Biceps", type: "isolation", sets: 3, reps: "8–12", rest: "1m 30s" },
-  { name: "DB Curl", muscle: "Biceps", type: "isolation", sets: 3, reps: "8–12", rest: "1m" },
-  { name: "Cable Rope Hammer Curl", muscle: "Biceps", type: "isolation", sets: 3, reps: "10–12", rest: "1m" },
-  { name: "Rope Pushdown", muscle: "Triceps", type: "isolation", sets: 3, reps: "10–15", rest: "1m" },
-  { name: "Overhead Cable Tricep Extension", muscle: "Triceps", type: "isolation", sets: 3, reps: "10–15", rest: "1m" },
-  { name: "Skull Crusher (EZ Bar)", muscle: "Triceps", type: "isolation", sets: 3, reps: "8–12", rest: "1m 30s" },
-  { name: "Close-Grip Lat Pulldown", muscle: "Back", type: "compound", sets: 3, reps: "8–12", rest: "2m" },
-  { name: "Neutral-Grip Lat Pulldown", muscle: "Back", type: "compound", sets: 3, reps: "8–12", rest: "2m" },
-  { name: "Assisted Pull-Up", muscle: "Back", type: "compound", sets: 3, reps: "6–10", rest: "2m" },
-  { name: "Chest-Supported Row (Machine)", muscle: "Back", type: "compound", sets: 3, reps: "8–12", rest: "2m" },
-  { name: "Dumbbell Row", muscle: "Back", type: "compound", sets: 3, reps: "8–12 each arm", rest: "1m 30s" },
-  { name: "T-Bar Row", muscle: "Back", type: "compound", sets: 3, reps: "6–10", rest: "2m" },
-  { name: "Rear Delt DB Fly (Bent-Over)", muscle: "Shoulders", type: "isolation", sets: 3, reps: "12–20", rest: "1m" },
-  { name: "Front Squat", muscle: "Quads", type: "compound", sets: 4, reps: "6–10", rest: "3m" },
-  { name: "Banded Lateral Walk", muscle: "Glutes", type: "isolation", sets: 3, reps: "15–20", rest: "1m" },
-  { name: "Captain's Chair Leg Raise", muscle: "Abs", type: "isolation", sets: 3, reps: "10–15", rest: "1m", bodyweight: true },
-  { name: "Cable Crunch", muscle: "Abs", type: "isolation", sets: 3, reps: "10–15", rest: "1m" },
-  { name: "Ab Wheel Rollout", muscle: "Abs", type: "isolation", sets: 3, reps: "8–12", rest: "1m", bodyweight: true },
-  { name: "Smith Machine Shoulder Press", muscle: "Shoulders", type: "compound", sets: 3, reps: "6–10", rest: "2m 30s" },
-  { name: "Barbell Overhead Press", muscle: "Shoulders", type: "compound", sets: 3, reps: "6–10", rest: "2m 30s" },
-  { name: "Machine Shoulder Press", muscle: "Shoulders", type: "compound", sets: 3, reps: "8–12", rest: "2m" },
-  { name: "Assisted Dip Machine", muscle: "Chest", type: "compound", sets: 3, reps: "8–12", rest: "2m" },
-];
-
-// Which exercises make sense in each program slot ("day.slot"). The slot's own
-// programmed exercise is always offered first, then these.
-const SLOT_ALTERNATIVES = {
-  "1.A": ["Smith Machine Hip Thrust", "Hip Thrust Machine", "Cable Pull-Through (rope)"],
-  "1.B": ["Dumbbell Romanian Deadlift", "Smith Machine Romanian Deadlift", "Hex Bar Deadlift"],
-  "1.C": ["Smith Machine Squat (feet forward)", "Leg Press Machine", "Dumbbell Goblet Squat"],
-  "1.D": ["Dumbbell Walking Lunge", "Smith Machine Split Squat"],
-  "1.E": ["Lying Leg Curl Machine", "Nordic Hamstring Curl"],
-  "1.F": ["Leg Press Calf Raise", "Seated Calf Raise Machine", "Standing Calf Raise Machine", "Smith Machine Calf Raise", "Seated DB Calf Raise (on bench)"],
-  "2.A": ["Incline Dumbbell Press", "Incline Barbell Press", "Incline Chest Press Machine"],
-  "2.B": ["Barbell Bench Press", "Flat DB Press", "Chest Press Machine"],
-  "2.C": ["Pec Deck", "Cable Crossover Fly (high to low)", "Dumbbell Fly"],
-  "2.D": ["Cable Lateral Raise", "Machine Lateral Raise"],
-  "2.E": ["Barbell Curl", "Preacher Curl (EZ Bar)", "DB Curl", "Cable Curl"],
-  "2.F": ["Rope Pushdown", "Overhead Cable Tricep Extension", "Skull Crusher (EZ Bar)"],
-  "4.A": ["Close-Grip Lat Pulldown", "Neutral-Grip Lat Pulldown", "Assisted Pull-Up"],
-  "4.B": ["Chest-Supported Row (Machine)", "Dumbbell Row", "T-Bar Row"],
-  "4.C": ["Low Cable Row (functional trainer)", "Chest-Supported Row (Machine)", "Dumbbell Row"],
-  "4.D": ["DB Lateral Raise", "Machine Lateral Raise"],
-  "4.E": ["Cable Reverse Fly (high pulleys)", "Rear Delt DB Fly (Bent-Over)"],
-  "4.F": ["DB Curl", "Preacher Curl (EZ Bar)", "Cable Curl"],
-  "4.G": ["Cable Rope Hammer Curl", "DB Curl"],
-  "6.A": ["Smith Machine Squat (feet forward)", "Hack Squat Machine", "Leg Press Machine", "Front Squat"],
-  "6.B": ["Hack Squat Machine", "Smith Machine Squat (feet forward)"],
-  "6.C": ["Cable Pull-Through (rope)", "Smith Machine Hip Thrust"],
-  "6.D": [],
-  "6.E": ["Cable Hip Abduction (ankle strap)", "Banded Lateral Walk"],
-  "6.F": ["Seated DB Calf Raise (on bench)", "Standing Calf Raise Machine", "Leg Press Calf Raise"],
-  "6.G": ["Captain's Chair Leg Raise", "Cable Crunch", "Ab Wheel Rollout"],
-  "7.A": ["Smith Machine Shoulder Press", "Barbell Overhead Press", "Machine Shoulder Press"],
-  "7.B": ["Flat DB Press", "Smith Machine Bench Press", "Decline Dumbbell Press"],
-  "7.C": ["Captain's Chair Dip (weighted)", "Assisted Dip Machine"],
-  "7.D": ["Cable Crossover Fly", "Cable Fly", "Dumbbell Fly"],
-  "7.E": ["Cable Lateral Raise", "Machine Lateral Raise"],
-  "7.F": ["EZ Bar Curl", "DB Curl", "Preacher Curl (EZ Bar)"],
-  "7.G": ["Overhead Cable Tricep Extension", "Cable Pushdown", "Rope Pushdown"],
-};
-// One extra not otherwise defined: the cable crossover variant for chest day.
-EXERCISE_EXTRAS.push({ name: "Cable Crossover Fly (high to low)", muscle: "Chest", type: "isolation", sets: 3, reps: "10–15", rest: "1m 30s" });
-
-function loadCustomExercises() {
-  try {
-    const a = JSON.parse(localStorage.getItem("wj_custom_exercises") || "[]");
-    return Array.isArray(a) ? a.filter(x => x && typeof x.name === "string" && x.name.trim()) : [];
-  } catch { return []; }
-}
-let CUSTOM_EXERCISES = loadCustomExercises();
-let LIB_CACHE = null;
-function buildLibrary() {
-  const map = new Map();
-  const add = ex => {
-    const key = exKey(ex.name);
-    if (!key || map.has(key)) return;
-    const { id: _id, startWeight, ...rest } = ex;
-    map.set(key, { sets: 3, reps: "10–12", rest: "1m 30s", type: "isolation", muscle: "", ...rest, ...(startWeight != null ? { startWeight } : {}) });
-  };
-  Object.values(PROGRAM).forEach(d => d.exercises.forEach(add));
-  Object.values(GYM_SUBS).forEach(add);
-  EXERCISE_EXTRAS.forEach(add);
-  CUSTOM_EXERCISES.forEach(add);
-  const index = new Map();
-  map.forEach((ex, key) => index.set(key, ex.name));
-  const addAliases = table => {
-    for (const [official, alts] of Object.entries(table)) {
-      const offKey = exKey(official);
-      const target = map.has(offKey) ? map.get(offKey).name : null;
-      if (!target) continue;
-      alts.forEach(a => { const k2 = exKey(a); if (k2 && !index.has(k2)) index.set(k2, target); });
-    }
-  };
-  addAliases(NAME_ALIASES);
-  addAliases(LIB_ALIASES);
-  LIB_CACHE = { map, index, list: [...map.values()] };
-  return LIB_CACHE;
-}
-function lib() { return LIB_CACHE ?? buildLibrary(); }
-// The official name for anything typed or stored; unknown names come back trimmed.
-function canonName(raw) {
-  const t = String(raw ?? "").trim();
-  if (!t) return t;
-  return lib().index.get(exKey(t)) ?? t;
-}
-function nameKey(n) { return exKey(canonName(n)); }
-function libFind(name) { return lib().map.get(nameKey(name)) ?? null; }
-// Library matches for what someone is typing: whole-phrase hits first, then
-// exercises containing most of the words.
-function searchLibrary(q, limit = 6) {
-  const qk = exKey(q);
-  if (!qk) return [];
-  const toks = qk.split(" ").filter(t => t.length > 1);
-  const out = [];
-  for (const ex of lib().list) {
-    const k = exKey(ex.name);
-    let score = 0;
-    if (k === qk) score = 1000;
-    else if (k.includes(qk) || qk.includes(k)) score = 100;
-    else if (toks.length) {
-      const hit = toks.filter(t => k.includes(t)).length;
-      if (hit / toks.length >= 0.6) score = 10 * hit / toks.length;
-    }
-    if (score > 0) out.push({ ex, score });
-  }
-  const canon = lib().index.get(qk);
-  if (canon) { const hit = out.find(o => o.ex.name === canon); if (hit) hit.score = 2000; }
-  return out.sort((a, b) => b.score - a.score || a.ex.name.localeCompare(b.ex.name)).slice(0, limit).map(o => o.ex);
-}
-function addCustomExercise(ex) {
-  const name = ex.name.trim();
-  if (!name || libFind(name)) return libFind(name) ?? null;
-  CUSTOM_EXERCISES = [...CUSTOM_EXERCISES, { sets: 3, reps: "10–12", rest: "1m 30s", type: "isolation", muscle: "", ...ex, name }];
-  try { localStorage.setItem("wj_custom_exercises", JSON.stringify(CUSTOM_EXERCISES)); } catch {}
-  buildLibrary();
-  return libFind(name);
-}
-// Alternatives for one slot of a session: its programmed exercise first, then the
-// slot's list. A movement outside the program falls back to the same muscle.
-function slotAlternatives(entry, mv) {
-  const out = [];
-  const seen = new Set([nameKey(mv.name)]);
-  const push = name => {
-    const ex = libFind(name);
-    if (ex && !seen.has(exKey(ex.name))) { seen.add(exKey(ex.name)); out.push(ex); }
-  };
-  if (entry?.programDay && mv?.programRef) {
-    const base = resolveExercise(entry.programDay, mv.programRef, entry.location);
-    if (base) push(base.name);
-    (SLOT_ALTERNATIVES[`${entry.programDay}.${mv.programRef}`] ?? []).forEach(push);
-  } else {
-    const muscle = mv?.muscle || libFind(mv?.name)?.muscle;
-    if (muscle) lib().list.filter(e => e.muscle === muscle).slice(0, 8).forEach(e => push(e.name));
-  }
-  return out;
-}
-
-const SWAP_REASONS = ["Machine taken", "Not at this gym", "Preference"];
-function setIsLogged(st) { return !!st && st.r !== "" && st.r != null; }
-// Pure: the movement `m` of `entry` turned into library exercise `ex`. The slot keeps
-// its prescription (sets, reps, rest); the exercise supplies type, muscle, cue and load
-// step. Logged sets are never touched; unlogged ones are reseeded from this exercise's
-// own history at this gym, so a swap never inherits another machine's weights.
-function buildSwappedMovement(m, entry, entries, ex, reason) {
-  const loc = entry.location ?? "equinox";
-  const hasSlot = !!(m.programRef && entry.programDay);
-  const base = hasSlot ? resolveExercise(entry.programDay, m.programRef, loc) : null;
-  const setsTarget = hasSlot ? (m.setsTarget ?? base?.sets ?? ex.sets) : ex.sets;
-  const repsTarget = hasSlot ? (m.repsTarget ?? base?.reps ?? ex.reps) : ex.reps;
-  const rest = hasSlot ? (m.rest ?? base?.rest ?? ex.rest) : ex.rest;
-  const others = entries.filter(e => e.id !== entry.id);
-  const hist = lastMovementByName(others, ex.name, loc);
-  const histSets = hist?.mv.sets ?? [];
-  const useCoach = !!COACH_TARGETS[ex.name] && !loggedSince(others, ex.name, COACH_SINCE);
-  const useStart = ex.startWeight != null && !loggedSince(others, ex.name, BLOCK_START);
-  const seed = i => ({
-    w: useCoach ? String(COACH_TARGETS[ex.name].weight) : useStart ? String(ex.startWeight) : (histSets[i]?.w ?? ""),
-    r: (useCoach || useStart) ? "" : (histSets[i]?.r ?? ""),
-    rir: "",
-  });
-  const kept = (m.sets ?? []).filter(setIsLogged);
-  const total = Math.max(setsTarget || 0, kept.length);
-  const sets = [];
-  for (let i = 0; i < total; i++) {
-    const cur = m.sets?.[i];
-    sets.push(setIsLogged(cur) ? cur : seed(i));
-  }
-  const backToBase = !!base && nameKey(ex.name) === nameKey(base.name);
-  return {
-    ...m,
-    name: ex.name,
-    setsTarget, repsTarget, rest,
-    type: ex.type ?? "isolation",
-    muscle: ex.muscle ?? "",
-    cue: ex.cue ?? "",
-    bodyweight: !!ex.bodyweight,
-    loadStep: ex.loadStep ?? null,
-    substituted: backToBase ? !!base.substituted : false,
-    swappedFrom: backToBase ? null : (m.swappedFrom ?? base?.name ?? m.name ?? null),
-    swapReason: backToBase ? null : (reason ?? null),
-    sets,
-    lastSets: histSets.length > 0 ? histSets : null,
-    lastDate: hist?.date ?? null,
-    lastLocation: hist?.location ?? null,
-  };
-}
-// One-time clean-up: every stored movement name becomes its official name (exact
-// normalized and alias matches only), and recent sessions get their "last session"
-// box rebuilt from history before that session, so a renamed lift picks up its numbers.
-function migrateNames(entries, recentCutoff) {
-  let changed = false;
-  const out = entries.map(e => ({ ...e, movements: (e.movements ?? []).map(m => {
-    const c = canonName(m.name);
-    if (c !== m.name) { changed = true; return { ...m, name: c }; }
-    return m;
-  }) }));
-  const res = out.map(e => {
-    if (e.date < recentCutoff) return e;
-    const prior = out.filter(o => o.date < e.date);
-    return { ...e, movements: e.movements.map(m => {
-      if (!m.name) return m;
-      const h = lastMovementByName(prior, m.name, e.location ?? "equinox");
-      if (!h) return m;
-      const same = JSON.stringify(m.lastSets ?? null) === JSON.stringify(h.mv.sets) && m.lastDate === h.date;
-      if (same) return m;
-      changed = true;
-      return { ...m, lastSets: h.mv.sets, lastDate: h.date, lastLocation: h.location };
-    }) };
-  });
-  return { entries: res, changed };
-}
-
-// Most recent logged instance of a movement by exact name (or alias), on ANY
-// program day. Used when an exercise has moved to a different day, so its weights
-// still carry forward. Only counts movements with at least one logged set.
-// When a location is given, history from that same gym wins; only if there is none
-// does it fall back to the other gym (machines differ, so same-gym numbers are the
-// trustworthy ones).
-function lastMovementByName(entries, name, location = null) {
-  if (!name) return null;
-  const want = nameKey(name);
-  const sorted = [...entries].sort((a, b) => b.date.localeCompare(a.date));
-  const passes = location ? [e => (e.location ?? "equinox") === location, () => true] : [() => true];
-  for (const ok of passes) {
-    for (const e of sorted) {
-      if (!ok(e)) continue;
-      const mv = e.movements.find(m => m.name && nameKey(m.name) === want && m.sets.some(s => (s.w !== "" && s.w != null) || (s.r !== "" && s.r != null)));
-      if (mv) return { mv, date: e.date, location: e.location ?? "equinox" };
-    }
-  }
-  return null;
-}
-
-// ── HELPERS ──────────────────────────────────────────────────────────────────
-function todayStr() {
-  // IMPORTANT: use LOCAL date components, not toISOString() which is UTC-based.
-  // toISOString() rolls over to the next calendar day ~4-5 hours early for US timezones
-  // (e.g. 8pm Eastern is already after midnight UTC), which silently broke "today" for
-  // macros, journal entries, and cycle tracking in the evening.
-  const d = new Date();
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${y}-${m}-${day}`;
-}
-function localDateStr(d) {
-  // Same local-date logic as todayStr(), for an arbitrary Date object (not just "now")
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${y}-${m}-${day}`;
-}
-function restToSeconds(restStr) {
-  if (!restStr) return 60;
-  const m = restStr.match(/(\d+)\s*m(?:\s*(\d+)\s*s)?/);
-  if (m) return parseInt(m[1]) * 60 + (m[2] ? parseInt(m[2]) : 0);
-  const s = restStr.match(/(\d+)\s*s/);
-  if (s) return parseInt(s[1]);
-  return 60;
-}
-function fmtDate(iso) {
-  const d = new Date(iso + "T12:00:00");
-  return d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", year: "numeric" });
-}
-function newEntry(dateStr) {
-  return {
-    id: Date.now(),
-    date: dateStr,
-    programDay: null,
-    customTitle: "",
-    note: "",
-    movements: [],
-    completedAt: null,
-    warmup: { stretchBefore: false, treadmill: false, stretchAfter: false },
-    location: "equinox",
-  };
-}
-function newMovement(name = "") {
-  return { id: Date.now() + Math.random(), name, sets: [{ w: "", r: "" }], note: "" };
-}
-
-const SEED_WEIGHTS = [];
-// ── STORAGE (localStorage — persists across deployments) ──────────────────
-async function loadEntries() {
-  try {
-    const raw = localStorage.getItem("wj_entries");
-    if (raw) { const p = JSON.parse(raw); if (Array.isArray(p)) return p; }
-  } catch {}
-  return [];
-}
-async function saveEntries(entries) {
-  try {
-    const data = JSON.stringify(entries);
-    localStorage.setItem("wj_entries", data);
-    // Warn if storage is getting large (>4MB)
-    const kb = Math.round(data.length / 1024);
-    if (kb > 4096) console.warn(`[Journal] Storage at ${kb}KB — consider exporting CSV backup`);
-  } catch (e) {
-    if (e.name === "QuotaExceededError") {
-      alert("Storage full — please export your data as CSV from the journal header, then contact support.");
-    }
-  }
-}
-
-async function loadWeights() {
-  try {
-    const raw = localStorage.getItem("wj_weights");
-    if (raw) { const p = JSON.parse(raw); if (Array.isArray(p) && p.length > 0) return p; }
-  } catch {}
-  return JSON.parse(JSON.stringify(SEED_WEIGHTS));
-}
-async function saveWeights(weights) {
-  try { localStorage.setItem("wj_weights", JSON.stringify(weights)); } catch {}
-}
-
-// ── SERVER CALLS ──────────────────────────────────────────────────────────────
-// AI and Drive calls go through /api/* on Vercel so no key ever ships to the browser.
-// The server checks a passcode you enter once on this phone (APP_PASSCODE env var).
-function getPasscode() {
-  let code = "";
-  try { code = localStorage.getItem("wj_passcode") || ""; } catch {}
-  if (!code) {
-    code = (window.prompt("Enter your app passcode to use AI and photos") || "").trim();
-    if (code) { try { localStorage.setItem("wj_passcode", code); } catch {} }
-  }
-  return code;
-}
-// A wrong passcode is forgotten so the app asks again next time.
-async function apiFetch(url, opts) {
-  const resp = await fetch(url, opts);
-  if (resp.status === 401) { try { localStorage.removeItem("wj_passcode"); } catch {} }
-  return resp;
-}
-function appHeaders() {
-  return { "Content-Type": "application/json", "x-app-passcode": getPasscode() };
-}
-
-// ── BACKUP ────────────────────────────────────────────────────────────────────
-// On iPhone this opens the share sheet, so you can save straight to Google Drive or Files.
-async function saveBackupFile(payload) {
-  const name = `workout_backup_${todayStr()}.json`;
-  const json = JSON.stringify(payload, null, 2);
-  try {
-    const file = new File([json], name, { type: "application/json" });
-    if (navigator.canShare && navigator.canShare({ files: [file] })) {
-      await navigator.share({ files: [file], title: "Workout Journal backup" });
-      try { localStorage.setItem("wj_last_backup", new Date().toISOString()); } catch {}
-      return true;
-    }
-  } catch (e) {
-    if (e?.name === "AbortError") return false; // user closed the share sheet
-  }
-  const url = URL.createObjectURL(new Blob([json], { type: "application/json" }));
-  const a = document.createElement("a");
-  a.href = url; a.download = name; a.click();
-  URL.revokeObjectURL(url);
-  try { localStorage.setItem("wj_last_backup", new Date().toISOString()); } catch {}
-  return true;
-}
-function backupFromStorage() {
-  const read = (k, fallback) => { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : fallback; } catch { return fallback; } };
-  let cycleAnchor = null;
-  try { cycleAnchor = localStorage.getItem("wj_cycle_anchor"); } catch {}
-  return {
-    version: 4, exportedAt: new Date().toISOString(),
-    entries: read("wj_entries", []), weights: read("wj_weights", []),
-    mesoOverride: read("wj_meso", null), cycleAnchor,
-    macros: read("wj_macros", {}), macroTargets: read("wj_macro_targets", DEFAULT_MACRO_TARGETS),
-  };
-}
-function daysSinceBackup() {
-  try {
-    const last = localStorage.getItem("wj_last_backup");
-    if (!last) return Infinity;
-    return (Date.now() - new Date(last).getTime()) / 86400000;
-  } catch { return Infinity; }
-}
-
-// ── CSV EXPORT ────────────────────────────────────────────────────────────────
-function buildCSV(entries, weights) {
-  const rows = [["TYPE","DATE","PROGRAM_DAY","WORKOUT_TITLE","EXERCISE","SET","WEIGHT_LBS","REPS","RIR","SESSION_NOTE","MOVEMENT_NOTE"]];
-  for (const e of [...entries].sort((a,b) => a.date.localeCompare(b.date))) {
-    if (!e.movements || e.movements.length === 0) {
-      rows.push(["WORKOUT", e.date, e.programDay ?? "", e.customTitle, "", "", "", "", "", csvEsc(e.note), ""]);
-      continue;
-    }
-    for (const mv of e.movements) {
-      if (!mv.sets || mv.sets.length === 0) {
-        rows.push(["WORKOUT", e.date, e.programDay ?? "", e.customTitle, mv.name, "", "", "", "", csvEsc(e.note), csvEsc(mv.note)]);
-        continue;
-      }
-      for (let i = 0; i < mv.sets.length; i++) {
-        const s = mv.sets[i];
-        rows.push(["WORKOUT", e.date, e.programDay ?? "", e.customTitle, mv.name, i + 1, s.w ?? "", s.r ?? "", s.rir ?? "", i === 0 ? csvEsc(e.note) : "", i === 0 ? csvEsc(mv.note) : ""]);
-      }
-    }
-  }
-  for (const w of [...weights].sort((a,b) => a.date.localeCompare(b.date))) {
-    rows.push(["BODY_WEIGHT", w.date, "", "", "", "", w.weight, w.unit, "", csvEsc(w.note ?? ""), ""]);
-  }
-  return rows.map(r => r.map(v => String(v ?? "")).join(",")).join("\n");
-}
-function csvEsc(v) {
-  if (!v) return "";
-  if (v.includes(",") || v.includes('"') || v.includes("\n")) return `"${v.replace(/"/g, '""')}"`;
-  return v;
-}
-function downloadCSV(entries, weights) {
-  const csv = buildCSV(entries, weights);
-  const blob = new Blob([csv], { type: "text/csv" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `workout_journal_${todayStr()}.csv`;
-  a.click();
-  URL.revokeObjectURL(url);
-}
-function downloadJSON(entries, weights, mesoOverride, cycleAnchor, macros, macroTargets) {
-  const payload = { version: 4, exportedAt: new Date().toISOString(), entries, weights, mesoOverride: mesoOverride ?? null, cycleAnchor: cycleAnchor ?? null, macros: macros ?? {}, macroTargets: macroTargets ?? DEFAULT_MACRO_TARGETS };
-  return saveBackupFile(payload);
-}
-function readJSONBackup(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = e => {
-      try {
-        const parsed = JSON.parse(e.target.result);
-        const entries = Array.isArray(parsed) ? parsed : (parsed.entries ?? []);
-        const weights = Array.isArray(parsed) ? [] : (parsed.weights ?? []);
-        const mesoOverride = parsed.mesoOverride ?? null;
-        const cycleAnchor = parsed.cycleAnchor ?? null;
-        const macros = parsed.macros ?? null;
-        const macroTargets = parsed.macroTargets ?? null;
-        resolve({ entries, weights, mesoOverride, cycleAnchor, macros, macroTargets, raw: parsed });
-      } catch { reject(new Error("Invalid JSON file")); }
-    };
-    reader.onerror = () => reject(new Error("Could not read file"));
-    reader.readAsText(file);
-  });
-}
-// Detect a standalone macro-app backup: date-keyed object without an .entries array at top level
-function isMacroOnlyBackup(parsed) {
-  if (Array.isArray(parsed)) return false;
-  if (parsed.entries || parsed.movements) return false; // workout backup shape
-  const dateKeys = Object.keys(parsed).filter(k => /^\d{4}-\d{2}-\d{2}$/.test(k));
-  return dateKeys.length > 0;
-}
-
-function getLastSession(entries, programDay, location = null) {
-  const days = [...entries]
-    .filter(e => e.programDay === programDay)
-    .sort((a, b) => b.date.localeCompare(a.date));
-  if (location) {
-    const same = days.find(e => (e.location ?? "equinox") === location);
-    if (same) return same;
-  }
-  return days[0] ?? null;
-}
-
-// ── RIR FEEDBACK (movement-type aware) ────────────────────────────────────────
-// Compounds: leave 1–2 in the tank. Isolation: failure OK on the last set.
-function rirFeedback(rir, type, isLastSet) {
-  if (rir === "" || rir === null || rir === undefined) return null;
-  const r = parseInt(rir);
-  if (isNaN(r)) return null;
-  if (type === "compound") {
-    if (r === 0) return { color: "#e05a4d", msg: "⚠ Leave 1–2 in tank on compounds" };
-    if (r <= 2) return { color: "#ffffff", msg: "✓ Ideal effort" };
-    return { color: "#c9c9c9", msg: "↑ Push a bit harder" };
-  } else {
-    // isolation
-    if (isLastSet) {
-      if (r <= 1) return { color: "#ffffff", msg: "✓ Failure earned here" };
-      return { color: "#c9c9c9", msg: "↑ Push closer to failure" };
-    }
-    if (r <= 2) return { color: "#ffffff", msg: "✓ Good effort" };
-    return { color: "#c9c9c9", msg: "↑ A little harder" };
-  }
-}
-
-// ── WEEKLY VOLUME PER MUSCLE ──────────────────────────────────────────────────
-// RP-style volume landmarks (sets/muscle/week): MEV → MAV → MRV
-// 8-day training cycle — landmarks are the standard weekly values × (8/7)
-const CYCLE_DAYS = 8;
-const SCALE = CYCLE_DAYS / 7; // ~1.143 — scales weekly RP landmarks to an 8-day cycle
-const VOLUME_LANDMARKS = {
-  Chest:     { mev: Math.round(10 * SCALE), mav: Math.round(18 * SCALE), mrv: Math.round(22 * SCALE) },
-  Back:      { mev: Math.round(10 * SCALE), mav: Math.round(20 * SCALE), mrv: Math.round(25 * SCALE) },
-  Quads:     { mev: Math.round(8  * SCALE), mav: Math.round(16 * SCALE), mrv: Math.round(20 * SCALE) },
-  Hamstrings:{ mev: Math.round(6  * SCALE), mav: Math.round(14 * SCALE), mrv: Math.round(18 * SCALE) },
-  Glutes:    { mev: Math.round(6  * SCALE), mav: Math.round(14 * SCALE), mrv: Math.round(18 * SCALE) },
-  Shoulders: { mev: Math.round(8  * SCALE), mav: Math.round(18 * SCALE), mrv: Math.round(26 * SCALE) },
-  Biceps:    { mev: Math.round(8  * SCALE), mav: Math.round(16 * SCALE), mrv: Math.round(20 * SCALE) },
-  Triceps:   { mev: Math.round(8  * SCALE), mav: Math.round(16 * SCALE), mrv: Math.round(20 * SCALE) },
-  Calves:    { mev: Math.round(8  * SCALE), mav: Math.round(16 * SCALE), mrv: Math.round(20 * SCALE) },
-};
-function cycleVolume(entries, cycleAnchor, endDate = null) {
-  // Count working sets per muscle from the cycle anchor onward, optionally bounded by
-  // an end date (exclusive-of-later-sessions) so past, already-finished cycles can be
-  // viewed too — not just the open-ended "anchor to now" current cycle.
-  const vol = {};
-  for (const e of entries) {
-    if (cycleAnchor && e.date < cycleAnchor) continue;
-    if (endDate && e.date > endDate) continue;
-    for (const mv of e.movements) {
-      let muscle = mv.muscle;
-      if (!muscle && e.programDay && mv.programRef) {
-        const progEx = programExFor(e, mv) ?? programExByName(mv.name);
-        muscle = progEx?.muscle;
-      }
-      if (!muscle) continue;
-      const workingSets = mv.sets.filter(s => s.r && String(s.r).trim() !== "").length;
-      vol[muscle] = (vol[muscle] || 0) + workingSets;
-    }
-  }
-  return vol;
-}
-
-// Segment full training history into distinct past cycles, so Volume can show any
-// previous cycle's totals, not just the current in-progress one. A cycle boundary is
-// detected the same way "This Cycle" auto-completion works: walking forward through
-// completed training-day sessions, a cycle ends once every training day has repeated.
-function segmentPastCycles(entries) {
-  const trainingDayNums = Object.entries(PROGRAM).filter(([, d]) => d.exercises.length > 0).map(([dn]) => Number(dn));
-  const completed = [...entries]
-    .filter(e => e.completedAt && e.programDay && trainingDayNums.includes(e.programDay))
-    .sort((a, b) => a.date.localeCompare(b.date) || a.completedAt.localeCompare(b.completedAt));
-
-  const cycles = [];
-  let seenDays = new Set();
-  let cycleStart = null;
-  let cycleSessions = [];
-  for (const e of completed) {
-    if (cycleStart === null) cycleStart = e.date;
-    cycleSessions.push(e);
-    seenDays.add(e.programDay);
-    if (trainingDayNums.every(dn => seenDays.has(dn))) {
-      cycles.push({ start: cycleStart, end: e.date, sessions: cycleSessions });
-      seenDays = new Set();
-      cycleStart = null;
-      cycleSessions = [];
-    }
-  }
-  // Return most-recent-first; each entry has enough info to compute volume for that window
-  return cycles.reverse();
-}
-function volumeStatus(sets, muscle) {
-  const lm = VOLUME_LANDMARKS[muscle];
-  if (!lm) return { label: "—", color: C.textMid };
-  if (sets < lm.mev) return { label: "below MEV", color: C.textMid };
-  if (sets <= lm.mav) return { label: "productive", color: C.teal };
-  if (sets <= lm.mrv) return { label: "high", color: C.amber };
-  return { label: "over MRV", color: C.red };
-}
-
-// ── PROGRESSION & PR HELPERS ──────────────────────────────────────────────────
-// Epley formula: 1RM = weight × (1 + reps/30), adjusted for RIR
-function estimateOneRM(weight, reps, rir = 0) {
-  if (!weight || !reps) return null;
-  const w = parseFloat(weight), r = parseFloat(reps) + parseFloat(rir || 0);
-  if (isNaN(w) || isNaN(r) || r <= 0) return null;
-  return Math.round(w * (1 + r / 30));
-}
-
-// Best set per session for a given movement (by estimated 1RM)
-function bestSetForMovement(mv) {
-  let best = null;
-  mv.sets.forEach((s, i) => {
-    if (!s.w || !s.r) return;
-    const e1rm = estimateOneRM(s.w, s.r, s.rir);
-    if (e1rm && (!best || e1rm > best.e1rm)) {
-      best = { w: parseFloat(s.w), r: parseFloat(s.r), rir: s.rir || 0, e1rm, setIdx: i };
-    }
-  });
-  return best;
-}
-
-// All sessions for a specific movement name, sorted oldest→newest
-function movementHistory(entries, mvName) {
-  const results = [];
-  [...entries].sort((a, b) => a.date.localeCompare(b.date)).forEach(e => {
-    e.movements.forEach(mv => {
-      if (mv.name && nameKey(mv.name) === nameKey(mvName)) {
-        const best = bestSetForMovement(mv);
-        if (best) results.push({ date: e.date, ...best });
-      }
-    });
-  });
-  return results;
-}
-
-// ── AUTOREGULATED PROGRESSION ─────────────────────────────────────────────────
-// Parse a repsTarget string into {min,max} for a given set number.
-// Handles split formats ("2×10-12, 2×15-20"), ranges ("8–12"), and singles ("10").
-function parseRepRange(repsTarget, setNum = 1) {
-  if (!repsTarget) return null;
-  const splitMatch = repsTarget.match(/(\d+)×(\d+)[–\-](\d+)/g);
-  if (splitMatch) {
-    let setCounter = 0;
-    for (const chunk of splitMatch) {
-      const cm = chunk.match(/(\d+)×(\d+)[–\-](\d+)/);
-      if (!cm) continue;
-      setCounter += parseInt(cm[1]);
-      if (setNum <= setCounter) return { min: parseInt(cm[2]), max: parseInt(cm[3]) };
-    }
-  }
-  const m = repsTarget.match(/(\d+)\s*[–\-]\s*(\d+)/);
-  if (m) return { min: parseInt(m[1]), max: parseInt(m[2]) };
-  const single = repsTarget.match(/^(\d+)/);
-  if (single) return { min: parseInt(single[1]), max: parseInt(single[1]) };
-  return null;
-}
-
-// Round a suggested load to something actually loadable in a gym.
-// Barbell/plate-loaded work rounds to 5s; dumbbell/cable/isolation to 2.5s.
-function roundLoad(weight, type, stepOverride = null) {
-  const step = stepOverride ?? (type === "compound" ? 5 : 2.5);
-  return Math.round(weight / step) * step;
-}
-
-// Every past session of one movement, newest first, with its sets parsed and
-// summarized. Used by the progression engine so it can look back through the
-// whole history rather than only at the single most recent session.
-function movementSessions(entries, mvName, excludeEntryId = null, bodyweight = false, location = null) {
-  if (!mvName) return [];
-  const want = nameKey(mvName);
-  const out = [];
-  const sorted = [...entries]
-    .filter(e => e.id !== excludeEntryId)
-    .sort((a, b) => b.date.localeCompare(a.date));
-  for (const e of sorted) {
-    for (const mv of e.movements) {
-      if (!mv.name || nameKey(mv.name) !== want) continue;
-      const sets = mv.sets
-        .map((s, i) => ({
-          // Bodyweight movements are usually logged with a blank weight; count them as 0.
-          w: isNaN(parseFloat(s.w)) && bodyweight ? 0 : parseFloat(s.w),
-          r: parseFloat(s.r),
-          rir: s.rir === "" || s.rir === null || s.rir === undefined ? null : parseFloat(s.rir),
-          setNum: i + 1,
-        }))
-        .filter(s => !isNaN(s.w) && !isNaN(s.r));
-      if (sets.length === 0) continue;
-      const withRIR = sets.filter(s => s.rir !== null && !isNaN(s.rir));
-      out.push({
-        date: e.date,
-        location: e.location ?? "equinox",
-        sets,
-        topSet: sets.reduce((a, b) => (b.w > a.w ? b : a)),
-        totalReps: sets.reduce((n, s) => n + s.r, 0),
-        avgRIR: withRIR.length ? withRIR.reduce((sum, s) => sum + s.rir, 0) / withRIR.length : null,
-        lastSetRIR: withRIR.length ? withRIR[withRIR.length - 1].rir : null,
-        hasRIR: withRIR.length > 0,
-      });
-    }
-  }
-  // Same-gym history is the only reliable basis for progression: the same lift can
-  // feel very different on another gym's machine. With no history at this gym yet,
-  // fall back to the other gym's sessions but flag it so the engine calibrates
-  // instead of prescribing a jump.
-  if (location) {
-    const same = out.filter(s => s.location === location);
-    if (same.length) return same;
-    if (out.length) out.crossGym = true;
-  }
-  return out;
-}
-
-// How many working sets need to hit the top of the rep range before an accessory
-// is allowed to add weight. Compounds progress off a single strong top set (one
-// true working set is meaningful signal on a heavy lift), but accessories use
-// double progression: reps first, then load, checked across ALL working sets so
-// one lucky set doesn't drag the load up before the movement is actually ready.
-//
-// Rule: all sets but one need to hit max reps (e.g. 4 sets needs 3, 3 sets needs
-// 2). With only 2 sets there is no room for a miss without losing the signal
-// entirely, so both are required. A single-set accessory just needs that set.
-function accessorySetsNeeded(totalSets) {
-  if (totalSets <= 2) return totalSets;
-  return totalSets - 1;
-}
-
-// Suggest the next session's load/rep action for one movement.
-//
-// Reads back through the FULL history for this movement, not just the last
-// session. If the most recent session has no RIR logged, it looks further back
-// for the last session that does, and if RIR was never logged at all it falls
-// back to reading the rep trend across sessions instead of giving up.
-//
-// Deliberately conservative: reads only logged sets, never auto-applies
-// anything, and holds steady rather than guessing when the signal is weak.
-function suggestProgression(entries, mvName, repsTarget, type, opts = {}) {
-  const {
-    isDeloadWeek = false, excludeEntryId = null,
-    loadStep = null, bodyweight = false, startWeight = null, location = null, setsTarget = null,
-  } = opts;
-
-  // Coach's one-time target for the next session (see COACH_TARGETS).
-  const coachT = COACH_TARGETS[canonName(mvName)];
-  if (coachT && !loggedSince(entries.filter(e => e.id !== excludeEntryId), mvName, COACH_SINCE)) {
-    return { action: "coach", weight: coachT.weight, lastWeight: null, lastDate: null, reason: coachT.note };
-  }
-
-  // Block starting weight takes priority until the movement is logged once in the
-  // current block, so the card agrees with the weight that was pre-filled.
-  if (startWeight != null && !loggedSince(
-    entries.filter(e => e.id !== excludeEntryId), mvName, BLOCK_START)) {
-    return {
-      action: "block_start",
-      weight: startWeight,
-      lastWeight: null, lastDate: null,
-      reason: `Starting weight for the new block. Log RIR on every set and the engine takes over from next session.${loadStep ? ` Progress in ${loadStep} lb steps only.` : ""}`,
-    };
-  }
-
-  const sessions = movementSessions(entries, mvName, excludeEntryId, bodyweight, location);
-  if (sessions.length === 0) return null;
-
-  const recent = sessions[0];
-  const topSet = recent.topSet;
-  const lastDate = recent.date;
-  const range = parseRepRange(repsTarget, topSet.setNum);
-  // Compounds: one strong top set is enough signal to add weight.
-  // Accessories/isolation: double progression — require max reps across all but
-  // one working set (both, if there are only two) before load goes up. A single
-  // set under the rep floor is still enough to back off either way; that's a
-  // safety signal, not a "have you earned the jump" signal.
-  let hitTopOfRange, belowRange, accessoryProgressNote = "", accessoryNeed = 0;
-  if (type === "compound" || !range) {
-    hitTopOfRange = range ? topSet.r >= range.max : false;
-    belowRange = range ? topSet.r < range.min : false;
-  } else {
-    // The bar is set by today's prescription (e.g. 3 working sets), not by however
-    // many sets happened to be logged last time (extra sets do not raise the bar).
-    const prescribed = setsTarget && setsTarget > 0 ? setsTarget : recent.sets.length;
-    const need = accessorySetsNeeded(prescribed);
-    accessoryNeed = need;
-    const atMax = recent.sets.filter(s => s.r >= range.max).length;
-    hitTopOfRange = atMax >= need;
-    belowRange = topSet.r < range.min;
-    accessoryProgressNote = `${atMax} of ${recent.sets.length} sets logged at ${range.max}+ reps (need ${need} of your ${prescribed})`;
-  }
-  // Per-exercise step override (e.g. hip thrust moves in 10 lb jumps only)
-  const bump = loadStep ?? (type === "compound" ? 10 : 5);
-  const rl = w => roundLoad(w, type, loadStep);
-  // A reduction must actually reduce. With coarse steps (e.g. 10 lb on a 30 lb hip
-  // thrust), 95% of the load can round straight back to the same number, so fall
-  // back to dropping one full step whenever rounding erases the cut.
-  const stepSize = loadStep ?? (type === "compound" ? 5 : 2.5);
-  const down = (w, pct) => { const eased = rl(w * pct); return eased < w ? eased : Math.max(0, w - stepSize); };
-
-  // First time at this gym for this movement: the other gym's numbers are only a
-  // starting guess. Hold, calibrate, and let this gym's own log drive next week.
-  if (sessions.crossGym && !bodyweight && !isDeloadWeek && topSet.w > 0) {
-    const from = LOCATIONS[recent.location]?.short ?? "the other gym";
-    const here = LOCATIONS[location]?.short ?? "this gym";
-    return {
-      action: "hold", calibrate: true,
-      weight: topSet.w, lastWeight: topSet.w, lastDate,
-      reason: `First time on ${here}'s machine. Last logged at ${from}: ${topSet.w} x ${topSet.r}. Machines differ, so use that only as a starting point. Pick the load that lands you in ${repsTarget} with 1 to 2 reps in reserve, log it exactly as the stack reads, and from next time on the suggestion comes from ${here}'s own numbers.`,
-    };
-  }
-
-  // Bodyweight movements (ab work etc.) progress by reps and control, never load.
-  if (bodyweight) {
-    if (isDeloadWeek) {
-      return {
-        action: "deload", weight: 0, lastWeight: 0, lastDate,
-        reason: "Deload week. Cut to 2 sets and stop well short of failure.",
-      };
-    }
-    if (range && topSet.r >= range.max) {
-      return {
-        action: "add_reps", weight: 0, lastWeight: 0, lastDate,
-        reason: `Hit ${topSet.r} reps last time, the top of the ${range.min} to ${range.max} range. Slow the eccentric or add a pause rather than chasing more reps.`,
-      };
-    }
-    return {
-      action: "add_reps", weight: 0, lastWeight: 0, lastDate,
-      reason: range
-        ? `Last time: ${topSet.r} reps. Build toward ${range.max} with strict form before making it harder.`
-        : `Build reps with strict form before making it harder.`,
-    };
-  }
-
-  // Logged at bodyweight / zero load. Percentage-based advice is meaningless here,
-  // and for a movement the program expects to be loaded the real answer is to start
-  // putting weight on it, not to shave a percentage off nothing.
-  if (!(topSet.w > 0)) {
-    return {
-      action: "add_weight",
-      weight: 0,
-      lastWeight: 0, lastDate,
-      reason: `Logged at bodyweight last time (${topSet.r} reps). Add external load so this movement can actually progress, then log the weight.`,
-    };
-  }
-
-  // Deload overrides everything — intensity comes down regardless of performance
-  if (isDeloadWeek) {
-    return {
-      action: "deload",
-      weight: down(topSet.w, 0.85),
-      lastWeight: topSet.w, lastDate,
-      reason: "Deload week. Drop load about 15% and leave 3+ reps in reserve.",
-    };
-  }
-
-  // ── Path A: the most recent session has RIR. Strongest signal available. ──
-  if (recent.hasRIR) {
-    const avgRIR = recent.avgRIR;
-    if (belowRange && avgRIR <= 1) {
-      return {
-        action: "back_off",
-        weight: down(topSet.w, 0.95),
-        lastWeight: topSet.w, lastDate,
-        reason: `Last time: ${topSet.r} reps at RIR ${recent.lastSetRIR}, under the ${range.min} to ${range.max} target. Ease the load and rebuild reps.`,
-      };
-    }
-    // Top of the range earns the jump whatever the RIR: reps left in the tank at
-    // the top of the range only means the load is even more clearly too light.
-    if (hitTopOfRange) {
-      const over = range ? Math.max(...recent.sets.map(x => x.r)) - range.max : 0;
-      const tail = avgRIR <= 1
-        ? " Add weight."
-        : ` That was with about ${avgRIR.toFixed(1)} reps left per set, so the load is light. Add weight.`;
-      const overNote = over >= 2 ? ` You went ${over} past the ${range.max} rep ceiling.` : "";
-      return {
-        action: "add_weight",
-        weight: rl(topSet.w + bump),
-        lastWeight: topSet.w, lastDate,
-        reason: (type === "compound"
-          ? `Last time: ${topSet.r} reps at RIR ${recent.lastSetRIR}, top of range.`
-          : `Last time: ${accessoryProgressNote}.`) + overNote + tail,
-      };
-    }
-    if (avgRIR >= 2) {
-      return {
-        action: "add_reps",
-        weight: topSet.w, lastWeight: topSet.w, lastDate,
-        reason: `Averaged RIR ${avgRIR.toFixed(1)} last time, so there is room to push. Same weight, more reps.`,
-      };
-    }
-    return {
-      action: "hold",
-      weight: topSet.w, lastWeight: topSet.w, lastDate,
-      reason: !range
-        ? `Hold ${topSet.w} and progress reps before adding load.`
-        : type === "compound"
-          ? (hitTopOfRange ? `Hold ${topSet.w} and progress reps before adding load.` : `Hold ${topSet.w} and work toward ${range.max} reps before adding load.`)
-          : `Hold ${topSet.w}. ${accessoryProgressNote} so far, work toward ${accessoryNeed} before adding load.`,
-    };
-  }
-
-  // ── Path B: no RIR on the most recent session. Look further back for one. ──
-  const lastWithRIR = sessions.find(s => s.hasRIR);
-
-  // ── Path C: read the rep trend across sessions at comparable load. ──
-  // This is what makes the engine useful before RIR data exists at all.
-  const prior = sessions.find(s => s.date !== recent.date);
-  const trendNote = lastWithRIR
-    ? ` Last RIR on file is from ${fmtDate(lastWithRIR.date)} (avg ${lastWithRIR.avgRIR.toFixed(1)}).`
-    : " Log RIR today for sharper advice.";
-
-  if (hitTopOfRange) {
-    // Top of the range without RIR: still the clearest earned-the-jump signal,
-    // but bump conservatively since we cannot see how hard it actually was.
-    return {
-      action: "add_weight",
-      weight: rl(topSet.w + bump),
-      lastWeight: topSet.w, lastDate,
-      reason: type === "compound"
-        ? `Last time: ${topSet.r} reps at ${topSet.w}, the top of your ${range.min} to ${range.max} range. That earns a jump.${trendNote}`
-        : `Last time: ${accessoryProgressNote} at ${topSet.w}. That earns a jump.${trendNote}`,
-    };
-  }
-
-  if (belowRange) {
-    return {
-      action: "back_off",
-      weight: down(topSet.w, 0.95),
-      lastWeight: topSet.w, lastDate,
-      reason: `Last time: ${topSet.r} reps at ${topSet.w}, under the ${range.min} rep floor. Ease the load and rebuild reps.${trendNote}`,
-    };
-  }
-
-  if (prior && prior.topSet.w === topSet.w) {
-    const repDelta = recent.totalReps - prior.totalReps;
-    if (repDelta > 0) {
-      return {
-        action: "add_reps",
-        weight: topSet.w, lastWeight: topSet.w, lastDate,
-        reason: `Reps improved at ${topSet.w} since ${fmtDate(prior.date)} (${prior.totalReps} to ${recent.totalReps} total). Keep the load and keep adding reps.${trendNote}`,
-      };
-    }
-    if (repDelta < 0) {
-      return {
-        action: "hold",
-        weight: topSet.w, lastWeight: topSet.w, lastDate,
-        reason: `Total reps dropped at ${topSet.w} since ${fmtDate(prior.date)} (${prior.totalReps} to ${recent.totalReps}). Hold the load and rebuild before progressing.${trendNote}`,
-      };
-    }
-  }
-
-  return {
-    action: "hold",
-    weight: topSet.w, lastWeight: topSet.w, lastDate,
-    reason: range
-      ? `Last time: ${topSet.r} reps at ${topSet.w}. Work toward ${range.max} reps before adding load.${trendNote}`
-      : `Hold ${topSet.w} and progress reps before adding load.${trendNote}`,
-  };
-}
-
-// Get all unique movement names across entries
-function allMovementNames(entries) {
-  const names = new Set();
-  entries.forEach(e => e.movements.forEach(mv => { if (mv.name) names.add(mv.name); }));
-  return [...names].sort();
-}
-
-// Personal records per movement
-function getPersonalRecords(entries) {
-  const records = {}; // mvName -> { maxWeight, maxE1RM, date }
-  [...entries].sort((a, b) => a.date.localeCompare(b.date)).forEach(e => {
-    e.movements.forEach(mv => {
-      if (!mv.name) return;
-      const best = bestSetForMovement(mv);
-      if (!best) return;
-      if (!records[mv.name] || best.e1rm > records[mv.name].maxE1RM) {
-        records[mv.name] = { maxWeight: best.w, maxE1RM: best.e1rm, date: e.date, reps: best.r };
-      }
-    });
-  });
-  return records;
-}
-
-// Check if this session's movement is a new PR
-function isNewPR(entry, mv, allEntries) {
-  const best = bestSetForMovement(mv);
-  if (!best) return false;
-  const prevEntries = allEntries.filter(e => e.date < entry.date);
-  const prior = movementHistory(prevEntries, mv.name);
-  const prevBest = prior.length ? prior.reduce((a, b) => (b.e1rm > a.e1rm ? b : a)) : null;
-  return !prevBest || best.e1rm > prevBest.e1rm;
-}
-
-// Detailed PR info for a single movement in a session — used by the Complete Workout
-// summary to show exactly what improved (weight, reps, or estimated 1RM) and by how much.
-function detailedPRForMovement(entry, mv, allEntries) {
-  const best = bestSetForMovement(mv);
-  if (!best || !mv.name) return null;
-  const prevEntries = allEntries.filter(e => e.date < entry.date);
-  const priorHistory = movementHistory(prevEntries, mv.name);
-  if (priorHistory.length === 0) return null; // first time doing this movement — not a "record" yet, just a first entry
-  // Best-ever prior performance (by e1RM), not just the last session
-  const priorBest = priorHistory.reduce((a, b) => (b.e1rm > a.e1rm ? b : a));
-  if (best.e1rm <= priorBest.e1rm) return null;
-
-  // Determine what actually improved: weight PR (heavier at same or better reps),
-  // rep PR (same weight, more reps), or just an estimated-1RM PR (mixed change)
-  let type = "1RM";
-  if (best.w > priorBest.w && best.r >= priorBest.r) type = "weight";
-  else if (best.w === priorBest.w && best.r > priorBest.r) type = "reps";
-
-  return {
-    name: mv.name,
-    type,
-    newWeight: best.w, newReps: best.r, newE1RM: best.e1rm,
-    prevWeight: priorBest.w, prevReps: priorBest.r, prevE1RM: priorBest.e1rm, prevDate: priorBest.date,
-    weightDelta: best.w - priorBest.w,
-    repDelta: best.r - priorBest.r,
-    e1rmDelta: best.e1rm - priorBest.e1rm,
-  };
-}
-
-
-// ── SMART COACHING: plateaus, set counts, recovery, PR forecast ─────────────
-// Strength score for one parsed session (movementSessions shape): best estimated
-// 1RM across its sets, RIR included. Bodyweight work with no added load scores by reps.
-function sessionScore(sess) {
-  let best = 0;
-  for (const st of sess.sets) {
-    const v = st.w > 0 ? st.w * (1 + (st.r + (st.rir ?? 0)) / 30) : st.r;
-    if (v > best) best = v;
-  }
-  return best;
-}
-// Deload-week sessions are light on purpose; they never count toward a stall or a
-// set-count change.
-function isDeloadDate(date) {
-  const d = daysBetween(BLOCK_START, date);
-  if (d < 0) return false;
-  return Math.floor(d / 7) % MESO_LENGTH === MESO_LENGTH - 1;
-}
-function workingSessions(entries, mvName, o = {}) {
-  const all = movementSessions(entries, mvName, o.excludeEntryId ?? null, !!o.bodyweight, o.location ?? null);
-  const out = all.filter(x => x.date >= BLOCK_START && !isDeloadDate(x.date));
-  out.crossGym = !!all.crossGym;
-  return out;
-}
-const PLATEAU_SESSIONS = 3;
-// A lift has stalled when its last 3 or more sessions at this gym (this block, no
-// deload weeks) failed to beat its best. The fix depends on how hard those sets were.
-function detectPlateau(entries, mvName, o = {}) {
-  if (o.isDeloadWeek) return null;
-  const sess = workingSessions(entries, mvName, o);
-  if (sess.crossGym || sess.length < PLATEAU_SESSIONS + 1) return null;
-  const chrono = [...sess].reverse();
-  let best = -1, bestIdx = 0;
-  chrono.forEach((x, i) => { const v = sessionScore(x); if (v > best + 0.5) { best = v; bestIdx = i; } });
-  const n = chrono.length - 1 - bestIdx;
-  if (n < PLATEAU_SESSIONS) return null;
-  const stalled = chrono.slice(bestIdx + 1);
-  const rirs = stalled.map(x => x.avgRIR).filter(v => v != null);
-  const avgRIR = rirs.length ? rirs.reduce((a, b) => a + b, 0) / rirs.length : null;
-  const top = sess[0].topSet.w;
-  let alt = null;
-  if (o.entry && o.mv) alt = slotAlternatives(o.entry, o.mv)[0]?.name ?? null;
-  let kind, fix, weight = null;
-  if (avgRIR != null && avgRIR <= 0.75) {
-    kind = "reset";
-    weight = top > 0 ? roundLoad(top * 0.9, o.type ?? "isolation", o.loadStep ?? null) : null;
-    fix = weight
-      ? `You are grinding every set (average RIR ${avgRIR.toFixed(1)}). Drop to ${weight} for one session, build reps back up, then climb past ${top}.`
-      : `You are grinding every set (average RIR ${avgRIR.toFixed(1)}). Do one easier session, stop 2 reps short, then push again.`;
-  } else if (avgRIR != null && avgRIR >= 2) {
-    kind = "push";
-    fix = `Your sets end with about ${avgRIR.toFixed(1)} reps left. Take the last set to RIR 0 or 1 before changing anything else.`;
-  } else if (n >= 5 && alt) {
-    kind = "swap";
-    fix = `${n} sessions without a new best. Swap to ${alt} for the rest of the block; a new angle restarts progress.`;
-  } else {
-    kind = "reps";
-    fix = top > 0
-      ? `Stay at ${top} and add one rep to a single set each session. Small wins break a stall.${avgRIR == null ? " Log RIR so the app can tell fatigue from effort." : ""}`
-      : `Add one rep to a single set each session. Small wins break a stall.`;
-  }
-  return { sessions: n, since: chrono[bestIdx].date, best: Math.round(best), kind, fix, weight };
-}
-// Proposes one more or one fewer working set, from the last two sessions at this gym.
-//   add: every prescribed set done, the final set still ended at RIR 2+, and reps
-//        held up from first set to last (the muscle can recover from more)
-//   cut: the final set fell under the rep floor or lost 30%+ of the first set's reps,
-//        at RIR 0 (that set is fatigue, not growth)
-function suggestSetCount(entries, mvName, o = {}) {
-  const target = o.setsTarget;
-  if (o.isDeloadWeek || !target) return null;
-  const range = parseRepRange(o.repsTarget);
-  if (!range) return null;
-  const sess = workingSessions(entries, mvName, o);
-  if (sess.crossGym || sess.length < 2) return null;
-  const last2 = sess.slice(0, 2);
-  const fin = x => x.sets[x.sets.length - 1];
-  const drop = x => { const a = x.sets[0].r, b = fin(x).r; return a > 0 ? (a - b) / a : 0; };
-  const easy = last2.every(x => x.sets.length >= target && fin(x).rir != null && fin(x).rir >= 2 && drop(x) <= 0.1 && fin(x).r >= range.min);
-  if (easy && target < 5) {
-    return { dir: "add", to: target + 1, reason: `Your last set ended at RIR ${fin(last2[0]).rir} with reps holding steady, two sessions running. You can recover from one more set.` };
-  }
-  const hard = last2.every(x => x.sets.length === target && (fin(x).rir == null || fin(x).rir <= 0) && (fin(x).r < range.min || drop(x) >= 0.3));
-  if (hard && target > 2) {
-    return { dir: "cut", to: target - 1, reason: `Your last set has fallen apart two sessions running (${fin(last2[0]).r} reps vs ${last2[0].sets[0].r} on set 1). Drop it and put that effort into the sets that count.` };
-  }
-  return null;
-}
-// Recovery check-in at the start of a session: sleep and soreness, one tap each.
-const READINESS_SLEEP = [["poor", "Poor"], ["ok", "OK"], ["good", "Good"]];
-const READINESS_SORE = [["very", "Very sore"], ["some", "A bit"], ["none", "Fresh"]];
-function readinessLevel(r) {
-  if (!r || !r.sleep || !r.soreness) return null;
-  const pts = ({ poor: 2, ok: 1, good: 0 })[r.sleep] + ({ very: 2, some: 1, none: 0 })[r.soreness];
-  return pts >= 3 ? "low" : pts === 2 ? "moderate" : "good";
-}
-const READINESS_TEXT = {
-  good: "Recovered. Chase every jump the app suggests.",
-  moderate: "Partly recovered. Hold your weights today; no new jumps.",
-  low: "Under-recovered. Hold your weights and skip the last set of each accessory.",
-};
-// A low or moderate check-in turns any weight jump into a hold at last time's load.
-function applyReadiness(sug, level) {
-  if (!sug || !level || level === "good" || sug.action !== "add_weight") return sug;
-  return {
-    ...sug,
-    action: sug.lastWeight > 0 ? "hold" : "add_reps",
-    weight: sug.lastWeight,
-    readiness: level,
-    reason: sug.lastWeight > 0
-      ? `You earned a jump, but recovery is ${level} today. Match ${sug.lastWeight} and take the jump next session.`
-      : `You earned more load, but recovery is ${level} today. Match last time and take the jump next session.`,
-  };
-}
-// The fewest reps at `weight` (assuming RIR 1) that beat the all-time best estimated
-// 1RM. Returned only when it is within reach: no more than 2 reps past the range top.
-function prForecast(entries, mvName, weight, repsTarget, excludeEntryId = null) {
-  const w = parseFloat(weight);
-  if (!mvName || !(w > 0)) return null;
-  const hist = movementHistory(entries.filter(e => e.id !== excludeEntryId), mvName);
-  if (hist.length < 2) return null;
-  const best = hist.reduce((a, b) => (b.e1rm > a.e1rm ? b : a));
-  const range = parseRepRange(repsTarget);
-  const cap = (range?.max ?? 12) + 2;
-  for (let r = 1; r <= cap; r++) {
-    if (estimateOneRM(w, r, 1) > best.e1rm) {
-      return { weight: w, reps: r, best: best.e1rm, bestW: best.w, bestR: best.r, bestDate: best.date };
-    }
-  }
-  return null;
-}
-
-// Collect all PRs achieved across every movement in a completed session
-function collectSessionPRs(entry, allEntries) {
-  return entry.movements
-    .map(mv => detailedPRForMovement(entry, mv, allEntries))
-    .filter(Boolean);
-}
-
-// Session completion heatmap — last 10 weeks
-function sessionHeatmap(entries) {
-  const map = {};
-  entries.forEach(e => { map[e.date] = (map[e.date] || 0) + 1; });
-  return map;
-}
-
-// Push/pull balance — sets per category over last cycle
-function pushPullBalance(entries) {
-  const PUSH_MUSCLES = new Set(["Chest", "Shoulders", "Triceps"]);
-  const PULL_MUSCLES = new Set(["Back", "Biceps"]);
-  const cutoff = new Date();
-  cutoff.setDate(cutoff.getDate() - 8);
-  const cutoffStr = localDateStr(cutoff);
-  let push = 0, pull = 0, legs = 0;
-  const LEG_MUSCLES = new Set(["Quads", "Hamstrings", "Glutes", "Calves"]);
-  entries.filter(e => e.date >= cutoffStr).forEach(e => {
-    e.movements.forEach(mv => {
-      let muscle = mv.muscle;
-      if (!muscle && e.programDay && mv.programRef) {
-        const progEx = programExFor(e, mv) ?? programExByName(mv.name);
-        muscle = progEx?.muscle;
-      }
-      const sets = mv.sets.filter(s => s.r).length;
-      if (PUSH_MUSCLES.has(muscle)) push += sets;
-      else if (PULL_MUSCLES.has(muscle)) pull += sets;
-      else if (LEG_MUSCLES.has(muscle)) legs += sets;
-    });
-  });
-  return { push, pull, legs };
-}
-
-// Coach export — build a formatted text summary
-// Find same-program-day repeat sessions for week-over-week comparison
-function findRepeatPairs(entries) {
-  const completed = [...entries].filter(e => e.completedAt && e.programDay).sort((a, b) => a.date.localeCompare(b.date));
-  const byDay = {};
-  completed.forEach(e => {
-    (byDay[e.programDay] = byDay[e.programDay] || []).push(e);
-  });
-  const pairs = [];
-  Object.keys(byDay).sort((a, b) => a - b).forEach(day => {
-    const list = byDay[day];
-    if (list.length >= 2) pairs.push({ day: Number(day), prev: list[list.length - 2], curr: list[list.length - 1] });
-  });
-  return pairs;
-}
-function topSetWeight(mv) {
-  const weights = mv.sets.filter(s => s.w && s.r).map(s => parseFloat(s.w));
-  return weights.length ? Math.max(...weights) : null;
-}
-function summarizeSets(mv) {
-  return mv.sets.filter(s => s.r).map(s => `${s.w || "BW"}x${s.r}`).join(", ");
-}
-
-// ── COACH PDF (jsPDF, loaded from CDN at call time — no bundler dependency) ──
-async function loadJsPDF() {
-  if (window.jspdf) return window.jspdf.jsPDF;
-  await new Promise((resolve, reject) => {
-    const script = document.createElement("script");
-    script.src = "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js";
-    script.onload = resolve;
-    script.onerror = () => reject(new Error("Could not load PDF library — check connection."));
-    document.head.appendChild(script);
-  });
-  return window.jspdf.jsPDF;
-}
-
-async function downloadCoachPDF(entries, weightLog, mesoInfo, windowDays = 35) {
-  const JsPDF = await loadJsPDF();
-  const doc = new JsPDF({ unit: "pt", format: "letter" });
-  const PAGE_W = 612, PAGE_H = 792, MARGIN = 61;
-  const CONTENT_W = PAGE_W - MARGIN * 2;
-  let y = MARGIN;
-
-  const BLACK = "#111111", DARK = "#333333", MID = "#767676", LIGHTG = "#b8b8b8", FAINT = "#e8e8e8", PANEL = "#f5f5f5";
-
-  function checkPageBreak(needed) {
-    if (y + needed > PAGE_H - MARGIN) { doc.addPage(); y = MARGIN; }
-  }
-  function text(str, x, yy, opts = {}) {
-    doc.setFont("helvetica", opts.bold ? "bold" : "normal");
-    doc.setFontSize(opts.size || 10);
-    doc.setTextColor(opts.color || DARK);
-    doc.text(str, x, yy, { align: opts.align || "left" });
-  }
-  function hr(yy, color = FAINT, weight = 0.5) {
-    doc.setDrawColor(color);
-    doc.setLineWidth(weight);
-    doc.line(MARGIN, yy, PAGE_W - MARGIN, yy);
-  }
-
-  // Header
-  text("TRAINING SUMMARY", MARGIN, y, { size: 9, color: MID }); y += 24;
-  text("Coach Report", MARGIN, y, { size: 28, bold: true, color: BLACK }); y += 20;
-  const today = entries.length ? entries.map(e => e.date).sort().slice(-1)[0] : todayStr();
-  const cutoff = new Date(today); cutoff.setDate(cutoff.getDate() - windowDays);
-  const cutoffStr = localDateStr(cutoff);
-  const fmtD = (d) => new Date(d + "T12:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" });
-  text(`${fmtD(cutoffStr)} - ${fmtD(today)}, ${today.slice(0,4)}  ·  Generated ${new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}`, MARGIN, y, { size: 10.5, color: MID });
-  y += 16; hr(y, BLACK, 1); y += 26;
-
-  // Stats row
-  const recent = [...entries].filter(e => e.date >= cutoffStr && e.completedAt).sort((a, b) => a.date.localeCompare(b.date));
-  const recentWeights = [...weightLog].filter(w => w.date >= cutoffStr).sort((a, b) => a.date.localeCompare(b.date));
-  const totalSets = recent.reduce((n, e) => n + e.movements.reduce((m, mv) => m + mv.sets.filter(s => s.r).length, 0), 0);
-  let weightChange = null;
-  if (recentWeights.length >= 2) {
-    const sW = parseFloat(recentWeights[0].weight), eW = parseFloat(recentWeights[recentWeights.length-1].weight);
-    if (!isNaN(sW) && !isNaN(eW)) weightChange = eW - sW;
-  }
-  const colW = CONTENT_W / 3;
-  [[String(recent.length), "SESSIONS LOGGED"], [String(totalSets), "SETS COMPLETED"], [weightChange !== null ? `${weightChange>=0?"+":""}${weightChange.toFixed(1)}` : "-", "LBS CHANGE"]].forEach(([num, lbl], i) => {
-    text(num, MARGIN + i * colW, y, { size: 22, bold: true, color: BLACK });
-    text(lbl, MARGIN + i * colW, y + 14, { size: 8, color: MID });
-  });
-  y += 30; hr(y, FAINT); y += 24;
-
-  // Body weight
-  if (recentWeights.length) {
-    checkPageBreak(50);
-    text("BODY WEIGHT", MARGIN, y, { size: 12, bold: true, color: BLACK }); y += 16;
-    doc.setFillColor(PANEL); doc.rect(MARGIN, y - 12, CONTENT_W, 30, "F");
-    const fw = recentWeights[0], lw = recentWeights[recentWeights.length - 1];
-    text(`${fw.weight} lbs`, MARGIN + 12, y + 6, { size: 10.5, bold: true });
-    text(fmtD(fw.date), MARGIN + 80, y + 6, { size: 9, color: MID });
-    text("->", MARGIN + 135, y + 6, { size: 9, color: LIGHTG });
-    text(`${lw.weight} lbs`, MARGIN + 155, y + 6, { size: 10.5, bold: true });
-    text(fmtD(lw.date), MARGIN + 225, y + 6, { size: 9, color: MID });
-    if (weightChange !== null) text(`${weightChange>=0?"+":""}${weightChange.toFixed(1)} lbs`, PAGE_W - MARGIN - 12, y + 6, { size: 10.5, bold: true, align: "right" });
-    y += 36;
-  }
-
-  // Week-over-week
-  const repeatPairs = findRepeatPairs(entries);
-  if (repeatPairs.length) {
-    checkPageBreak(40);
-    y += 10;
-    text("WEEK-OVER-WEEK: WEIGHT & REPS", MARGIN, y, { size: 12, bold: true, color: BLACK }); y += 14;
-    text("Comparing each program day's most recent two occurrences.", MARGIN, y, { size: 9, color: MID }); y += 18;
-
-    repeatPairs.forEach(({ day, prev, curr }) => {
-      checkPageBreak(60);
-      text(`Day ${day} - ${curr.customTitle || "Session"}`, MARGIN, y, { size: 10.5, bold: true });
-      text(`(${fmtD(prev.date)} -> ${fmtD(curr.date)})`, MARGIN + doc.getTextWidth(`Day ${day} - ${curr.customTitle || "Session"}`) + 8, y, { size: 9, color: MID });
-      y += 14;
-      const colX = [MARGIN, MARGIN + 140, MARGIN + 290, MARGIN + 420];
-      ["MOVEMENT", `LAST (${fmtD(prev.date)})`, `THIS (${fmtD(curr.date)})`, "TOP SET"].forEach((h, i) => text(h, colX[i], y, { size: 7, color: MID, bold: true }));
-      y += 6; hr(y, BLACK, 0.75); y += 12;
-      const currByName = {}; curr.movements.forEach(mv => currByName[mv.name] = mv);
-      const prevByName = {}; prev.movements.forEach(mv => prevByName[mv.name] = mv);
-      Object.keys(currByName).forEach(name => {
-        checkPageBreak(16);
-        const cMv = currByName[name], pMv = prevByName[name];
-        const cStr = summarizeSets(cMv), pStr = pMv ? summarizeSets(pMv) : "-";
-        const cTop = topSetWeight(cMv), pTop = pMv ? topSetWeight(pMv) : null;
-        let deltaStr = "-", deltaColor = LIGHTG;
-        if (cTop !== null && pTop !== null) {
-          const diff = cTop - pTop;
-          if (Math.abs(diff) < 0.01) { deltaStr = "no change"; deltaColor = LIGHTG; }
-          else if (diff > 0) { deltaStr = `+${diff}`; deltaColor = BLACK; }
-          else { deltaStr = `${diff}`; deltaColor = MID; }
-        }
-        text(name.length > 22 ? name.slice(0, 21) + "…" : name, colX[0], y, { size: 8.5 });
-        doc.setFont("courier", "normal"); doc.setFontSize(7.5); doc.setTextColor(MID);
-        doc.text(pStr.length > 26 ? pStr.slice(0, 25) + "…" : pStr, colX[1], y);
-        doc.setTextColor(DARK);
-        doc.text(cStr.length > 26 ? cStr.slice(0, 25) + "…" : cStr, colX[2], y);
-        text(deltaStr, colX[3], y, { size: 8.5, bold: true, color: deltaColor });
-        y += 6; hr(y, FAINT, 0.3); y += 10;
-      });
-      y += 8;
-    });
-  }
-
-  // All sessions
-  if (recent.length) {
-    checkPageBreak(40);
-    y += 6;
-    text("ALL SESSIONS THIS WINDOW", MARGIN, y, { size: 12, bold: true, color: BLACK }); y += 14;
-    text(`${recent.length} completed sessions in the last ${windowDays} days`, MARGIN, y, { size: 9, color: MID }); y += 18;
-
-    recent.forEach(e => {
-      checkPageBreak(30);
-      const dayLbl = e.programDay ? `Day ${e.programDay}` : "";
-      text(`${fmtD(e.date)}  ${dayLbl}`, MARGIN, y, { size: 10.5, bold: true });
-      text(e.customTitle || "Session", PAGE_W - MARGIN, y, { size: 9.5, color: MID, align: "right" });
-      y += 14;
-      e.movements.forEach(mv => {
-        const sets = mv.sets.filter(s => s.w && s.r);
-        if (!sets.length) return;
-        checkPageBreak(14);
-        const setStr = sets.map(s => `${s.w}x${s.r}${s.rir !== undefined && s.rir !== "" ? ` @${s.rir}` : ""}`).join("  ·  ");
-        text(mv.name.length > 28 ? mv.name.slice(0,27)+"…" : mv.name, MARGIN, y, { size: 9 });
-        doc.setFont("courier", "normal"); doc.setFontSize(8); doc.setTextColor(DARK);
-        doc.text(setStr.length > 55 ? setStr.slice(0,54)+"…" : setStr, MARGIN + 165, y);
-        y += 13; hr(y - 4, FAINT, 0.3);
-      });
-      y += 10;
-    });
-  }
-
-  // Personal records
-  const prs = getPersonalRecords(entries);
-  const topPrs = Object.entries(prs).sort((a, b) => b[1].maxE1RM - a[1].maxE1RM).slice(0, 8);
-  if (topPrs.length) {
-    checkPageBreak(40);
-    y += 6;
-    text("PERSONAL RECORDS", MARGIN, y, { size: 12, bold: true, color: BLACK }); y += 14;
-    text("Estimated one-rep max (Epley formula), all-time best per movement", MARGIN, y, { size: 9, color: MID }); y += 18;
-    topPrs.forEach(([name, pr], i) => {
-      checkPageBreak(20);
-      text(String(i+1).padStart(2,"0"), MARGIN, y, { size: 9, bold: true, color: LIGHTG });
-      text(name.length > 30 ? name.slice(0,29)+"…" : name, MARGIN + 24, y, { size: 10, bold: true });
-      text(`${pr.maxWeight} lbs x ${pr.reps}  ·  ${fmtD(pr.date)}`, MARGIN + 24, y + 12, { size: 8.5, color: MID });
-      text(`~${Math.round(pr.maxE1RM)} lbs`, PAGE_W - MARGIN, y + 4, { size: 12, bold: true, align: "right" });
-      y += 24; hr(y - 6, FAINT, 0.3);
-    });
-  }
-
-  // Footer
-  checkPageBreak(30);
-  y += 16; hr(y, FAINT); y += 12;
-  text("Generated automatically from training log data.", MARGIN, y, { size: 8, color: LIGHTG });
-
-  doc.save(`coach_report_${todayStr()}.pdf`);
-}
-
-// ── CHECK-INS ────────────────────────────────────────────────────────────────
-// Every 2 weeks from the block start (Mondays: Oct 5, Oct 19, Nov 2, ...), bring
-// the coach report and backup to Claude for review. The check-in that lands in the
-// last two weeks of a block doubles as the full program review before the next one.
-const CHECKIN_ANCHOR = BLOCK_START;
-const CHECKIN_EVERY_DAYS = 14;
-function addDays(dateStr, n) {
-  const d = new Date(dateStr + "T12:00:00");
-  d.setDate(d.getDate() + n);
-  return localDateStr(d);
-}
-function daysBetween(a, b) {
-  return Math.round((new Date(b + "T12:00:00") - new Date(a + "T12:00:00")) / 86400000);
-}
-// Latest scheduled check-in on or before `today` (null before the first one), and
-// the next one after today.
-function checkinSchedule(today) {
-  const elapsed = daysBetween(CHECKIN_ANCHOR, today);
-  const k = Math.floor(Math.max(0, elapsed) / CHECKIN_EVERY_DAYS);
-  const latest = k >= 1 ? addDays(CHECKIN_ANCHOR, k * CHECKIN_EVERY_DAYS) : null;
-  const next = addDays(CHECKIN_ANCHOR, (k + 1) * CHECKIN_EVERY_DAYS);
-  return { latest, next };
-}
-// 7-day average weight ending on `end`, compared with the 7-day average two weeks
-// earlier. Returns the weekly rate of change in lbs, or null without enough data.
-function weightTrend(weightLog, end) {
-  const toLb = w => (w.unit === "kg" ? parseFloat(w.weight) * 2.20462 : parseFloat(w.weight));
-  const avg = (from, to) => {
-    const pts = weightLog.filter(w => w.date >= from && w.date <= to).map(toLb).filter(n => !isNaN(n));
-    return pts.length >= 3 ? pts.reduce((s, n) => s + n, 0) / pts.length : null;
-  };
-  const now = avg(addDays(end, -6), end);
-  const before = avg(addDays(end, -20), addDays(end, -14));
-  if (now == null || before == null) return { now, before, rate: null };
-  return { now, before, rate: (now - before) / 2 };
-}
-// The every-2-weeks calorie rule: target is about +0.5 lb per week (coach, Oct 5).
-function surplusAdvice(rate) {
-  if (rate == null) return { action: "none", carbs: 0, text: "Not enough weigh-ins to judge the trend. Weigh in at least 3 mornings a week." };
-  // Coach (Oct 5): aim for about +0.5 lb/week, judged on the 7-day average, not single
-  // weigh-ins. A band of 0.25 to 0.75 counts as on target.
-  if (rate < 0.25) return { action: "add", carbs: 38, text: `Gaining ${rate.toFixed(2)} lb/week, under the +0.5 target. Add 150 kcal of carbs (about 38g) to both day types.` };
-  if (rate > 0.75) return { action: "remove", carbs: -38, text: `Gaining ${rate.toFixed(2)} lb/week, over the +0.5 target. Take 150 kcal of carbs (about 38g) out of both day types.` };
-  return { action: "hold", carbs: 0, text: `Gaining ${rate.toFixed(2)} lb/week, right around the +0.5 lb target. Keep the current targets.` };
-}
-
-// ── DAILY BRIEF ──────────────────────────────────────────────────────────────
-// A popup on the first open each day, built to get you moving. On a training day
-// it shows today's whole session: every exercise with sets, reps, your last top
-// set and a target to beat. On a rest day it prescribes active rest and previews
-// the next session. Both carry a motivation line, a quote, and the last 7 days.
-
-// General quotes. A plain string is an original line; an object carries an author.
-const BRIEF_QUOTES = [
-  { q: "The last three or four reps is what makes the muscle grow.", by: "Arnold Schwarzenegger" },
-  { q: "Yeah buddy! Light weight, baby!", by: "Ronnie Coleman" },
-  { q: "I hated every minute of training, but I said, Don't quit. Suffer now and live the rest of your life as a champion.", by: "Muhammad Ali" },
-  { q: "The impediment to action advances action. What stands in the way becomes the way.", by: "Marcus Aurelius" },
-  { q: "Discipline is the bridge between goals and accomplishment.", by: "Jim Rohn" },
-  "Today is a deposit. Every rep you log compounds into the physique you want.",
-  "Heavy, controlled, logged. Do that and the mirror takes care of itself.",
-  "You already did the hard part: you showed up. Now make the first set count.",
-  "Progressive overload is the whole game. Beat your last log by one rep or one plate.",
-  "Big chest, capped shoulders, strong glutes. Build them one honest set at a time.",
-  "The bar does not care how you feel. Your log does not lie. Go get the numbers.",
-  "Leave one or two reps in the tank on the big lifts. Take the last set of isolations to the edge.",
-  "Muscle bear season. Eat big, lift heavy, sleep deep.",
-  "Your future self is going to be so glad you did not skip today.",
-  "Warm up like you mean it, then attack the first working set.",
-  "Stop negotiating. Start your first set.",
-  "Slow negatives. Hard squeezes. Full stretch. That is how it grows.",
-  "Nobody hands you a bigger chest. You take it, three minutes of rest at a time.",
-  "Small jumps, every session. That is how a frame changes.",
-  "Consistency beats intensity. Show up again tomorrow, too.",
-  "The surplus is part of the workout. Eat what the plan says.",
-  "Train like the person you are becoming.",
-  "You do not need motivation. You need the first warm-up set.",
-  "Every plate you add is a vote for the physique you are building.",
-  "Earn the pump, then earn the next rep.",
-  "Discipline now, freedom in the mirror later.",
-  "Be patient with the scale and relentless with the bar.",
-  "Log it. What gets tracked gets stronger.",
-  "Your only competition is last session's numbers.",
-  "Own the eccentric. Control the weight, do not let it control you.",
-  "Rest between sets is part of the plan. Take it and come back stronger.",
-  "A great session is not luck. It is sleep, food, and showing up.",
-  "Break the record on one lift today. Just one.",
-  "You are one workout away from a better mood.",
-  "The weights are honest. Give them your best and they give it back.",
-  "A lean bulk takes patience. Trust the process and keep lifting heavy.",
-  "Be the person who trains when it is inconvenient.",
-  "Chase the burn in the last two reps, not the first eight.",
-  "Form first, load second, ego never.",
-  "Feed the machine, train the machine, rest the machine.",
-  "Stack good weeks. The physique is just the receipt.",
-  "The barbell is waiting. Go say hello.",
-  "Strong glutes, wide shoulders, thick chest, big arms. Pick your target and hit it.",
-  "Turn the intensity up on the set that scares you a little.",
-  "Nothing about today's plan is optional, and all of it is doable.",
-  "Push the muscle, not the ego. Feel the target working every rep.",
-  "Every session you finish is a session nobody can take from you.",
-  "Sweat now, thank yourself in the mirror in six months.",
-  "The plan is written. Your job is to execute.",
-  "Hard training, real food, deep sleep. Repeat until different.",
-  "Go beat the version of you that logged those numbers last time.",
-  "Be relentless about the reps and gentle about the rest.",
-  "You are building something that takes months. Today is one more brick.",
-  "Tight core, proud chest, hard squeeze. Own every rep.",
-  "Feel it in the target muscle, or lower the weight until you do.",
-  "Fatigue is a signal, not a stop sign. Check your RIR and keep going.",
-  "You are allowed to be tired and still lift well.",
-  "Beat yesterday's excuses with today's reps.",
-  "Get the work in and the food in. The results are automatic.",
-  "There is a bigger version of you waiting on the other side of this session.",
-  "Show me a log with one more rep in it.",
-  "Push through the middle of the workout. That is where the growth is.",
-  "Confidence is built in the gym, one completed session at a time.",
-  "Your body adapts to what you demand of it. Demand more.",
-  "Trust the process, trust the program, trust the reps.",
-  "Big lifts first while you are fresh, then attack the accessories with control.",
-  "Every rep with intent.",
-  "Say it out loud: today I get stronger.",
-];
-
-// Hype lines for each training day. Nine per day (coprime with the 8-day cycle) so
-// the same day does not land on the same line every cycle.
-const BRIEF_DAY_LINES = {
-  1: [
-    "Lower A. Glutes and hamstrings are on the menu. Squeeze at the top of every thrust.",
-    "Hip thrusts first. Prime the glutes, pause at the top, and make 12 reps hard.",
-    "Romanian deadlifts: hips back, hamstrings loaded, spine long. Feel the stretch.",
-    "Build a lower body that fills out every pair of jeans.",
-    "Glute bridge primer, then drive. Wake them up before you load them.",
-    "Heavy legs day. The hardest sessions build the biggest change.",
-    "Strong glutes and hamstrings fix posture and build a physique.",
-    "Hamstrings and glutes are where a strong back half is built. Own the eccentric.",
-    "Lower A is a long session. Take your rest, hit every rep, finish strong.",
-  ],
-  2: [
-    "Heavy chest day. Three full minutes of rest on the press. Earn every rep.",
-    "Chest is the priority. Big incline first, then flat, then finish with the fly.",
-    "Press with intent, control the descent, drive up hard. Build that shelf.",
-    "Take the rest. Your chest ran out of recovery before, not strength. Fix it today.",
-    "Upper A: heavy press, sharp laterals, arms to finish. Stack it.",
-    "Shoulder blades back, chest up, bar path smooth. Let the chest do the work.",
-    "This is your heaviest push day. Add weight if last time earned it.",
-    "Fly at the end: full stretch, hands meet, squeeze the chest.",
-    "Thick chest, wide shoulders. The muscle bear shape starts on days like this.",
-  ],
-  4: [
-    "Pull day. Build the width that makes your shoulders look capped and your waist look small.",
-    "Pulldowns: elbows to the hips, chest up, feel the lats. Wide back, wide frame.",
-    "Rows next. Brace hard, pull to the belly, squeeze the shoulder blades.",
-    "Side delts and rear delts today. Small weights, strict form, huge payoff.",
-    "Lateral raises: 12 to 20 reps, hold the top, control the way down.",
-    "Biceps to finish. Full stretch at the bottom, hard squeeze at the top.",
-    "A thick back and round delts make everything else look bigger.",
-    "Pull day builds the V. Every lat rep is a brick in it.",
-    "Rear delts, curls, pump. Finish the pull day strong.",
-  ],
-  6: [
-    "Squat day. Three minutes rest, brace, sit down between your hips, drive up.",
-    "Lower B: quads and glutes. Squat first while you are fresh, then press deep.",
-    "Leg press feet high and wide. Feel the glutes at the bottom.",
-    "Heavy squats build more than legs. They build belief.",
-    "Squat with control, own the depth, and leave one or two reps in the tank.",
-    "Extension and abduction to finish. Chase the burn without chasing the ego.",
-    "Big legs, strong glutes. This is how the lower half catches up to the upper.",
-    "Calves and abs to close. Small muscles, big finish.",
-    "Squat day is the hardest day of the cycle. Win it and the rest is easy.",
-  ],
-  7: [
-    "Upper B: shoulders, chest, arms. Everything that makes a t-shirt fit better.",
-    "Shoulder press first. Fresh delts, heavy dumbbells, drive them up.",
-    "Chest work after the shoulders. Full range, full control on every press and dip.",
-    "Four sets of laterals today. Round, capped shoulders are built here.",
-    "Fly, curl, extend. Finish with a huge arm pump.",
-    "Second chest day of the cycle. Twice a cycle is how it grows.",
-    "Press, dip, fly, raise, curl, extend. Simple work, big physique.",
-    "Arms are the finishing touch. Keep every rep strict and slow.",
-    "Last hard day of the cycle. Empty the tank, then recover like a pro.",
-  ],
-};
-
-// Rest day lines. Seventeen, coprime with the 8-day cycle.
-const BRIEF_REST_LINES = [
-  "Rest day. Active rest is still work: walk, stretch, eat, sleep.",
-  "Growth happens while you recover. Do your recovery like you do your sets.",
-  "Rest does not mean off. Move easy, eat your full target, sleep deep.",
-  "The muscle you trained is rebuilding right now. Feed it.",
-  "A 30 minute walk today makes tomorrow's session better.",
-  "Recovery is a skill. Practice it with the same discipline you bring to lifting.",
-  "No heavy lifting today. Just move, breathe, and refuel.",
-  "Sleep is the strongest supplement you own. Protect it tonight.",
-  "Mobilize your hips and upper back today. Your lifts will thank you.",
-  "Strong people rest on purpose.",
-  "Eat like it is a training day. Muscle is built on rest days, too.",
-  "Easy movement, big meals, early bedtime. That is the whole plan.",
-  "You earned this day. Use it to come back harder.",
-  "Rest today so you can hit new numbers next session.",
-  "Walk, foam roll, stretch, hydrate. Boring and effective.",
-  "Recovery is where the training turns into muscle.",
-  "Stay loose, stay fed, stay patient. The next session is coming.",
-];
-
-const BRIEF_SESSION_TARGET = 4; // sessions per 7 days (5 training days per 8-day cycle)
-
-function briefPick(list, dayIndex) {
-  return list[((dayIndex % list.length) + list.length) % list.length];
-}
-function briefDayType(macros, entries, date) {
-  const trained = entries.some(e => e.date === date && e.programDay && PROGRAM[e.programDay]?.exercises.length > 0
-    && e.movements.some(m => m.sets.some(s => s.r !== "" && s.r != null)));
-  if (trained) return "training";
-  const day = macros[date];
-  if (day?.dayTypeManual) return day.dayType === "training" ? "training" : "rest";
-  return "rest";
-}
-function briefDayCals(macros, date) {
-  const list = macros[date]?.entries;
-  if (!Array.isArray(list)) return 0;
-  return list.reduce((s, e) => s + (parseFloat(e.cal) || 0), 0);
-}
-// Average weight over [from, to], needing at least 2 weigh-ins.
-function briefAvgWeight(weightLog, from, to) {
-  const toLb = w => (w.unit === "kg" ? parseFloat(w.weight) * 2.20462 : parseFloat(w.weight));
-  const pts = weightLog.filter(w => w.date >= from && w.date <= to).map(toLb).filter(n => !isNaN(n));
-  return pts.length >= 2 ? pts.reduce((s, n) => s + n, 0) / pts.length : null;
-}
-function isTrainingDay(n) {
-  return !!PROGRAM[n] && PROGRAM[n].exercises.length > 0;
-}
-// What today is. Walks the 8-day cycle forward from the last completed session to
-// the next training day and the date it falls due:
-//   done  = a session was already completed today
-//   train = today is that training day (or it is overdue, so do it today)
-//   rest  = the next training day is still ahead, so today is an active rest day
-function todayPlan(entries, today) {
-  const trainingDays = Object.keys(PROGRAM).map(Number).filter(isTrainingDay).sort((a, b) => a - b);
-  const done = entries
-    .filter(e => e.completedAt && trainingDays.includes(e.programDay))
-    .sort((a, b) => b.date.localeCompare(a.date) || String(b.completedAt).localeCompare(String(a.completedAt)));
-  if (done.length === 0) return { kind: "train", day: trainingDays[0], overdue: 0 };
-  const last = done[0];
-  let pos = last.programDay, gap = 0;
-  do { pos = (pos % CYCLE_DAYS) + 1; gap++; } while (!isTrainingDay(pos) && gap <= CYCLE_DAYS);
-  const due = addDays(last.date, gap);
-  if (daysBetween(last.date, today) <= 0) return { kind: "done", doneDay: last.programDay, day: pos, due };
-  if (today >= due) return { kind: "train", day: pos, overdue: daysBetween(due, today) };
-  return { kind: "rest", day: pos, due };
-}
-function briefLift(entries, ex, isDeload, location = null) {
-  const last = lastMovementByName(entries, ex.name, location);
-  let top = null;
-  if (last) {
-    const sets = last.mv.sets
-      .map(s => ({ w: parseFloat(s.w), r: parseFloat(s.r) }))
-      .filter(s => !isNaN(s.r));
-    if (sets.length) top = sets.reduce((a, b) => ((b.w || 0) > (a.w || 0) || ((b.w || 0) === (a.w || 0) && b.r > a.r)) ? b : a);
-  }
-  const range = parseRepRange(ex.reps);
-  const sug = suggestProgression(entries, ex.name, ex.reps, ex.type, {
-    isDeloadWeek: isDeload, loadStep: ex.loadStep ?? null, bodyweight: !!ex.bodyweight, startWeight: ex.startWeight ?? null, location, setsTarget: ex.sets ?? null,
-  });
-  const w = sug?.weight;
-  let target;
-  if (!sug) target = top ? "Match it, then add a rep" : "No history yet. Find a working weight.";
-  else if (sug.action === "add_weight") target = `Go up to ${w}, aim for ${range?.min ?? ""}+ reps`;
-  else if (sug.action === "add_reps") target = w > 0 ? `Stay at ${w}, beat ${top?.r ?? ""} reps` : `Beat ${top?.r ?? ""} reps`;
-  else if (sug.action === "coach") target = `Coach target: ${w}. ${COACH_TARGETS[ex.name]?.note.replace(/^Coach: /, "") ?? ""}`;
-  else if (sug.calibrate) target = `New machine here. Start near ${w}, find the load that fits ${ex.reps}`;
-  else if (sug.action === "hold") target = w > 0 ? `Stay at ${w}, build toward ${range?.max ?? ""} reps` : `Build toward ${range?.max ?? ""} reps`;
-  else if (sug.action === "back_off") target = `Ease back to ${w}`;
-  else if (sug.action === "deload") target = w > 0 ? `Deload week, use ${w}` : "Deload week, 2 easy sets";
-  else if (sug.action === "block_start") target = `Start at ${w}, log RIR every set`;
-  else target = "Match it, then add a rep";
-  const plateau = detectPlateau(entries, ex.name, { bodyweight: !!ex.bodyweight, location, isDeloadWeek: isDeload, type: ex.type, loadStep: ex.loadStep ?? null });
-  const pr = !isDeload && sug?.action !== "back_off" ? prForecast(entries, ex.name, w ?? top?.w, ex.reps) : null;
-  return {
-    plateau: plateau ? `Stalled ${plateau.sessions} sessions. ${plateau.fix}` : null,
-    pr: pr ? `PR in reach: ${pr.weight} x ${pr.reps} beats your best (${pr.bestW} x ${pr.bestR})` : null,
-    name: ex.name, sets: ex.sets, reps: ex.reps, rest: ex.rest, muscle: ex.muscle,
-    last: top ? ((top.w || 0) > 0 ? `${top.w} x ${top.r}` : `${top.r} reps`) : null,
-    lastDate: last?.date ?? null,
-    target,
-  };
-}
-function buildDailyBrief({ entries, weightLog, macros, macroTargets, mesoOverride, location, today }) {
-  const dayIndex = daysBetween("2026-01-01", today);
-  const plan = todayPlan(entries, today);
-  const quote = briefPick(BRIEF_QUOTES, dayIndex);
-  const isDeload = mesocycleWeek(entries, mesoOverride).isDeload;
-  const exercisesFor = day => coachOrder(day, PROGRAM[day].exercises.map(ex => resolveExercise(day, ex.id, location) ?? ex), entries);
-
-  let headline, session = null, recovery = null, upcoming = null;
-  if (plan.kind === "train") {
-    const exs = exercisesFor(plan.day);
-    headline = briefPick(BRIEF_DAY_LINES[plan.day] ?? BRIEF_QUOTES.filter(q => typeof q === "string"), dayIndex);
-    session = {
-      day: plan.day, title: PROGRAM[plan.day].title, tag: PROGRAM[plan.day].tag,
-      overdue: plan.overdue, isDeload,
-      totalSets: exs.reduce((s, ex) => s + ex.sets, 0),
-      muscles: [...new Set(exs.map(ex => ex.muscle).filter(Boolean))],
-      exercises: exs.map(ex => briefLift(entries, ex, isDeload, location)),
-    };
-  } else {
-    headline = briefPick(BRIEF_REST_LINES, dayIndex);
-    const t = macroTargets?.[plan.kind === "done" ? "training" : "rest"];
-    const away = daysBetween(today, plan.due);
-    recovery = {
-      done: plan.kind === "done",
-      doneTitle: plan.kind === "done" ? PROGRAM[plan.doneDay]?.title : null,
-      cal: t ? macroCals(t.p, t.c, t.f) : null,
-      protein: t ? Math.round(parseFloat(t.p) || 0) : null,
-    };
-    upcoming = {
-      day: plan.day, title: PROGRAM[plan.day].title,
-      when: away <= 1 ? "Tomorrow" : `In ${away} days`,
-      isDeload,
-      lifts: exercisesFor(plan.day).slice(0, 2).map(ex => briefLift(entries, ex, isDeload, location)),
-    };
-  }
-
-  // Last 7 days: the 7 full days before today.
-  const from = addDays(today, -7), to = addDays(today, -1);
-  const trainingDays = Object.keys(PROGRAM).map(Number).filter(isTrainingDay);
-  const sessions = entries.filter(e => e.completedAt && trainingDays.includes(e.programDay) && e.date >= from && e.date <= to).length;
-  let fedDays = 0;
-  for (let i = 1; i <= 7; i++) {
-    const d = addDays(today, -i);
-    const t = macroTargets?.[briefDayType(macros, entries, d)];
-    if (!t) continue;
-    const target = macroCals(t.p, t.c, t.f);
-    if (target > 0 && briefDayCals(macros, d) >= 0.9 * target) fedDays++;
-  }
-  const now = briefAvgWeight(weightLog, from, to);
-  const prev = briefAvgWeight(weightLog, addDays(today, -14), addDays(today, -8));
-  let weight = { now, prev, delta: null, status: null };
-  if (now != null && prev != null) {
-    const delta = now - prev;
-    weight = { now, prev, delta, status: delta < 0.4 ? "Under pace" : delta <= 1.1 ? "On pace" : "Above pace" };
-  }
-
-  return {
-    today, kind: plan.kind, headline, quote,
-    session, recovery, upcoming,
-    week: { sessions, sessionTarget: BRIEF_SESSION_TARGET, fedDays, weight },
-  };
-}
-
-// ── MESOCYCLE ─────────────────────────────────────────────────────────────────
-function mesocycleWeek(entries, override) {
-  // override = { anchorDate, weekAtAnchor } set manually by the user; takes priority
-  let anchor, baseWeekOffset;
-  if (override && override.anchorDate) {
-    anchor = override.anchorDate;
-    baseWeekOffset = (override.weekAtAnchor || 1) - 1; // weeks already elapsed at anchor
-  } else {
-    const dated = entries.filter(e => e.movements.length > 0).map(e => e.date).sort();
-    anchor = dated[0] ?? MESO_START;
-    baseWeekOffset = 0;
-  }
-  const a = new Date(anchor + "T12:00:00");
-  const now = new Date();
-  const diffWeeks = Math.floor((now - a) / (7 * 24 * 60 * 60 * 1000)) + baseWeekOffset;
-  const safeDiff = Math.max(0, diffWeeks);
-  const weekInMeso = (safeDiff % MESO_LENGTH) + 1;
-  const isDeload = weekInMeso === MESO_LENGTH;
-  return { week: weekInMeso, total: MESO_LENGTH, isDeload, cycle: Math.floor(safeDiff / MESO_LENGTH) + 1 };
-}
-
-// ── MACRO TRACKING ────────────────────────────────────────────────────────────
-// Merged from MacroTracker app. Data model matches the old app so backups import cleanly:
-//   wj_macros = { "YYYY-MM-DD": { entries: [{id, name, cal, p, c, f, time}], dayType } }
-// ── PROGRESS PHOTOS (Google Drive, public read-only API) ─────────────────────
-// Folder must be link-shared ("anyone with the link can view") for this to work
-// without OAuth — confirmed already shared as of this build.
-
-async function driveListPhotos() {
-  const resp = await apiFetch("/api/photos", { headers: appHeaders() });
-  if (!resp.ok) {
-    const body = await resp.json().catch(() => null);
-    throw new Error(body?.error?.message || `Photos error (${resp.status})`);
-  }
-  const data = await resp.json();
-  const k = encodeURIComponent(getPasscode());
-  // <img> tags can't send headers, so thumbnails carry the passcode in the URL (same origin only).
-  return (data.files || []).map(f => ({ ...f, thumb: `/api/photos?id=${encodeURIComponent(f.id)}&thumb=1&k=${k}` }));
-}
-
-const DEFAULT_MACRO_TARGETS = {
-  // Revised Sep 29, 2026: protein down to 200g, freed calories to carbs, rest days
-  // raised so the surplus holds every day. Adjust every 2 weeks off the 7-day
-  // average weight (see the check-in card): under +0.25 lb/wk add 150 kcal of carbs,
-  // over +0.75 lb/wk remove 150.
-  training: { p: 200, c: 330, f: 75 }, // ~2,795 kcal
-  rest:     { p: 200, c: 270, f: 70 }, // ~2,510 kcal
-};
-function macroCals(p, c, f) {
-  return Math.round((parseFloat(p)||0) * 4 + (parseFloat(c)||0) * 4 + (parseFloat(f)||0) * 9);
-}
-function loadMacros() {
-  try {
-    const raw = localStorage.getItem("wj_macros");
-    if (raw) { const p = JSON.parse(raw); if (p && typeof p === "object" && !Array.isArray(p)) return p; }
-  } catch {}
-  return {};
-}
-function saveMacrosLS(data) {
-  try { localStorage.setItem("wj_macros", JSON.stringify(data)); } catch (e) {
-    if (e.name === "QuotaExceededError") alert("Storage full — export a backup first.");
-  }
-}
-function loadMacroTargets() {
-  try {
-    const raw = localStorage.getItem("wj_macro_targets");
-    if (raw) { const p = JSON.parse(raw); if (p?.training && p?.rest) return p; }
-  } catch {}
-  return DEFAULT_MACRO_TARGETS;
-}
-function saveMacroTargetsLS(t) {
-  try { localStorage.setItem("wj_macro_targets", JSON.stringify(t)); } catch {}
-}
-function migrateMacroBackup(raw) {
-  const migrated = {};
-  Object.keys(raw).forEach(k => {
-    if (k.startsWith("__") || k === "exportedAt" || k === "version") return;
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(k)) return;
-    const day = raw[k];
-    const normalizeEntry = (e) => ({
-      id: e.id ?? Date.now() + Math.random(),
-      name: e.name ?? "Food",
-      // Old MacroTracker app used calories/protein/carbs/fat; this app uses cal/p/c/f
-      cal: e.cal ?? e.calories ?? macroCals(e.p ?? e.protein, e.c ?? e.carbs, e.f ?? e.fat),
-      p: e.p ?? e.protein ?? 0,
-      c: e.c ?? e.carbs ?? 0,
-      f: e.f ?? e.fat ?? 0,
-      time: e.time ?? "",
-    });
-    if (Array.isArray(day)) {
-      migrated[k] = { entries: day.map(normalizeEntry), dayType: "training" };
-    } else if (day && typeof day === "object") {
-      const entries = Array.isArray(day.entries) ? day.entries.map(normalizeEntry) : [];
-      const dt = day.dayType === "rest" ? "rest" : "training";
-      migrated[k] = { entries, dayType: dt };
-    }
-  });
-  return migrated;
-}
-// Extract training/rest targets from an old-format backup (__targetsWorkout / __targetsRest)
-function extractMacroTargets(raw) {
-  const tw = raw.__targetsWorkout;
-  const tr = raw.__targetsRest;
-  if (!tw && !tr) return null;
-  const norm = (t) => t ? { p: t.p ?? t.protein ?? 220, c: t.c ?? t.carbs ?? 150, f: t.f ?? t.fat ?? 60 } : null;
-  const training = norm(tw);
-  const rest = norm(tr);
-  if (!training && !rest) return null;
-  return { training: training ?? DEFAULT_MACRO_TARGETS.training, rest: rest ?? DEFAULT_MACRO_TARGETS.rest };
-}
-function dayTotals(day) {
-  const t = { cal: 0, p: 0, c: 0, f: 0 };
-  (day?.entries ?? []).forEach(e => {
-    t.cal += parseFloat(e.cal) || 0;
-    t.p += parseFloat(e.p) || 0;
-    t.c += parseFloat(e.c) || 0;
-    t.f += parseFloat(e.f) || 0;
-  });
-  return { cal: Math.round(t.cal), p: Math.round(t.p), c: Math.round(t.c), f: Math.round(t.f) };
-}
+import { Camera, Check, ChevronLeft, ChevronRight, ClipboardList, Dumbbell, Flame, Moon, Pencil, Play, Plus, Scale, Search, Trophy, Utensils, X } from "./icons.jsx";
+import { C, LAKE, MONO, SANS, shadow } from "./theme.js";
+import { BLOCK_START, COACH_NOTES, COACH_SINCE, COACH_TARGETS, GYM_SUBS, LOCATIONS, MESO_LENGTH, PROGRAM, canonName, coachOrder, libFind, loggedSince, nameKey, programExFor, resolveExercise, saveSetOverride, searchLibrary } from "./program.js";
+import { buildSwappedMovement, lastMovementByName, migrateNames } from "./lib/movements.js";
+import { fmtDate, localDateStr, newEntry, newMovement, restToSeconds, todayStr } from "./lib/utils.js";
+import { apiFetch, appHeaders, backupFromStorage, daysSinceBackup, downloadCSV, downloadJSON, getLastSession, isMacroOnlyBackup, loadEntries, loadWeights, readJSONBackup, saveBackupFile, saveEntries, saveWeights } from "./lib/storage.js";
+import { CYCLE_DAYS, READINESS_SLEEP, READINESS_SORE, READINESS_TEXT, VOLUME_LANDMARKS, allMovementNames, applyReadiness, bestSetForMovement, collectSessionPRs, cycleVolume, detailedPRForMovement, detectPlateau, estimateOneRM, getPersonalRecords, isNewPR, movementHistory, prForecast, pushPullBalance, readinessLevel, segmentPastCycles, sessionHeatmap, suggestProgression, suggestSetCount, volumeStatus } from "./lib/training.js";
+import { downloadCoachPDF } from "./lib/coachReport.js";
+import { addDays, checkinSchedule, daysBetween, surplusAdvice, weightTrend } from "./lib/checkins.js";
+import { buildDailyBrief, todayPlan } from "./lib/dailyBrief.js";
+import { mesocycleWeek } from "./lib/mesocycle.js";
+import { driveListPhotos } from "./lib/photos.js";
+import { DEFAULT_MACRO_TARGETS, dayTotals, extractMacroTargets, loadMacroTargets, loadMacros, macroCals, migrateMacroBackup, saveMacroTargetsLS, saveMacrosLS } from "./lib/macros.js";
+import { RestTimer } from "./components/RestTimer.jsx";
+import { MacroChefModal } from "./components/MacroChefModal.jsx";
+import { CompletionSummary } from "./components/CompletionSummary.jsx";
+import { BottomNav, MoreMenu, ResumeBar } from "./components/Nav.jsx";
+import { DailyBrief } from "./components/DailyBrief.jsx";
+import { PhotoWeightCaption, SliderCompare } from "./components/PhotoCompare.jsx";
+import { BackBtn, GhostBtn, MvCard, Pill, SectionLabel, Shell, SwapSheet, TopBar, WarmupItem } from "./components/ui.jsx";
+import { SetRow } from "./components/SetRow.jsx";
+import { bigInput, btnStyle, ghostInput, labelStyle, modalInput, noteArea } from "./components/styles.js";
 
 // ── MAIN APP ──────────────────────────────────────────────────────────────────
 // Shows the daily brief on top of the app. The app itself reports when a brief
@@ -2260,7 +66,7 @@ function BackupNudge() {
       </div>
       <button onClick={async () => { if (await saveBackupFile(backupFromStorage())) setShow(false); }} style={{ padding: "7px 12px", borderRadius: 10, border: "none", background: LAKE.sky, color: "#080c0a", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: SANS }}>Back up</button>
       <button onClick={() => { try { localStorage.setItem("wj_backup_snooze", todayStr()); } catch {} setShow(false); }} style={{ width: 26, height: 26, borderRadius: 8, background: "#2a2a2a", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <X size={13} color="#9a9a9a" strokeWidth={2.5} />
+        <X size={13} color="#c4c4c4" strokeWidth={2.5} />
       </button>
     </div>
   );
@@ -2291,6 +97,16 @@ function AppInner({ onBrief }) {
   // Macro tracking state
   const [macros, setMacros] = useState({});
   const [macroTargets, setMacroTargets] = useState(DEFAULT_MACRO_TARGETS);
+  // Visual confirmation when a past food is re-added with "+": the tapped row flashes
+  // and the new entry in today's list glows briefly.
+  const [macroFlashKey, setMacroFlashKey] = useState(null);
+  const [macroHighlightId, setMacroHighlightId] = useState(null);
+  const macroFlashTimer = useRef(null);
+  // PR moments: a toast + haptic the first time a logged set beats the movement's
+  // previous best e1RM. Tracked per entry+movement so the same PR never toasts twice.
+  const [prToast, setPrToast] = useState(null);
+  const prToastTimer = useRef(null);
+  const prToastShown = useRef({});
   const [checkinsDone, setCheckinsDone] = useState(() => {
     try { return JSON.parse(localStorage.getItem("wj_checkins_done") || "[]"); } catch { return []; }
   });
@@ -2369,6 +185,7 @@ function AppInner({ onBrief }) {
   const [drivePhotosLoading, setDrivePhotosLoading] = useState(false);
   const [photoSlotA, setPhotoSlotA] = useState(null); // selected photo object for left slot
   const [photoSlotB, setPhotoSlotB] = useState(null); // selected photo object for right slot
+  const [photoCompareMode, setPhotoCompareMode] = useState("side"); // "side" | "slider"
   const [photoPickerSlot, setPhotoPickerSlot] = useState(null); // "A" | "B" | null — which slot is being picked
   const [dismissedResumeIds, setDismissedResumeIds] = useState(() => {
     try { return JSON.parse(localStorage.getItem("wj_dismissed_resume") || "[]"); } catch { return []; }
@@ -2825,10 +642,27 @@ function AppInner({ onBrief }) {
       <Shell>
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "100vh", gap: 12 }}>
           <div style={{ fontSize: 32 }}>🏋️</div>
-          <div style={{ fontSize: 14, color: "#5c5c5c", fontFamily: SANS, letterSpacing: 2 }}>LOADING…</div>
+          <div style={{ fontSize: 14, color: "#a3a3a3", fontFamily: SANS, letterSpacing: 2 }}>LOADING…</div>
         </div>
       </Shell>
     );
+  }
+
+  function checkSetPR(entry, mv, set) {
+    if (!mv?.name || !set) return;
+    const e1 = estimateOneRM(set.w, set.r, set.rir);
+    if (!e1) return;
+    const prior = movementHistory(entries.filter(e => e.date < entry.date), mv.name);
+    if (prior.length === 0) return; // first time on this movement is a baseline, not a PR
+    const priorBest = Math.max(...prior.map(p => p.e1rm));
+    const key = `${entry.id}|${mv.id}`;
+    const already = prToastShown.current[key] ?? 0;
+    if (e1 <= priorBest || e1 <= already) return;
+    prToastShown.current[key] = e1;
+    try { navigator.vibrate?.([20, 40, 20]); } catch {}
+    setPrToast({ id: Date.now(), text: `New PR: ${set.w} x ${set.r}, e1RM ${e1}` });
+    clearTimeout(prToastTimer.current);
+    prToastTimer.current = setTimeout(() => setPrToast(null), 2800);
   }
 
   // ── MOVEMENT DETAIL ───────────────────────────────────────────────────────
@@ -2840,6 +674,13 @@ function AppInner({ onBrief }) {
     const nextMv = allMvs[curIdx + 1] ?? null;
     const isLast = curIdx === allMvs.length - 1;
     const alreadyDone = !!activeMv.doneAt;
+    // Previous session's sets for this movement (same gym first), used as ghost
+    // placeholders in the set inputs. Falls back to the lastSets seeded at creation.
+    const ghostSets = (() => {
+      const prior = entries.filter(e => e.id !== activeEntry.id && e.date <= activeEntry.date);
+      const h = lastMovementByName(prior, activeMv.name, activeEntry.location ?? "equinox");
+      return h?.mv?.sets ?? activeMv.lastSets ?? [];
+    })();
 
     function finishAndAdvance() {
       const hasLoggedReps = activeMv.sets.some(s => s.r && String(s.r).trim() !== "");
@@ -2848,6 +689,8 @@ function AppInner({ onBrief }) {
         return;
       }
       const ts = new Date().toISOString();
+      const best = bestSetForMovement(activeMv);
+      if (best) checkSetPR(activeEntry, activeMv, activeMv.sets[best.setIdx]);
       updateMovement(activeEntry.id, activeMv.id, { doneAt: ts });
       dismissTimer();
       if (nextMv) {
@@ -2894,13 +737,13 @@ function AppInner({ onBrief }) {
                 </div>
               </div>
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 10, letterSpacing: 2, color: done ? color : "#9a9a9a", fontFamily: SANS, textTransform: "uppercase", marginBottom: 4 }}>
+                <div style={{ fontSize: 10, letterSpacing: 2, color: done ? color : "#c4c4c4", fontFamily: SANS, textTransform: "uppercase", marginBottom: 4 }}>
                   {done ? "✓ Rest complete — start!" : "Rest before this movement · 1m 30s"}
                 </div>
                 <div style={{ display: "flex", gap: 6 }}>
-                  {!done && running && <button onClick={pauseTimer} style={{ ...btnStyle("#2e2e2e", "#9a9a9a"), padding: "4px 10px", fontSize: 11 }}>⏸</button>}
+                  {!done && running && <button onClick={pauseTimer} style={{ ...btnStyle("#2e2e2e", "#c4c4c4"), padding: "4px 10px", fontSize: 11 }}>⏸</button>}
                   {!done && !running && <button onClick={resumeTimer} style={{ ...btnStyle(color + "22", color), padding: "4px 10px", fontSize: 11 }}>▶</button>}
-                  <button onClick={() => resetTimer(90)} style={{ ...btnStyle("#2e2e2e", "#9a9a9a"), padding: "4px 10px", fontSize: 11 }}>↺</button>
+                  <button onClick={() => resetTimer(90)} style={{ ...btnStyle("#2e2e2e", "#c4c4c4"), padding: "4px 10px", fontSize: 11 }}>↺</button>
                   {done && <button onClick={dismissTimer} style={{ ...btnStyle(color, "#131313"), padding: "4px 14px", fontSize: 12, fontWeight: 800 }}>Dismiss</button>}
                 </div>
               </div>
@@ -2910,11 +753,21 @@ function AppInner({ onBrief }) {
 
         <div style={{ padding: "4px 18px 16px" }}>
           {activeMv.programRef && (
-            <div style={{ fontSize: 11, letterSpacing: 2, color: "#9a9a9a", textTransform: "uppercase", marginBottom: 6, fontFamily: SANS, display: "flex", alignItems: "center", gap: 8 }}>
+            <div style={{ fontSize: 11, letterSpacing: 2, color: "#c4c4c4", textTransform: "uppercase", marginBottom: 6, fontFamily: SANS, display: "flex", alignItems: "center", gap: 8 }}>
               <span>{prog?.title} · {activeMv.programRef}</span>
-              {activeMv.substituted && <span style={{ color: "#ffb3d9", letterSpacing: 0.5 }}>· apartment swap</span>}
+              {activeMv.substituted && <span style={{ color: "#f0c97a", letterSpacing: 0.5 }}>· apartment swap</span>}
             </div>
           )}
+          {(() => {
+            const pr = detailedPRForMovement(activeEntry, activeMv, entries);
+            const best = pr ? bestSetForMovement(activeMv) : null;
+            return pr && best ? (
+              <div style={{ display: "inline-flex", alignItems: "center", gap: 6, marginBottom: 8, padding: "4px 10px", borderRadius: 8, background: C.green + "22" }}>
+                <Trophy size={13} color={C.green} strokeWidth={2.2} />
+                <span style={{ fontSize: 11, fontWeight: 800, color: C.green, fontFamily: SANS, letterSpacing: 0.5 }}>PR THIS SESSION · {best.w} x {best.r} · e1RM {best.e1rm}</span>
+              </div>
+            ) : null;
+          })()}
           {/* CHANGE 3: Editable movement name inline */}
           <input
             style={bigInput}
@@ -2925,7 +778,7 @@ function AppInner({ onBrief }) {
             placeholder="Movement name…"
           />
           {activeMv.swappedFrom && (
-            <div style={{ marginTop: 6, fontSize: 11, color: "#ffb3d9", fontFamily: SANS, letterSpacing: 0.3 }}>
+            <div style={{ marginTop: 6, fontSize: 11, color: "#f0c97a", fontFamily: SANS, letterSpacing: 0.3 }}>
               swapped from {activeMv.swappedFrom}{activeMv.swapReason && activeMv.swapReason !== "Renamed" ? ` (${activeMv.swapReason.toLowerCase()})` : ""}
             </div>
           )}
@@ -2951,14 +804,14 @@ function AppInner({ onBrief }) {
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 8 }}>
               <Pill color={color}>{activeMv.setsTarget} sets</Pill>
               <Pill color={color}>{activeMv.repsTarget} reps</Pill>
-              {activeMv.rest && <Pill color="#9a9a9a">Rest {activeMv.rest}</Pill>}
+              {activeMv.rest && <Pill color="#c4c4c4">Rest {activeMv.rest}</Pill>}
             </div>
           )}
           {(() => {
             const cue = activeMv.cue || programExFor(activeEntry, activeMv)?.cue;
             return cue ? (
               <div style={{ marginTop: 10, padding: "9px 12px", borderRadius: 10, background: "#1c1c1c", fontSize: 12, color: "#c9c9c9", fontFamily: SANS, lineHeight: 1.5 }}>
-                <span style={{ fontSize: 10, letterSpacing: 1.5, color: "#5c5c5c", textTransform: "uppercase", fontWeight: 700, marginRight: 6 }}>Cue</span>
+                <span style={{ fontSize: 10, letterSpacing: 1.5, color: "#a3a3a3", textTransform: "uppercase", fontWeight: 700, marginRight: 6 }}>Cue</span>
                 {cue}
               </div>
             ) : null;
@@ -2967,7 +820,7 @@ function AppInner({ onBrief }) {
 
         {activeMv.lastSets && activeMv.lastDate && (
           <div style={{ margin: "0 18px 14px", padding: "10px 14px", borderRadius: 12, background: "#131313" }}>
-            <div style={{ fontSize: 10, letterSpacing: 2, color: "#5c5c5c", textTransform: "uppercase", fontFamily: SANS, marginBottom: 6 }}>
+            <div style={{ fontSize: 10, letterSpacing: 2, color: "#a3a3a3", textTransform: "uppercase", fontFamily: SANS, marginBottom: 6 }}>
               Last session · {fmtDate(activeMv.lastDate)}{activeMv.lastLocation ? ` · ${LOCATIONS[activeMv.lastLocation]?.short ?? ""}` : ""}
             </div>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
@@ -3007,7 +860,7 @@ function AppInner({ onBrief }) {
           };
           // Emphasize only when the suggestion is a real change from last time
           const isChange = sug.action === "add_weight" || sug.action === "back_off" || sug.action === "deload" || sug.action === "block_start" || sug.action === "coach";
-          const accent = isChange ? LAKE.sky : "#5c5c5c";
+          const accent = isChange ? LAKE.sky : "#a3a3a3";
           const alreadyApplied = activeMv.sets.length > 0 && String(activeMv.sets[0].w) === String(sug.weight);
           return (
             <div style={{ margin: "0 18px 14px", padding: "12px 14px", borderRadius: 12, background: isChange ? LAKE.sky + "14" : "#131313" }}>
@@ -3021,11 +874,11 @@ function AppInner({ onBrief }) {
                   </div>
                 )}
               </div>
-              <div style={{ fontSize: 11, color: "#9a9a9a", fontFamily: SANS, lineHeight: 1.5 }}>
+              <div style={{ fontSize: 11, color: "#c4c4c4", fontFamily: SANS, lineHeight: 1.5 }}>
                 {sug.reason}
               </div>
               {COACH_NOTES[canonName(activeMv.name)] && sug.action !== "coach" && !loggedSince(entries.filter(e => e.id !== activeEntry.id), activeMv.name, COACH_SINCE) && (
-                <div style={{ fontSize: 11, color: "#ff3fc8", fontFamily: SANS, lineHeight: 1.5, marginTop: 6 }}>
+                <div style={{ fontSize: 11, color: "#e0a83a", fontFamily: SANS, lineHeight: 1.5, marginTop: 6 }}>
                   {COACH_NOTES[canonName(activeMv.name)]}
                 </div>
               )}
@@ -3076,23 +929,23 @@ function AppInner({ onBrief }) {
             if (forward && slotKey && progEx) saveSetOverride(slotKey, activeMv.name, to === (progEx.programSets ?? -1) ? null : to);
           };
           const smallBtn = (txt, onClick, filled) => (
-            <button onClick={onClick} style={{ ...btnStyle(filled ? "#ffb3d9" : "#2e2e2e", filled ? "#131313" : "#e8e8e8"), padding: "7px 12px", fontSize: 12, fontWeight: 800, marginTop: 10, marginRight: 8 }}>{txt}</button>
+            <button onClick={onClick} style={{ ...btnStyle(filled ? "#f0c97a" : "#2e2e2e", filled ? "#131313" : "#e8e8e8"), padding: "7px 12px", fontSize: 12, fontWeight: 800, marginTop: 10, marginRight: 8 }}>{txt}</button>
           );
           return (
             <>
-              {level && level !== "good" && card("#ffb3d9", `Recovery · ${level}`, READINESS_TEXT[level])}
+              {level && level !== "good" && card("#f0c97a", `Recovery · ${level}`, READINESS_TEXT[level])}
               {pr && card("#e8e8e8", "PR in reach", `${pr.weight} × ${pr.reps} beats your best ever (${pr.bestW} × ${pr.bestR}, ${fmtDate(pr.bestDate)}).`)}
-              {plateau && card("#ff3fc8", `Stalled · ${plateau.sessions} sessions`, `No new best since ${fmtDate(plateau.since)}. ${plateau.fix}`,
+              {plateau && card("#e0a83a", `Stalled · ${plateau.sessions} sessions`, `No new best since ${fmtDate(plateau.since)}. ${plateau.fix}`,
                 plateau.kind === "reset" && plateau.weight ? smallBtn(`Use ${plateau.weight} today`, () => updateMovement(activeEntry.id, activeMv.id, { sets: activeMv.sets.map(st => (st.r !== "" && st.r != null) ? st : { ...st, w: String(plateau.weight) }) }), true) : null)}
-              {setSug && card("#ffb3d9", setSug.dir === "add" ? `Add a set · ${setSug.to} sets` : `Drop a set · ${setSug.to} sets`, setSug.reason,
+              {setSug && card("#f0c97a", setSug.dir === "add" ? `Add a set · ${setSug.to} sets` : `Drop a set · ${setSug.to} sets`, setSug.reason,
                 <div>
                   {smallBtn("Today only", () => applySets(setSug.to, false), false)}
                   {slotKey && progEx && smallBtn("From now on", () => applySets(setSug.to, true), true)}
                 </div>)}
               {progEx?.programSets != null && progEx.programSets !== progEx.sets && (
-                <div style={{ margin: "-6px 18px 14px", fontSize: 11, color: "#9a9a9a", fontFamily: SANS }}>
+                <div style={{ margin: "-6px 18px 14px", fontSize: 11, color: "#c4c4c4", fontFamily: SANS }}>
                   You set this slot to {progEx.sets} sets (program: {progEx.programSets}).{" "}
-                  <span onClick={() => { saveSetOverride(slotKey, activeMv.name, null); applySets(progEx.programSets, false); }} style={{ color: "#ffb3d9", cursor: "pointer", fontWeight: 700 }}>Reset to program</span>
+                  <span onClick={() => { saveSetOverride(slotKey, activeMv.name, null); applySets(progEx.programSets, false); }} style={{ color: "#f0c97a", cursor: "pointer", fontWeight: 700 }}>Reset to program</span>
                 </div>
               )}
             </>
@@ -3112,7 +965,7 @@ function AppInner({ onBrief }) {
               <button onClick={toggleStopwatch} style={{ ...btnStyle("#1c1c1c", "#e8e8e8"), padding: "8px 16px" }}>
                 {stopwatchRunning ? "⏸ Pause" : "▶ Resume"}
               </button>
-              <button onClick={resetStopwatch} style={{ ...btnStyle("#2e2e2e", "#9a9a9a"), padding: "8px 14px" }}>↺</button>
+              <button onClick={resetStopwatch} style={{ ...btnStyle("#2e2e2e", "#c4c4c4"), padding: "8px 14px" }}>↺</button>
               <button onClick={() => {
                 dismissStopwatch();
                 if (nextMv) { setActiveMvId(nextMv.id); setTimerState(null); }
@@ -3132,6 +985,7 @@ function AppInner({ onBrief }) {
             <div key={i}>
               <SetRow
                 num={i + 1}
+                ghost={ghostSets[i] ?? null}
                 weight={s.w} reps={s.r} rir={s.rir ?? ""}
                 repsTarget={activeMv.repsTarget ?? null}
                 type={activeMv.type ?? (activeEntry.programDay && activeMv.programRef ? (programExFor(activeEntry, activeMv)?.type ?? "compound") : "compound")}
@@ -3150,6 +1004,7 @@ function AppInner({ onBrief }) {
                 onDone={() => {
                   const ts = s.done ? null : new Date().toISOString();
                   updateSet(activeEntry.id, activeMv.id, i, "done", ts);
+                  if (!s.done) checkSetPR(activeEntry, activeMv, s);
                   if (!s.done && i < activeMv.sets.length - 1) {
                     startTimer(i, restSecs);
                   }
@@ -3189,7 +1044,7 @@ function AppInner({ onBrief }) {
             {alreadyDone ? (
               <div style={{ display: "flex", gap: 10 }}>
                 <button onClick={() => updateMovement(activeEntry.id, activeMv.id, { doneAt: null })}
-                  style={{ flex: 1, padding: "13px", borderRadius: 14, background: "transparent", color: "#5c5c5c", fontSize: 13, fontFamily: SANS, fontWeight: 700, cursor: "pointer" }}>
+                  style={{ flex: 1, padding: "13px", borderRadius: 14, background: "transparent", color: "#a3a3a3", fontSize: 13, fontFamily: SANS, fontWeight: 700, cursor: "pointer" }}>
                   ↩ Undo Done
                 </button>
                 {nextMv && (
@@ -3215,6 +1070,12 @@ function AppInner({ onBrief }) {
             )}
           </div>
         )}
+        {prToast && (
+          <div key={prToast.id} onClick={() => setPrToast(null)} role="status"
+            style={{ position: "fixed", top: 18, left: "50%", transform: "translateX(-50%)", zIndex: 300, display: "flex", alignItems: "center", gap: 10, padding: "12px 18px", borderRadius: 14, background: C.green, color: "#0a0a0a", boxShadow: "0 8px 30px rgba(76,195,138,0.35)", fontFamily: SANS, fontSize: 15, fontWeight: 800, whiteSpace: "nowrap", animation: "wjToast 2800ms ease-out forwards" }}>
+            <Trophy size={18} color="#0a0a0a" strokeWidth={2.4} /> {prToast.text}
+          </div>
+        )}
         <BottomNav tab={tab} setTab={t => { setTab(t); if (t !== "journal") setView("journal"); }} onOpenMenu={() => setShowMoreMenu(true)} />
         <MoreMenu open={showMoreMenu} onClose={() => setShowMoreMenu(false)} onSelect={(id) => { setShowMoreMenu(false); setTab(id); setView("journal"); }} />
       </Shell>
@@ -3237,7 +1098,7 @@ function AppInner({ onBrief }) {
           }
         />
         <div style={{ padding: "4px 18px 0" }}>
-          <input type="date" style={{ ...ghostInput, fontSize: 16, color: "#9a9a9a", marginBottom: 6 }}
+          <input type="date" style={{ ...ghostInput, fontSize: 16, color: "#c4c4c4", marginBottom: 6 }}
             value={activeEntry.date}
             onChange={e => updateEntry(activeEntry.id, { date: e.target.value })} />
           <input style={bigInput} value={activeEntry.customTitle}
@@ -3249,7 +1110,7 @@ function AppInner({ onBrief }) {
               <Pill color={color}>{prog.tag}</Pill>
               {!isRest && (
                 <div onClick={() => updateEntry(activeEntry.id, { location: activeEntry.location === "apartment" ? "equinox" : "apartment" })}
-                  style={{ cursor: "pointer", padding: "3px 10px", borderRadius: 999, fontSize: 11, fontWeight: 700, fontFamily: SANS, letterSpacing: 0.5, background: activeEntry.location === "apartment" ? "#ffb3d922" : "#1c1c1c", color: activeEntry.location === "apartment" ? "#ffb3d9" : "#9a9a9a", border: `1px solid ${activeEntry.location === "apartment" ? "#ffb3d955" : "#2e2e2e"}` }}>
+                  style={{ cursor: "pointer", padding: "3px 10px", borderRadius: 999, fontSize: 11, fontWeight: 700, fontFamily: SANS, letterSpacing: 0.5, background: activeEntry.location === "apartment" ? "#f0c97a22" : "#1c1c1c", color: activeEntry.location === "apartment" ? "#f0c97a" : "#c4c4c4", border: `1px solid ${activeEntry.location === "apartment" ? "#f0c97a55" : "#2e2e2e"}` }}>
                   {LOCATIONS[activeEntry.location ?? "equinox"]?.short ?? "Equinox"} · tap to switch
                 </div>
               )}
@@ -3263,10 +1124,10 @@ function AppInner({ onBrief }) {
           const setR = (k, v) => updateEntry(activeEntry.id, { readiness: { ...r, [k]: r[k] === v ? null : v } });
           const row = (label, k, opts) => (
             <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
-              <div style={{ width: 64, fontSize: 12, color: "#9a9a9a", fontFamily: SANS }}>{label}</div>
+              <div style={{ width: 64, fontSize: 12, color: "#c4c4c4", fontFamily: SANS }}>{label}</div>
               {opts.map(([v, t]) => (
                 <button key={v} onClick={() => setR(k, v)}
-                  style={{ ...btnStyle(r[k] === v ? color : "#1c1c1c", r[k] === v ? "#131313" : "#9a9a9a"), flex: 1, padding: "8px 0", fontSize: 12, fontWeight: 700 }}>{t}</button>
+                  style={{ ...btnStyle(r[k] === v ? color : "#1c1c1c", r[k] === v ? "#131313" : "#c4c4c4"), flex: 1, padding: "8px 0", fontSize: 12, fontWeight: 700 }}>{t}</button>
               ))}
             </div>
           );
@@ -3276,7 +1137,7 @@ function AppInner({ onBrief }) {
               <div style={{ margin: "0 18px 6px" }}>
                 {row("Sleep", "sleep", READINESS_SLEEP)}
                 {row("Soreness", "soreness", READINESS_SORE)}
-                {level && <div style={{ fontSize: 12, color: level === "good" ? "#c9c9c9" : "#ffb3d9", fontFamily: SANS, lineHeight: 1.5, marginTop: 2 }}>{READINESS_TEXT[level]}</div>}
+                {level && <div style={{ fontSize: 12, color: level === "good" ? "#c9c9c9" : "#f0c97a", fontFamily: SANS, lineHeight: 1.5, marginTop: 2 }}>{READINESS_TEXT[level]}</div>}
               </div>
             </>
           );
@@ -3291,7 +1152,7 @@ function AppInner({ onBrief }) {
           <div style={{ margin: "20px 18px", padding: "28px 20px", borderRadius: 16, background: "#1c1c1c", textAlign: "center" }}>
             <div style={{ display: "flex", justifyContent: "center", marginBottom: 10 }}><Moon size={34} color={C.textMid} strokeWidth={1.8} /></div>
             <div style={{ color: "#f2f2f2", fontWeight: 700, fontSize: 18 }}>Rest Day</div>
-            <div style={{ color: "#9a9a9a", fontSize: 13, marginTop: 4 }}>Recovery is part of the program</div>
+            <div style={{ color: "#c4c4c4", fontSize: 13, marginTop: 4 }}>Recovery is part of the program</div>
           </div>
         ) : (
           <>
@@ -3333,15 +1194,15 @@ function AppInner({ onBrief }) {
                         display: "flex", alignItems: "center", justifyContent: "center",
                         fontSize: 16, cursor: "pointer", transition: "all 0.15s",
                       }}>
-                        {mvDone ? <span style={{ color: "#131313" }}>✓</span> : <span style={{ fontSize: 11, fontFamily: SANS, fontWeight: 800, color: "#5c5c5c" }}>{mv.programRef ?? String(i + 1)}</span>}
+                        {mvDone ? <span style={{ color: "#131313" }}>✓</span> : <span style={{ fontSize: 11, fontFamily: SANS, fontWeight: 800, color: "#a3a3a3" }}>{mv.programRef ?? String(i + 1)}</span>}
                       </div>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ fontWeight: 700, fontSize: 15, color: mvDone ? "#e8e8e8" : "#f2f2f2", lineHeight: 1.3, textDecoration: mvDone ? "line-through" : "none", opacity: mvDone ? 0.7 : 1, display: "flex", alignItems: "center", gap: 6 }}>
-                          {mv.name || <span style={{ color: "#5c5c5c" }}>Unnamed movement</span>}
-                          {isPR && <span style={{ fontSize: 9, fontWeight: 800, color: "#0a0a0a", background: LAKE.ochre, padding: "2px 6px", borderRadius: 4, letterSpacing: 0.5, flexShrink: 0 }}>PR</span>}
-                          {mv.substituted && <span style={{ fontSize: 9, fontWeight: 800, color: "#ffb3d9", background: "#ffb3d922", padding: "2px 6px", borderRadius: 4, letterSpacing: 0.5, flexShrink: 0 }}>SWAP</span>}
+                          {mv.name || <span style={{ color: "#a3a3a3" }}>Unnamed movement</span>}
+                          {isPR && <span style={{ fontSize: 9, fontWeight: 800, color: "#0a0a0a", background: C.green, padding: "2px 6px", borderRadius: 4, letterSpacing: 0.5, flexShrink: 0 }}>PR</span>}
+                          {mv.substituted && <span style={{ fontSize: 9, fontWeight: 800, color: "#f0c97a", background: "#f0c97a22", padding: "2px 6px", borderRadius: 4, letterSpacing: 0.5, flexShrink: 0 }}>SWAP</span>}
                         </div>
-                        <div style={{ fontSize: 12, color: "#9a9a9a", marginTop: 3 }}>
+                        <div style={{ fontSize: 12, color: "#c4c4c4", marginTop: 3 }}>
                           {mv.repsTarget ? `${mv.setsTarget} sets · ${mv.repsTarget} reps` : `${mv.sets.length} sets logged`}
                           {mv.doneAt && <span style={{ color: "#e8e8e877", marginLeft: 6 }}>· done {new Date(mv.doneAt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}</span>}
                         </div>
@@ -3351,7 +1212,7 @@ function AppInner({ onBrief }) {
                               fontSize: 11, fontFamily: SANS,
                               padding: "3px 7px", borderRadius: 6,
                               background: s.r ? `${color}2a` : "#2e2e2e",
-                              color: s.r ? color : "#5c5c5c", fontWeight: 600,
+                              color: s.r ? color : "#a3a3a3", fontWeight: 600,
                             }}>
                               {s.w ? `${s.w}×` : ""}{s.r || "–"}
                             </span>
@@ -3362,12 +1223,12 @@ function AppInner({ onBrief }) {
                       <div style={{ display: "flex", flexDirection: "column", gap: 4, flexShrink: 0 }} onClick={e => e.stopPropagation()}>
                         <button
                           onClick={() => canMoveUp && reorderMovements(activeEntry.id, i, i - 1)}
-                          style={{ width: 32, height: 32, borderRadius: 8, background: canMoveUp ? "#1c1c1c" : "transparent", color: canMoveUp ? "#9a9a9a" : "#5c5c5c", fontSize: 14, cursor: canMoveUp ? "pointer" : "default", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: SANS }}>
+                          style={{ width: 32, height: 32, borderRadius: 8, background: canMoveUp ? "#1c1c1c" : "transparent", color: canMoveUp ? "#c4c4c4" : "#a3a3a3", fontSize: 14, cursor: canMoveUp ? "pointer" : "default", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: SANS }}>
                           ↑
                         </button>
                         <button
                           onClick={() => canMoveDown && reorderMovements(activeEntry.id, i, i + 1)}
-                          style={{ width: 32, height: 32, borderRadius: 8, background: canMoveDown ? "#1c1c1c" : "transparent", color: canMoveDown ? "#9a9a9a" : "#5c5c5c", fontSize: 14, cursor: canMoveDown ? "pointer" : "default", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: SANS }}>
+                          style={{ width: 32, height: 32, borderRadius: 8, background: canMoveDown ? "#1c1c1c" : "transparent", color: canMoveDown ? "#c4c4c4" : "#a3a3a3", fontSize: 14, cursor: canMoveDown ? "pointer" : "default", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: SANS }}>
                           ↓
                         </button>
                       </div>
@@ -3393,13 +1254,13 @@ function AppInner({ onBrief }) {
               <div style={{ padding: "18px", borderRadius: 16, background: "#e8e8e822", textAlign: "center" }}>
                 <div style={{ display: "flex", justifyContent: "center", marginBottom: 8 }}><Trophy size={30} color={C.accent} strokeWidth={2} /></div>
                 <div style={{ fontSize: 16, fontWeight: 800, color: "#e8e8e8", fontFamily: SANS }}>WORKOUT COMPLETE</div>
-                <div style={{ fontSize: 12, color: "#5c5c5c", marginTop: 4, fontFamily: SANS }}>
+                <div style={{ fontSize: 12, color: "#a3a3a3", marginTop: 4, fontFamily: SANS }}>
                   {new Date(activeEntry.completedAt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}
                   {" · "}
                   {activeEntry.movements.filter(m => m.doneAt).length}/{activeEntry.movements.length} movements done
                 </div>
                 <button onClick={() => updateEntry(activeEntry.id, { completedAt: null })}
-                  style={{ marginTop: 10, padding: "6px 16px", borderRadius: 8, background: "transparent", color: "#5c5c5c", fontSize: 12, fontFamily: SANS, cursor: "pointer" }}>
+                  style={{ marginTop: 10, padding: "6px 16px", borderRadius: 8, background: "transparent", color: "#a3a3a3", fontSize: 12, fontFamily: SANS, cursor: "pointer" }}>
                   Undo
                 </button>
               </div>
@@ -3551,11 +1412,28 @@ function AppInner({ onBrief }) {
       });
     }
     function logAgain(entry) {
+      const newId = Date.now();
+      const { date: _searchDate, ...clean } = entry; // search results carry a display-only date
       mutateMacros(prev => {
         const d = prev[todayStr()] ?? { entries: [] };
-        prev[todayStr()] = { ...d, entries: [...(d.entries ?? []), { ...entry, id: Date.now(), time: new Date().toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }) }] };
+        prev[todayStr()] = { ...d, entries: [...(d.entries ?? []), { ...clean, id: newId, time: new Date().toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }) }] };
         return prev;
       });
+      return newId;
+    }
+    // "+" with feedback: flash the tapped row, check-mark the button, glow the new
+    // entry in today's list, and a short haptic tap where the browser supports it.
+    function logAgainWithFeedback(entry, flashKey, after) {
+      const newId = logAgain(entry);
+      try { navigator.vibrate?.(15); } catch {}
+      setMacroFlashKey(flashKey);
+      setMacroHighlightId(newId);
+      clearTimeout(macroFlashTimer.current);
+      macroFlashTimer.current = setTimeout(() => {
+        setMacroFlashKey(null);
+        if (after) after();
+      }, 650);
+      setTimeout(() => setMacroHighlightId(h => (h === newId ? null : h)), 1800);
     }
     async function aiLogFoodPhoto() {
       if (!foodPhoto) return;
@@ -3923,18 +1801,25 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
                 <div style={{ padding: "16px 0", textAlign: "center", color: C.textDim, fontSize: 13, fontFamily: SANS }}>No matches</div>
               ) : (
                 <div>
-                  {results.slice(0, 30).map(r => (
-                    <div key={`${r.date}-${r.id}`} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 14px", borderRadius: 12, background: C.surface, marginBottom: 6 }}>
+                  {results.slice(0, 30).map(r => {
+                    const fk = `search-${r.date}-${r.id}`;
+                    const flashing = macroFlashKey === fk;
+                    return (
+                    <div key={`${r.date}-${r.id}`} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 14px", borderRadius: 12, background: C.surface, marginBottom: 6, animation: flashing ? "wjFlash 650ms ease-out" : "none" }}>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ fontSize: 13, fontWeight: 600, color: C.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.name}</div>
                         <div style={{ fontSize: 10, color: C.textDim, fontFamily: MONO, marginTop: 2 }}>{fmtDate(r.date)} · {r.cal} kcal · {Math.round(r.p)}p/{Math.round(r.c)}c/{Math.round(r.f)}f</div>
                       </div>
-                      <button onClick={() => { logAgain(r); setShowMacroSearch(false); setMacroSearchQuery(""); }}
-                        style={{ width: 28, height: 28, borderRadius: 8, background: C.surface2, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                        <Plus size={13} color={LAKE.sky} strokeWidth={2.5} />
+                      <button onClick={() => { if (macroFlashKey) return; logAgainWithFeedback(r, fk, () => { setShowMacroSearch(false); setMacroSearchQuery(""); }); }}
+                        aria-label="Add to today"
+                        style={{ width: 36, height: 36, borderRadius: 10, background: flashing ? C.green : C.surface2, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "background 0.15s" }}>
+                        {flashing
+                          ? <span style={{ display: "flex", animation: "wjPop 300ms ease-out" }}><Check size={16} color="#0a0a0a" strokeWidth={3} /></span>
+                          : <Plus size={15} color={LAKE.sky} strokeWidth={2.5} />}
                       </button>
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
               );
             })()}
@@ -3950,8 +1835,12 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
         <div style={{ padding: "4px 18px 180px" }}>
           {(day.entries ?? []).length === 0 ? (
             <div style={{ padding: "32px 0", textAlign: "center", color: C.textDim, fontSize: 13, fontFamily: SANS }}>Nothing logged {isToday ? "yet today" : "this day"}</div>
-          ) : [...day.entries].reverse().map(e => (
-            <div key={e.id} onClick={() => isToday && startEditFood(e)} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", borderRadius: 14, background: C.surface, marginBottom: 8, cursor: isToday ? "pointer" : "default" }}>
+          ) : [...day.entries].reverse().map(e => {
+            const fk = `list-${e.id}`;
+            const flashing = macroFlashKey === fk;
+            const isNew = macroHighlightId === e.id;
+            return (
+            <div key={e.id} onClick={() => isToday && startEditFood(e)} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", borderRadius: 14, background: C.surface, marginBottom: 8, cursor: isToday ? "pointer" : "default", animation: isNew ? "wjHighlight 1800ms ease-out" : flashing ? "wjFlash 650ms ease-out" : "none" }}>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 14, fontWeight: 600, color: C.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{e.name}</div>
                 <div style={{ fontSize: 11, color: C.textDim, fontFamily: MONO, marginTop: 2 }}>
@@ -3964,16 +1853,19 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
                   <Pencil size={13} color={C.textMid} strokeWidth={2} />
                 </button>
               )}
-              <button onClick={(ev) => { ev.stopPropagation(); logAgain(e); }} title="Log again today"
-                style={{ width: 30, height: 30, borderRadius: 8, background: C.surface2, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <Plus size={14} color={LAKE.sky} strokeWidth={2.5} />
+              <button onClick={(ev) => { ev.stopPropagation(); if (macroFlashKey) return; logAgainWithFeedback(e, fk); }} title="Log again today"
+                style={{ width: 30, height: 30, borderRadius: 8, background: flashing ? C.green : C.surface2, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "background 0.15s" }}>
+                {flashing
+                  ? <span style={{ display: "flex", animation: "wjPop 300ms ease-out" }}><Check size={14} color="#0a0a0a" strokeWidth={3} /></span>
+                  : <Plus size={14} color={LAKE.sky} strokeWidth={2.5} />}
               </button>
               <button onClick={(ev) => { ev.stopPropagation(); deleteFood(e.id); }}
                 style={{ width: 30, height: 30, borderRadius: 8, background: "#2a1a18", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
                 <X size={14} color={C.red} strokeWidth={2.5} />
               </button>
             </div>
-          ))}
+            );
+          })}
         </div>
 
         {/* Log Food modal */}
@@ -4195,9 +2087,9 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
     return (
       <Shell>
         <div style={{ padding: "52px 18px 20px", background: "linear-gradient(160deg,#131313 0%,#131313 100%)" }}>
-          <div style={{ fontSize: 11, letterSpacing: 3, color: "#5c5c5c", textTransform: "uppercase", fontFamily: SANS, marginBottom: 4 }}>Sets Per Muscle</div>
+          <div style={{ fontSize: 11, letterSpacing: 3, color: "#a3a3a3", textTransform: "uppercase", fontFamily: SANS, marginBottom: 4 }}>Sets Per Muscle</div>
           <div style={{ fontSize: 30, fontWeight: 900, color: "#f2f2f2", lineHeight: 1, fontFamily: SANS, letterSpacing: -0.5 }}>Volume</div>
-          <div style={{ fontSize: 13, color: "#5c5c5c", marginTop: 6, fontFamily: SANS }}>
+          <div style={{ fontSize: 13, color: "#a3a3a3", marginTop: 6, fontFamily: SANS }}>
             {viewingPast ? cycleLabel : `Since ${cycleLabel} · resets with each new cycle`}
           </div>
         </div>
@@ -4233,9 +2125,9 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
           const meso = mesocycleWeek(entries, mesoOverride);
           if (!meso.isDeload) return null;
           return (
-            <div style={{ margin: "12px 18px 4px", padding: "14px 16px", borderRadius: 14, background: "#e8e8e81a" }}>
-              <div style={{ fontSize: 13, fontWeight: 700, color: C.accent, marginBottom: 8, display: "flex", alignItems: "center", gap: 6 }}>
-                <Flame size={14} color={C.accent} strokeWidth={2} /> Deload Week — Volume Targets
+            <div style={{ margin: "12px 18px 4px", padding: "14px 16px", borderRadius: 14, background: C.amber + "14" }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: C.amber, marginBottom: 8, display: "flex", alignItems: "center", gap: 6 }}>
+                <Flame size={14} color={C.amber} strokeWidth={2} /> Deload Week: Volume Targets
               </div>
               {Object.entries(VOLUME_LANDMARKS).map(([muscle, lm]) => (
                 <div key={muscle} style={{ display: "flex", justifyContent: "space-between", padding: "5px 0", borderBottom: `1px solid ${C.lineSoft}` }}>
@@ -4245,6 +2137,47 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
                   </span>
                 </div>
               ))}
+            </div>
+          );
+        })()}
+        {/* Overview: sets per muscle as horizontal bars over MEV / MAV / MRV bands */}
+        {(() => {
+          const rowH = 26, labelW = 78, numW = 30, W = 340;
+          const barW = W - labelW - numW;
+          const H = allMuscles.length * rowH + 18;
+          return (
+            <div style={{ margin: "12px 18px 0", padding: "16px", borderRadius: 18, background: C.surface, boxShadow: shadow }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 10 }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: C.text }}>Sets per muscle</div>
+                <div style={{ fontSize: 10, color: C.textDim, fontFamily: SANS }}>{viewingPast ? "that cycle" : "this 8-day cycle"}</div>
+              </div>
+              <svg width="100%" viewBox={`0 0 ${W} ${H}`} style={{ display: "block" }}>
+                {allMuscles.map((muscle, idx) => {
+                  const lm = VOLUME_LANDMARKS[muscle];
+                  const sets = vol[muscle] || 0;
+                  const st = volumeStatus(sets, muscle);
+                  // Each row is scaled to its own landmarks so every muscle reads the same way
+                  const maxX = Math.max(lm.mrv * 1.25, sets + 1);
+                  const sx = v => labelW + (Math.min(v, maxX) / maxX) * barW;
+                  const y = idx * rowH + 4;
+                  return (
+                    <g key={muscle}>
+                      <text x={0} y={y + 13} fontSize="11" fill={C.textMid} fontFamily={SANS}>{muscle}</text>
+                      <rect x={labelW} y={y + 3} width={sx(lm.mev) - labelW} height={14} fill={C.surface2} rx="3" />
+                      <rect x={sx(lm.mev)} y={y + 3} width={sx(lm.mav) - sx(lm.mev)} height={14} fill={C.green} opacity="0.16" />
+                      <rect x={sx(lm.mav)} y={y + 3} width={sx(lm.mrv) - sx(lm.mav)} height={14} fill={C.amber} opacity="0.16" />
+                      <rect x={sx(lm.mrv)} y={y + 3} width={labelW + barW - sx(lm.mrv)} height={14} fill={C.red} opacity="0.10" />
+                      <rect x={labelW} y={y + 7} width={Math.max(0, sx(sets) - labelW)} height={6} fill={st.color === C.textMid ? C.textMid : st.color} rx="3" />
+                      <text x={W} y={y + 14} fontSize="12" fill={st.color} textAnchor="end" fontFamily="monospace" fontWeight="700">{sets}</text>
+                    </g>
+                  );
+                })}
+                <g fontSize="9" fontFamily={SANS} fill={C.textDim}>
+                  <rect x={labelW} y={H - 10} width="8" height="8" fill={C.green} opacity="0.5" rx="1" /><text x={labelW + 11} y={H - 3}>MEV to MAV</text>
+                  <rect x={labelW + 80} y={H - 10} width="8" height="8" fill={C.amber} opacity="0.5" rx="1" /><text x={labelW + 91} y={H - 3}>MAV to MRV</text>
+                  <rect x={labelW + 160} y={H - 10} width="8" height="8" fill={C.red} opacity="0.4" rx="1" /><text x={labelW + 171} y={H - 3}>over MRV</text>
+                </g>
+              </svg>
             </div>
           );
         })()}
@@ -4266,7 +2199,7 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
                   </div>
                 </div>
                 {/* Volume bar with MEV/MAV/MRV markers */}
-                <div style={{ position: "relative", height: 12, borderRadius: 6, background: C.surface2, overflow: "hidden" }}>
+                <div style={{ position: "relative", height: 12, borderRadius: 6, background: `linear-gradient(90deg, ${C.surface2} 0 ${mevPct}%, ${C.green}29 ${mevPct}% ${mavPct}%, ${C.amber}29 ${mavPct}% 100%)`, overflow: "hidden" }}>
                   <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: `${pct}%`, background: `linear-gradient(90deg, ${status.color}aa, ${status.color})`, borderRadius: 6, transition: "width 0.4s ease" }} />
                   <div style={{ position: "absolute", left: `${mevPct}%`, top: 0, bottom: 0, width: 1.5, background: "rgba(255,255,255,0.25)" }} />
                   <div style={{ position: "absolute", left: `${mavPct}%`, top: 0, bottom: 0, width: 1.5, background: "rgba(255,255,255,0.25)" }} />
@@ -4279,7 +2212,7 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
               </div>
             );
           })}
-          <div style={{ padding: "8px 4px", fontSize: 11, color: "#5c5c5c", fontFamily: SANS, lineHeight: 1.6 }}>
+          <div style={{ padding: "8px 4px", fontSize: 11, color: "#a3a3a3", fontFamily: SANS, lineHeight: 1.6 }}>
             MEV = minimum effective volume · MAV = max adaptive (the productive zone) · MRV = max recoverable. Stay in the green band for growth; back off if you're over MRV repeatedly.
           </div>
         </div>
@@ -4309,7 +2242,8 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
     }
     const completedSessions = heatDays.filter(d => d.count > 0).length;
 
-    // Mini SVG line chart for selected movement
+    // Inline SVG e1RM chart for the selected lift: gridlines with values, a point per
+    // session (best set by estimateOneRM via movementHistory), the all-time best in green.
     function LineChart({ data, color }) {
       if (data.length < 2) return (
         <div style={{ height: 80, display: "flex", alignItems: "center", justifyContent: "center", color: C.textDim, fontSize: 12, fontFamily: SANS }}>
@@ -4317,31 +2251,45 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
         </div>
       );
       const vals = data.map(d => d.e1rm);
-      const min = Math.min(...vals), max = Math.max(...vals);
+      const rawMin = Math.min(...vals), rawMax = Math.max(...vals);
+      const padV = Math.max(2, Math.round((rawMax - rawMin) * 0.1));
+      const min = rawMin - padV, max = rawMax + padV;
       const range = max - min || 1;
-      const W = 340, H = 80, PAD = 8;
+      const W = 340, H = 150, L = 34, R = 8, T = 10, B = 20;
+      const bestIdx = vals.lastIndexOf(rawMax);
       const pts = vals.map((v, i) => {
-        const x = PAD + (i / (vals.length - 1)) * (W - PAD * 2);
-        const y = H - PAD - ((v - min) / range) * (H - PAD * 2);
+        const x = L + (i / (vals.length - 1)) * (W - L - R);
+        const y = T + (1 - (v - min) / range) * (H - T - B);
         return [x, y];
       });
       const path = pts.map((p, i) => `${i === 0 ? "M" : "L"}${p[0].toFixed(1)},${p[1].toFixed(1)}`).join(" ");
-      const area = path + ` L${pts[pts.length-1][0]},${H} L${PAD},${H} Z`;
+      const area = path + ` L${pts[pts.length-1][0]},${H - B} L${L},${H - B} Z`;
+      const ticks = [0, 0.5, 1].map(f => min + f * range);
       return (
         <svg width="100%" viewBox={`0 0 ${W} ${H}`} style={{ display: "block" }}>
           <defs>
             <linearGradient id="lg" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor={color} stopOpacity="0.3" />
+              <stop offset="0%" stopColor={color} stopOpacity="0.22" />
               <stop offset="100%" stopColor={color} stopOpacity="0.02" />
             </linearGradient>
           </defs>
+          {ticks.map((v, i) => {
+            const y = T + (1 - (v - min) / range) * (H - T - B);
+            return (
+              <g key={i}>
+                <line x1={L} y1={y} x2={W - R} y2={y} stroke={C.line} strokeWidth="1" strokeDasharray="3,4" />
+                <text x={L - 5} y={y + 3} fontSize="9" fill={C.textDim} textAnchor="end" fontFamily="monospace">{Math.round(v)}</text>
+              </g>
+            );
+          })}
           <path d={area} fill="url(#lg)" />
           <path d={path} fill="none" stroke={color} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
           {pts.map(([x, y], i) => (
-            <circle key={i} cx={x} cy={y} r="3" fill={color} stroke={C.surface} strokeWidth="1.5" />
+            <circle key={i} cx={x} cy={y} r={i === bestIdx ? 4.5 : 3} fill={i === bestIdx ? C.green : color} stroke={C.surface} strokeWidth="1.5" />
           ))}
-          <text x={pts[0][0]} y={H - 2} fontSize="9" fill={C.textDim} textAnchor="middle" fontFamily="monospace">{data[0].date.slice(5)}</text>
-          <text x={pts[pts.length-1][0]} y={H - 2} fontSize="9" fill={C.textDim} textAnchor="middle" fontFamily="monospace">{data[data.length-1].date.slice(5)}</text>
+          <text x={pts[bestIdx][0]} y={Math.max(9, pts[bestIdx][1] - 8)} fontSize="9" fill={C.green} textAnchor={bestIdx === pts.length - 1 ? "end" : bestIdx === 0 ? "start" : "middle"} fontFamily="monospace" fontWeight="700">PR {rawMax}</text>
+          <text x={pts[0][0]} y={H - 4} fontSize="9" fill={C.textDim} textAnchor="start" fontFamily="monospace">{data[0].date.slice(5)}</text>
+          <text x={pts[pts.length-1][0]} y={H - 4} fontSize="9" fill={C.textDim} textAnchor="end" fontFamily="monospace">{data[data.length-1].date.slice(5)}</text>
         </svg>
       );
     }
@@ -4376,7 +2324,7 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
             <div style={{ fontSize: 13, fontWeight: 700, color: C.text, marginBottom: 12 }}>Push / Pull Balance <span style={{ fontSize: 11, color: C.textDim, fontWeight: 400 }}>last 8 days</span></div>
             {[
               { label: "Push", val: balance.push, color: C.accent },
-              { label: "Pull", val: balance.pull, color: "#9a9a9a" },
+              { label: "Pull", val: balance.pull, color: "#c4c4c4" },
               { label: "Legs", val: balance.legs, color: "#e8e8e8" },
             ].map(({ label, val, color }) => {
               const total = balance.push + balance.pull + balance.legs || 1;
@@ -4404,14 +2352,14 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
 
           {/* ── PER-LIFT PROGRESSION ── */}
           <div style={{ marginBottom: 14, padding: "16px", borderRadius: 18, background: C.surface, boxShadow: shadow }}>
-            <div style={{ fontSize: 13, fontWeight: 700, color: C.text, marginBottom: 10 }}>Lift Progression</div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: C.text, marginBottom: 10 }}>Lift Progression <span style={{ fontSize: 11, color: C.textDim, fontWeight: 400 }}>estimated 1RM per session</span></div>
             <select value={selMv || ""} onChange={e => setSelectedMovement(e.target.value)}
               style={{ width: "100%", padding: "10px 12px", borderRadius: 10, background: C.surface2, color: C.text, fontSize: 13, fontFamily: SANS, marginBottom: 12, outline: "none" }}>
               {mvNames.map(n => <option key={n} value={n}>{n}</option>)}
             </select>
             {history.length > 0 && (
               <>
-                <LineChart data={history} color={LAKE.lake} />
+                <LineChart data={history} color={C.text} />
                 <div style={{ display: "flex", justifyContent: "space-between", marginTop: 10 }}>
                   <div style={{ textAlign: "center" }}>
                     <div style={{ fontSize: 9, color: C.textDim, letterSpacing: 1, textTransform: "uppercase", fontFamily: SANS }}>First</div>
@@ -4419,7 +2367,7 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
                   </div>
                   <div style={{ textAlign: "center" }}>
                     <div style={{ fontSize: 9, color: C.textDim, letterSpacing: 1, textTransform: "uppercase", fontFamily: SANS }}>Best</div>
-                    <div style={{ fontSize: 16, fontWeight: 800, color: LAKE.lake, fontFamily: MONO }}>{Math.max(...history.map(h => h.e1rm))}kg</div>
+                    <div style={{ fontSize: 16, fontWeight: 800, color: C.green, fontFamily: MONO }}>{Math.max(...history.map(h => h.e1rm))}lbs</div>
                   </div>
                   <div style={{ textAlign: "center" }}>
                     <div style={{ fontSize: 9, color: C.textDim, letterSpacing: 1, textTransform: "uppercase", fontFamily: SANS }}>Sessions</div>
@@ -4427,7 +2375,7 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
                   </div>
                   <div style={{ textAlign: "center" }}>
                     <div style={{ fontSize: 9, color: C.textDim, letterSpacing: 1, textTransform: "uppercase", fontFamily: SANS }}>Change</div>
-                    <div style={{ fontSize: 16, fontWeight: 800, color: history[history.length-1].e1rm >= history[0].e1rm ? C.accent : C.red, fontFamily: MONO }}>
+                    <div style={{ fontSize: 16, fontWeight: 800, color: history[history.length-1].e1rm >= history[0].e1rm ? C.green : C.red, fontFamily: MONO }}>
                       {history[history.length-1].e1rm >= history[0].e1rm ? "+" : ""}{history[history.length-1].e1rm - history[0].e1rm}lbs
                     </div>
                   </div>
@@ -4444,13 +2392,13 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
               <div style={{ fontSize: 13, color: C.textDim, fontFamily: SANS }}>Log some sets to see PRs</div>
             ) : Object.entries(prs).sort((a, b) => b[1].maxE1RM - a[1].maxE1RM).map(([name, pr]) => (
               <div key={name} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 0", borderBottom: `1px solid ${C.lineSoft}` }}>
-                <Trophy size={14} color={C.accent} strokeWidth={2} style={{ flexShrink: 0 }} />
+                <Trophy size={14} color={C.green} strokeWidth={2} style={{ flexShrink: 0 }} />
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 13, fontWeight: 600, color: C.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{name}</div>
                   <div style={{ fontSize: 11, color: C.textDim, fontFamily: SANS, marginTop: 2 }}>{pr.date} · {pr.maxWeight}lbs × {pr.reps}</div>
                 </div>
                 <div style={{ textAlign: "right", flexShrink: 0 }}>
-                  <div style={{ fontSize: 16, fontWeight: 800, color: C.accent, fontFamily: MONO }}>~{pr.maxE1RM}lbs</div>
+                  <div style={{ fontSize: 16, fontWeight: 800, color: C.green, fontFamily: MONO }}>~{pr.maxE1RM}lbs</div>
                   <div style={{ fontSize: 9, color: C.textDim, fontFamily: SANS }}>e1RM</div>
                 </div>
               </div>
@@ -4670,6 +2618,7 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
               <div style={{ textAlign: "center", marginTop: 8, fontSize: 13, fontWeight: 700, color: C.text, fontFamily: SANS }}>
                 {fmtDate(photo.date)}
               </div>
+              <PhotoWeightCaption weightLog={weightLog} date={photo.date} />
               <button onClick={onPick} style={{
                 display: "block", width: "100%", marginTop: 8, padding: "10px", borderRadius: 10,
                 background: LAKE.sky + "22", border: "none", cursor: "pointer",
@@ -4705,10 +2654,39 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
           )}
           {!drivePhotosLoading && !drivePhotosError && drivePhotos && (
             <>
-              <div style={{ display: "flex", gap: 12, marginBottom: 20 }}>
-                <PhotoSlot label="Slot A" photo={photoSlotA} onPick={() => setPhotoPickerSlot("A")} />
-                <PhotoSlot label="Slot B" photo={photoSlotB} onPick={() => setPhotoPickerSlot("B")} />
-              </div>
+              {photoSlotA && photoSlotB && (
+                <div style={{ display: "flex", gap: 6, padding: 4, borderRadius: 12, background: C.surface2, marginBottom: 14 }}>
+                  {[["side", "Side by side"], ["slider", "Slider"]].map(([m, label]) => (
+                    <button key={m} onClick={() => setPhotoCompareMode(m)} style={{
+                      flex: 1, padding: "10px", borderRadius: 9, border: "none", cursor: "pointer", fontFamily: SANS, fontSize: 13, fontWeight: 700,
+                      background: photoCompareMode === m ? C.accent : "transparent", color: photoCompareMode === m ? "#0a0a0a" : C.textMid,
+                    }}>{label}</button>
+                  ))}
+                </div>
+              )}
+              {photoSlotA && photoSlotB && photoCompareMode === "slider" ? (
+                <div style={{ marginBottom: 20 }}>
+                  <SliderCompare a={photoSlotA} b={photoSlotB} />
+                  <div style={{ display: "flex", gap: 12, marginTop: 10 }}>
+                    {[["A", photoSlotA], ["B", photoSlotB]].map(([slot, ph]) => (
+                      <div key={slot} style={{ flex: 1, textAlign: "center" }}>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: C.text, fontFamily: SANS }}>{slot} · {fmtDate(ph.date)}</div>
+                        <PhotoWeightCaption weightLog={weightLog} date={ph.date} />
+                        <button onClick={() => setPhotoPickerSlot(slot)} style={{
+                          display: "block", width: "100%", marginTop: 8, padding: "10px", borderRadius: 10,
+                          background: LAKE.sky + "22", border: "none", cursor: "pointer",
+                          fontSize: 12, fontWeight: 700, color: LAKE.sky, fontFamily: SANS,
+                        }}>Change {slot}</button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div style={{ display: "flex", gap: 12, marginBottom: 20 }}>
+                  <PhotoSlot label="Slot A" photo={photoSlotA} onPick={() => setPhotoPickerSlot("A")} />
+                  <PhotoSlot label="Slot B" photo={photoSlotB} onPick={() => setPhotoPickerSlot("B")} />
+                </div>
+              )}
               {photoSlotA && photoSlotB && (
                 <div style={{ textAlign: "center", padding: "12px 16px", borderRadius: 12, background: C.surface2, fontSize: 12, color: C.textMid, fontFamily: SANS }}>
                   {fmtDate(photoSlotA.date)} → {fmtDate(photoSlotB.date)}
@@ -4841,18 +2819,18 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
     return (
       <Shell>
         <div style={{ padding: "52px 18px 20px", background: "linear-gradient(160deg,#131313 0%,#131313 100%)" }}>
-          <div style={{ fontSize: 11, letterSpacing: 3, color: "#5c5c5c", textTransform: "uppercase", fontFamily: SANS, marginBottom: 4 }}>Backup & History</div>
+          <div style={{ fontSize: 11, letterSpacing: 3, color: "#a3a3a3", textTransform: "uppercase", fontFamily: SANS, marginBottom: 4 }}>Backup & History</div>
           <div style={{ fontSize: 30, fontWeight: 900, color: "#f2f2f2", lineHeight: 1, fontFamily: SANS, letterSpacing: -0.5 }}>Data</div>
           <div style={{ display: "flex", gap: 20, marginTop: 10 }}>
-            <div><div style={{ fontSize: 22, fontWeight: 900, color: "#e8e8e8", fontFamily: SANS }}>{totalSessions}</div><div style={{ fontSize: 10, color: "#5c5c5c", letterSpacing: 1, textTransform: "uppercase", fontFamily: SANS }}>Sessions</div></div>
-            <div><div style={{ fontSize: 22, fontWeight: 900, color: "#e8e8e8", fontFamily: SANS }}>{totalSets}</div><div style={{ fontSize: 10, color: "#5c5c5c", letterSpacing: 1, textTransform: "uppercase", fontFamily: SANS }}>Sets Logged</div></div>
-            <div><div style={{ fontSize: 22, fontWeight: 900, color: "#e05a4d", fontFamily: SANS }}>{weightLog.length}</div><div style={{ fontSize: 10, color: "#5c5c5c", letterSpacing: 1, textTransform: "uppercase", fontFamily: SANS }}>Weigh-ins</div></div>
+            <div><div style={{ fontSize: 22, fontWeight: 900, color: "#e8e8e8", fontFamily: SANS }}>{totalSessions}</div><div style={{ fontSize: 10, color: "#a3a3a3", letterSpacing: 1, textTransform: "uppercase", fontFamily: SANS }}>Sessions</div></div>
+            <div><div style={{ fontSize: 22, fontWeight: 900, color: "#e8e8e8", fontFamily: SANS }}>{totalSets}</div><div style={{ fontSize: 10, color: "#a3a3a3", letterSpacing: 1, textTransform: "uppercase", fontFamily: SANS }}>Sets Logged</div></div>
+            <div><div style={{ fontSize: 22, fontWeight: 900, color: "#e05a4d", fontFamily: SANS }}>{weightLog.length}</div><div style={{ fontSize: 10, color: "#a3a3a3", letterSpacing: 1, textTransform: "uppercase", fontFamily: SANS }}>Weigh-ins</div></div>
           </div>
         </div>
 
         {/* Export / Import + Coach Export */}
         <div style={{ padding: "16px 18px 8px" }}>
-          <div style={{ fontSize: 11, letterSpacing: 2, color: "#5c5c5c", textTransform: "uppercase", fontFamily: SANS, fontWeight: 700, marginBottom: 10 }}>Backup</div>
+          <div style={{ fontSize: 11, letterSpacing: 2, color: "#a3a3a3", textTransform: "uppercase", fontFamily: SANS, fontWeight: 700, marginBottom: 10 }}>Backup</div>
           <div style={{ display: "flex", gap: 10, marginBottom: 10 }}>
             <button onClick={() => downloadJSON(entries, weightLog, mesoOverride, cycleAnchor, macros, macroTargets)} style={{ flex: 1, padding: "13px", borderRadius: 14, background: "#e8e8e822", color: "#e8e8e8", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: SANS }}>
               Export JSON
@@ -4894,13 +2872,13 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
 
         {/* Filter by day */}
         <div style={{ padding: "8px 18px 4px" }}>
-          <div style={{ fontSize: 11, letterSpacing: 2, color: "#5c5c5c", textTransform: "uppercase", fontFamily: SANS, fontWeight: 700, marginBottom: 8 }}>Session History · {filtered.filter(e => {
+          <div style={{ fontSize: 11, letterSpacing: 2, color: "#a3a3a3", textTransform: "uppercase", fontFamily: SANS, fontWeight: 700, marginBottom: 8 }}>Session History · {filtered.filter(e => {
             if (!searchQuery) return true;
             const q = searchQuery.toLowerCase();
             return e.customTitle?.toLowerCase().includes(q) || e.note?.toLowerCase().includes(q) || e.movements.some(m => m.name?.toLowerCase().includes(q) || m.note?.toLowerCase().includes(q));
           }).length} shown</div>
           <div style={{ display: "flex", gap: 6, overflowX: "auto", paddingBottom: 4, scrollbarWidth: "none" }}>
-            <button onClick={() => setFilterDay(null)} style={{ flexShrink: 0, padding: "5px 12px", borderRadius: 8, border: "none", cursor: "pointer", fontFamily: SANS, fontSize: 11, fontWeight: 700, background: filterDay === null ? "#e8e8e8" : "#2e2e2e", color: filterDay === null ? "#131313" : "#9a9a9a" }}>All</button>
+            <button onClick={() => setFilterDay(null)} style={{ flexShrink: 0, padding: "5px 12px", borderRadius: 8, border: "none", cursor: "pointer", fontFamily: SANS, fontSize: 11, fontWeight: 700, background: filterDay === null ? "#e8e8e8" : "#2e2e2e", color: filterDay === null ? "#131313" : "#c4c4c4" }}>All</button>
             {Object.entries(PROGRAM).filter(([,d]) => d.exercises.length > 0).map(([dn, d]) => (
               <button key={dn} onClick={() => setFilterDay(filterDay === Number(dn) ? null : Number(dn))}
                 style={{ flexShrink: 0, padding: "5px 12px", borderRadius: 8, border: "none", cursor: "pointer", fontFamily: SANS, fontSize: 11, fontWeight: 700, background: filterDay === Number(dn) ? d.color : "#2e2e2e", color: filterDay === Number(dn) ? "#131313" : d.color }}>
@@ -4920,10 +2898,10 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
           return (
             <div style={{ padding: "4px 18px 100px" }}>
               {displayed.length === 0 ? (
-                <div style={{ padding: "40px 0", textAlign: "center", color: "#5c5c5c", fontSize: 13, fontFamily: SANS }}>No sessions found</div>
+                <div style={{ padding: "40px 0", textAlign: "center", color: "#a3a3a3", fontSize: 13, fontFamily: SANS }}>No sessions found</div>
               ) : displayed.map(entry => {
                 const prog = entry.programDay ? PROGRAM[entry.programDay] : null;
-                const color = prog?.color ?? "#5c5c5c";
+                const color = prog?.color ?? "#a3a3a3";
                 const expanded = expandedId === entry.id;
                 const entryColor = prog?.color ?? "#e8e8e8";
                 const totalVol = entry.movements.reduce((n, mv) =>
@@ -4934,33 +2912,33 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
                     <div onClick={() => setExpandedId(expanded ? null : entry.id)}
                       style={{ padding: "12px 14px", cursor: "pointer", display: "flex", alignItems: "center", gap: 12 }}>
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: 10, color: "#5c5c5c", fontFamily: SANS, letterSpacing: 1, marginBottom: 2 }}>
+                        <div style={{ fontSize: 10, color: "#a3a3a3", fontFamily: SANS, letterSpacing: 1, marginBottom: 2 }}>
                           {fmtDate(entry.date)}{entry.programDay ? ` · DAY ${entry.programDay}` : ""}
                           {entry.completedAt && <span style={{ color: "#e8e8e8", marginLeft: 6 }}>✓</span>}
                         </div>
                         <div style={{ fontSize: 15, fontWeight: 700, color: "#f2f2f2" }}>{entry.customTitle || "Custom Session"}</div>
-                        <div style={{ fontSize: 11, color: "#5c5c5c", fontFamily: SANS, marginTop: 2 }}>
+                        <div style={{ fontSize: 11, color: "#a3a3a3", fontFamily: SANS, marginTop: 2 }}>
                           {entry.movements.length} movements
-                          {totalVol > 0 && <span style={{ color: "#9a9a9a", marginLeft: 8 }}>{Math.round(totalVol).toLocaleString()} lbs total vol</span>}
+                          {totalVol > 0 && <span style={{ color: "#c4c4c4", marginLeft: 8 }}>{Math.round(totalVol).toLocaleString()} lbs total vol</span>}
                         </div>
                       </div>
-                      <div style={{ color: "#5c5c5c", fontSize: 14, fontFamily: SANS, transition: "transform 0.2s", transform: expanded ? "rotate(90deg)" : "none" }}>›</div>
+                      <div style={{ color: "#a3a3a3", fontSize: 14, fontFamily: SANS, transition: "transform 0.2s", transform: expanded ? "rotate(90deg)" : "none" }}>›</div>
                     </div>
                     {expanded && (
                       <div style={{ borderTop: "1px solid #2e2e2e", padding: "10px 14px 14px" }}>
-                        {entry.note && <div style={{ fontSize: 12, color: "#9a9a9a", marginBottom: 10, fontStyle: "italic" }}>{entry.note}</div>}
+                        {entry.note && <div style={{ fontSize: 12, color: "#c4c4c4", marginBottom: 10, fontStyle: "italic" }}>{entry.note}</div>}
                         {entry.movements.map(mv => (
                           <div key={mv.id} style={{ marginBottom: 10 }}>
-                            <div style={{ fontSize: 12, fontWeight: 700, color: "#9a9a9a", marginBottom: 4, fontFamily: SANS }}>
+                            <div style={{ fontSize: 12, fontWeight: 700, color: "#c4c4c4", marginBottom: 4, fontFamily: SANS }}>
                               {mv.programRef ? `${mv.programRef}. ` : ""}{mv.name}
                             </div>
                             <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
                               {mv.sets.map((s, si) => (
-                                <span key={si} style={{ fontSize: 11, fontFamily: SANS, padding: "3px 8px", borderRadius: 6, background: s.r ? entryColor + "22" : "#2e2e2e", color: s.r ? entryColor : "#5c5c5c" }}>
+                                <span key={si} style={{ fontSize: 11, fontFamily: SANS, padding: "3px 8px", borderRadius: 6, background: s.r ? entryColor + "22" : "#2e2e2e", color: s.r ? entryColor : "#a3a3a3" }}>
                                   {s.w ? `${s.w}×` : "BW×"}{s.r || "–"}
                                 </span>
                               ))}
-                              {mv.note && <span style={{ fontSize: 10, color: "#5c5c5c", fontStyle: "italic", alignSelf: "center", marginLeft: 4 }}>{mv.note}</span>}
+                              {mv.note && <span style={{ fontSize: 10, color: "#a3a3a3", fontStyle: "italic", alignSelf: "center", marginLeft: 4 }}>{mv.note}</span>}
                             </div>
                           </div>
                         ))}
@@ -5008,21 +2986,21 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
     return (
       <Shell>
         <div style={{ padding: "52px 18px 16px", background: "linear-gradient(160deg,#131313 0%,#131313 100%)" }}>
-          <div style={{ fontSize: 11, letterSpacing: 3, color: "#5c5c5c", textTransform: "uppercase", fontFamily: SANS, marginBottom: 4 }}>Body Weight</div>
+          <div style={{ fontSize: 11, letterSpacing: 3, color: "#a3a3a3", textTransform: "uppercase", fontFamily: SANS, marginBottom: 4 }}>Body Weight</div>
           <div style={{ fontSize: 30, fontWeight: 900, color: "#f2f2f2", lineHeight: 1, fontFamily: SANS, letterSpacing: -0.5 }}>Weight Tracker</div>
           {latest && (
             <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginTop: 8 }}>
               <span style={{ fontSize: 36, fontWeight: 900, color: "#e8e8e8", fontFamily: SANS }}>{latest.weight}</span>
-              <span style={{ fontSize: 16, color: "#5c5c5c", fontFamily: SANS }}>{latest.unit}</span>
+              <span style={{ fontSize: 16, color: "#a3a3a3", fontFamily: SANS }}>{latest.unit}</span>
               {diff !== null && (
-                <span style={{ fontSize: 14, fontFamily: SANS, fontWeight: 700, color: parseFloat(diff) < 0 ? "#e8e8e8" : parseFloat(diff) > 0 ? "#e05a4d" : "#9a9a9a" }}>
+                <span style={{ fontSize: 14, fontFamily: SANS, fontWeight: 700, color: parseFloat(diff) < 0 ? "#e8e8e8" : parseFloat(diff) > 0 ? "#e05a4d" : "#c4c4c4" }}>
                   {parseFloat(diff) > 0 ? "+" : ""}{diff} vs last
                 </span>
               )}
             </div>
           )}
           {totalDiff !== null && (
-            <div style={{ fontSize: 12, color: "#5c5c5c", fontFamily: SANS, marginTop: 4 }}>
+            <div style={{ fontSize: 12, color: "#a3a3a3", fontFamily: SANS, marginTop: 4 }}>
               Total change: {parseFloat(totalDiff) > 0 ? "+" : ""}{totalDiff} {sorted_w[0]?.unit} over {weightLog.length} entries
             </div>
           )}
@@ -5037,14 +3015,14 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
           return (
           <div style={{ margin: "16px 18px 0", padding: "16px", borderRadius: 16, background: "#131313" }}>
             <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 10 }}>
-              <div style={{ fontSize: 11, letterSpacing: 2, color: "#5c5c5c", textTransform: "uppercase", fontFamily: SANS }}>Progress</div>
+              <div style={{ fontSize: 11, letterSpacing: 2, color: "#a3a3a3", textTransform: "uppercase", fontFamily: SANS }}>Progress</div>
               {active ? (
                 <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
                   <span style={{ fontSize: 17, fontWeight: 800, color: "#e8e8e8", fontFamily: MONO }}>{active.weight}</span>
-                  <span style={{ fontSize: 11, color: "#9a9a9a", fontFamily: SANS }}>{fmtDate(active.date)}</span>
+                  <span style={{ fontSize: 11, color: "#c4c4c4", fontFamily: SANS }}>{fmtDate(active.date)}</span>
                 </div>
               ) : (
-                <div style={{ fontSize: 10, color: "#5c5c5c", fontFamily: SANS }}>Touch & drag to scrub</div>
+                <div style={{ fontSize: 10, color: "#a3a3a3", fontFamily: SANS }}>Touch & drag to scrub</div>
               )}
             </div>
             <svg
@@ -5058,7 +3036,7 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
                 return (
                   <g key={p}>
                     <line x1="30" y1={y} x2={CHART_W} y2={y} stroke="#2e2e2e" strokeWidth="1" strokeDasharray="3,4" />
-                    <text x="26" y={y + 4} fontSize="9" fill="#5c5c5c" textAnchor="end" fontFamily="monospace">{val}</text>
+                    <text x="26" y={y + 4} fontSize="9" fill="#a3a3a3" textAnchor="end" fontFamily="monospace">{val}</text>
                   </g>
                 );
               })}
@@ -5090,6 +3068,65 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
           </div>
           );
         })()}
+        {/* ── 7-DAY AVERAGE: daily weigh-ins as dots, rolling 7-day mean as a line ── */}
+        {chartData.length >= 2 && (() => {
+          const toLb = w => (w.unit === "kg" ? parseFloat(w.weight) * 2.20462 : parseFloat(w.weight));
+          const pts = chartData.map(w => ({ date: w.date, v: toLb(w) })).filter(p => !isNaN(p.v));
+          if (pts.length < 2) return null;
+          const avgIn = (from, to) => {
+            const xs = pts.filter(p => p.date >= from && p.date <= to).map(p => p.v);
+            return xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : null;
+          };
+          const today = todayStr();
+          const lastDate = pts[pts.length - 1].date;
+          // Anchor on today; if there's no weigh-in this week, anchor on the latest one.
+          const end = avgIn(addDays(today, -6), today) != null ? today : lastDate;
+          const curAvg = avgIn(addDays(end, -6), end);
+          const prevAvg = avgIn(addDays(end, -13), addDays(end, -7));
+          const delta = curAvg != null && prevAvg != null ? curAvg - prevAvg : null;
+          // Plot the last 60 days of weigh-ins (or all of them if fewer)
+          const startDate = addDays(lastDate, -59);
+          const shown = pts.filter(p => p.date >= startDate);
+          const rolling = shown.map(p => ({ date: p.date, v: avgIn(addDays(p.date, -6), p.date) }));
+          const W = 340, H = 130, L = 34, T = 8, B = 18;
+          const all = shown.map(p => p.v).concat(rolling.map(r => r.v));
+          const lo = Math.floor(Math.min(...all) - 0.5), hi = Math.ceil(Math.max(...all) + 0.5);
+          const span = Math.max(1, daysBetween(shown[0].date, lastDate));
+          const x = d => L + (daysBetween(shown[0].date, d) / span) * (W - L - 4);
+          const y = v => T + (1 - (v - lo) / Math.max(hi - lo, 1)) * (H - T - B);
+          const line = rolling.map((r, i) => `${i === 0 ? "M" : "L"}${x(r.date).toFixed(1)},${y(r.v).toFixed(1)}`).join(" ");
+          const fmtD = d => new Date(d + "T12:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" });
+          return (
+            <div style={{ margin: "12px 18px 0", padding: "16px", borderRadius: 16, background: "#131313" }}>
+              <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 6 }}>
+                <div style={{ fontSize: 11, letterSpacing: 2, color: "#a3a3a3", textTransform: "uppercase", fontFamily: SANS }}>7-Day Average</div>
+                <div style={{ fontSize: 10, color: "#a3a3a3", fontFamily: SANS }}>dots = weigh-ins · line = 7-day avg</div>
+              </div>
+              <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: 10 }}>
+                <span style={{ fontSize: 26, fontWeight: 900, color: "#e8e8e8", fontFamily: MONO }}>{curAvg != null ? curAvg.toFixed(1) : "–"}</span>
+                <span style={{ fontSize: 12, color: "#a3a3a3", fontFamily: SANS }}>lbs</span>
+                <span style={{ fontSize: 12, fontFamily: MONO, fontWeight: 700, color: delta == null ? "#a3a3a3" : "#c4c4c4" }}>
+                  {delta == null ? "not enough data for last week" : `${delta > 0 ? "+" : ""}${delta.toFixed(1)} vs previous 7 days`}
+                </span>
+              </div>
+              <svg width="100%" viewBox={`0 0 ${W} ${H}`} style={{ display: "block" }}>
+                {[0, 0.5, 1].map(f => {
+                  const v = lo + f * (hi - lo);
+                  return (
+                    <g key={f}>
+                      <line x1={L} y1={y(v)} x2={W} y2={y(v)} stroke="#2e2e2e" strokeWidth="1" strokeDasharray="3,4" />
+                      <text x={L - 4} y={y(v) + 3} fontSize="9" fill="#a3a3a3" textAnchor="end" fontFamily="monospace">{v.toFixed(0)}</text>
+                    </g>
+                  );
+                })}
+                {shown.map((p, i) => <circle key={i} cx={x(p.date)} cy={y(p.v)} r="2.4" fill="#a3a3a3" />)}
+                <path d={line} fill="none" stroke="#e8e8e8" strokeWidth="2.2" strokeLinejoin="round" strokeLinecap="round" />
+                <text x={L} y={H - 4} fontSize="9" fill="#a3a3a3" fontFamily="monospace">{fmtD(shown[0].date)}</text>
+                <text x={W} y={H - 4} fontSize="9" fill="#a3a3a3" textAnchor="end" fontFamily="monospace">{fmtD(lastDate)}</text>
+              </svg>
+            </div>
+          );
+        })()}
         <div style={{ padding: "14px 18px 4px" }}>
           <button onClick={() => { setWeightDate(todayStr()); setWeightInput(""); setShowWeightForm(true); }}
             style={{ width: "100%", padding: "14px", borderRadius: 14, background: "#e8e8e8", border: "none", color: "#131313", fontSize: 15, fontWeight: 800, cursor: "pointer", fontFamily: SANS }}>
@@ -5097,12 +3134,12 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
           </button>
         </div>
         <div style={{ padding: "8px 18px 4px" }}>
-          <div style={{ fontSize: 11, letterSpacing: 2, color: "#5c5c5c", textTransform: "uppercase", fontFamily: SANS, fontWeight: 700 }}>History · {weightLog.length} entries</div>
+          <div style={{ fontSize: 11, letterSpacing: 2, color: "#a3a3a3", textTransform: "uppercase", fontFamily: SANS, fontWeight: 700 }}>History · {weightLog.length} entries</div>
         </div>
         {sorted_w.length === 0 ? (
           <div style={{ margin: "20px 18px", padding: "32px 20px", borderRadius: 16, background: "#131313", textAlign: "center" }}>
             <div style={{ display: "flex", justifyContent: "center", marginBottom: 10 }}><Scale size={30} color={C.textDim} strokeWidth={1.8} /></div>
-            <div style={{ color: "#9a9a9a", fontSize: 14 }}>No weight entries yet</div>
+            <div style={{ color: "#c4c4c4", fontSize: 14 }}>No weight entries yet</div>
           </div>
         ) : (
           <div style={{ padding: "4px 18px 100px" }}>
@@ -5112,12 +3149,12 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
               return (
                 <div key={w.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", borderRadius: 14, background: "#131313", marginBottom: 8 }}>
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 11, color: "#5c5c5c", fontFamily: SANS }}>{fmtDate(w.date)}</div>
+                    <div style={{ fontSize: 11, color: "#a3a3a3", fontFamily: SANS }}>{fmtDate(w.date)}</div>
                     <div style={{ display: "flex", alignItems: "baseline", gap: 6, marginTop: 2 }}>
                       <span style={{ fontSize: 22, fontWeight: 900, color: "#f2f2f2", fontFamily: SANS }}>{w.weight}</span>
-                      <span style={{ fontSize: 12, color: "#5c5c5c", fontFamily: SANS }}>{w.unit}</span>
+                      <span style={{ fontSize: 12, color: "#a3a3a3", fontFamily: SANS }}>{w.unit}</span>
                       {d !== null && (
-                        <span style={{ fontSize: 12, fontFamily: SANS, fontWeight: 700, color: parseFloat(d) < 0 ? "#e8e8e8" : parseFloat(d) > 0 ? "#e05a4d" : "#9a9a9a" }}>
+                        <span style={{ fontSize: 12, fontFamily: SANS, fontWeight: 700, color: parseFloat(d) < 0 ? "#e8e8e8" : parseFloat(d) > 0 ? "#e05a4d" : "#c4c4c4" }}>
                           {parseFloat(d) > 0 ? "+" : ""}{d}
                         </span>
                       )}
@@ -5135,7 +3172,7 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
             onClick={() => setShowWeightForm(false)}>
             <div style={{ background: "#131313", width: "100%", borderRadius: "24px 24px 0 0", padding: "24px 18px 48px", borderBottom: "none" }}
               onClick={e => e.stopPropagation()}>
-              <div style={{ width: 36, height: 4, borderRadius: 2, background: "#5c5c5c", margin: "0 auto 20px" }} />
+              <div style={{ width: 36, height: 4, borderRadius: 2, background: "#a3a3a3", margin: "0 auto 20px" }} />
               <div style={{ fontSize: 18, fontWeight: 800, color: "#f2f2f2", marginBottom: 16, fontFamily: SANS }}>Log Weight</div>
               <div style={{ marginBottom: 14 }}>
                 <label style={labelStyle}>Date</label>
@@ -5146,7 +3183,7 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
                   <label style={labelStyle}>Weight</label>
                   <div style={{ display: "flex", gap: 6 }}>
                     {["lbs"].map(u => (
-                      <button key={u} onClick={() => setWeightUnit(u)} style={{ padding: "4px 12px", borderRadius: 8, border: "none", cursor: "pointer", fontFamily: SANS, fontSize: 12, fontWeight: 700, background: weightUnit === u ? "#e8e8e8" : "#2e2e2e", color: weightUnit === u ? "#131313" : "#9a9a9a" }}>{u}</button>
+                      <button key={u} onClick={() => setWeightUnit(u)} style={{ padding: "4px 12px", borderRadius: 8, border: "none", cursor: "pointer", fontFamily: SANS, fontSize: 12, fontWeight: 700, background: weightUnit === u ? "#e8e8e8" : "#2e2e2e", color: weightUnit === u ? "#131313" : "#c4c4c4" }}>{u}</button>
                     ))}
                   </div>
                 </div>
@@ -5170,12 +3207,72 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
   return (
     <Shell>
       <div style={{ padding: "52px 18px 20px", background: "linear-gradient(160deg,#131313 0%,#131313 100%)" }}>
-        <div style={{ fontSize: 11, letterSpacing: 3, color: "#5c5c5c", textTransform: "uppercase", fontFamily: SANS, marginBottom: 4 }}>Training Journal</div>
+        <div style={{ fontSize: 11, letterSpacing: 3, color: "#a3a3a3", textTransform: "uppercase", fontFamily: SANS, marginBottom: 4 }}>Training Journal</div>
         <div style={{ fontSize: 30, fontWeight: 900, color: "#f2f2f2", lineHeight: 1, fontFamily: SANS, letterSpacing: -0.5 }}>My Workouts</div>
         <div style={{ marginTop: 6 }}>
-          <div style={{ fontSize: 13, color: "#5c5c5c" }}>{entries.filter(e => e.completedAt).length} session{entries.filter(e => e.completedAt).length !== 1 ? "s" : ""} logged</div>
+          <div style={{ fontSize: 13, color: "#a3a3a3" }}>{entries.filter(e => e.completedAt).length} session{entries.filter(e => e.completedAt).length !== 1 ? "s" : ""} logged</div>
         </div>
       </div>
+
+      {/* ── TODAY card: what today is in the 8-day cycle, plus a one-tap Start/Resume ── */}
+      {(() => {
+        // Reuses todayPlan (8-day cycle walk from the last completed session) and
+        // mesocycleWeek; no program logic is duplicated here.
+        const plan = todayPlan(entries, today);
+        const cycleDay = plan.kind === "done" ? plan.doneDay
+          : plan.kind === "train" ? plan.day
+          : ((((plan.day - 1 - daysBetween(today, plan.due)) % CYCLE_DAYS) + CYCLE_DAYS) % CYCLE_DAYS) + 1;
+        const meso = mesocycleWeek(entries, mesoOverride);
+        const nextProg = PROGRAM[plan.day];
+        const todaysOpen = entries.find(e => !e.completedAt && e.date === today);
+        const resumeTarget = todaysOpen ?? inProgressSession;
+        const doneEntry = plan.kind === "done"
+          ? entries.find(e => e.date === today && e.completedAt && e.programDay === plan.doneDay) ?? null
+          : null;
+        const title = plan.kind === "done" ? (PROGRAM[plan.doneDay]?.title ?? "Session")
+          : plan.kind === "train" ? (nextProg?.title ?? "Training")
+          : "Rest Day";
+        const sub = plan.kind === "done" ? "Done for today. Nice work."
+          : plan.kind === "train" ? (plan.overdue > 0 ? `${plan.overdue} day${plan.overdue !== 1 ? "s" : ""} overdue, do it today` : "Scheduled for today")
+          : `Next: ${nextProg?.title ?? "training"} on ${new Date(plan.due + "T12:00:00").toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}`;
+        const startToday = () => { setNewProgramDay(plan.day); setNewDate(today); setShowNewModal(true); };
+        const bigBtn = { width: "100%", marginTop: 14, padding: "16px", borderRadius: 14, border: "none", fontSize: 17, fontWeight: 800, cursor: "pointer", fontFamily: SANS, letterSpacing: 0.3, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 };
+        return (
+          <div style={{ margin: "4px 18px 4px", padding: "16px 16px 16px", borderRadius: 18, background: C.surface, boxShadow: shadow }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+              <div style={{ fontSize: 11, letterSpacing: 2, color: C.textDim, textTransform: "uppercase", fontFamily: SANS, fontWeight: 700 }}>Today</div>
+              <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                <span style={{ fontSize: 11, fontFamily: MONO, color: C.textMid }}>Day {cycleDay} of {CYCLE_DAYS}</span>
+                <span style={{ fontSize: 11, color: C.textDim }}>·</span>
+                <span style={{ fontSize: 11, fontFamily: MONO, color: meso.isDeload ? C.amber : C.textMid, fontWeight: meso.isDeload ? 700 : 400 }}>
+                  Week {meso.week}{meso.isDeload ? " · Deload" : ""}
+                </span>
+              </div>
+            </div>
+            <div style={{ fontSize: 22, fontWeight: 900, color: C.text, fontFamily: SANS, letterSpacing: -0.3, marginTop: 8, lineHeight: 1.15 }}>{title}</div>
+            <div style={{ fontSize: 13, color: plan.kind === "done" ? C.green : C.textMid, fontFamily: SANS, marginTop: 4 }}>{sub}</div>
+            {resumeTarget ? (
+              <button onClick={() => { setActiveId(resumeTarget.id); setView("entry"); }}
+                style={{ ...bigBtn, background: C.accent, color: "#0a0a0a" }}>
+                <Play size={16} strokeWidth={2.4} /> Resume{resumeTarget.date !== today ? ` (${fmtDate(resumeTarget.date)})` : ""}
+              </button>
+            ) : plan.kind === "train" ? (
+              <button onClick={startToday} style={{ ...bigBtn, background: C.accent, color: "#0a0a0a" }}>
+                <Dumbbell size={18} strokeWidth={2.2} /> Start
+              </button>
+            ) : plan.kind === "done" && doneEntry ? (
+              <button onClick={() => { setActiveId(doneEntry.id); setView("entry"); }}
+                style={{ ...bigBtn, background: C.surface2, color: C.text, fontSize: 15 }}>
+                View today's session
+              </button>
+            ) : plan.kind === "rest" ? (
+              <button onClick={startToday} style={{ ...bigBtn, background: C.surface2, color: C.textMid, fontSize: 14, padding: "13px" }}>
+                Start {nextProg?.tag ?? "next session"} early
+              </button>
+            ) : null}
+          </div>
+        );
+      })()}
 
       {/* Coach check-in reminder */}
       {(() => {
@@ -5187,7 +3284,7 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
         const fmtShort = d => new Date(d + "T12:00:00").toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
         if (!due) {
           return (
-            <div style={{ margin: "12px 18px 0", fontSize: 12, color: "#5c5c5c", fontFamily: SANS }}>
+            <div style={{ margin: "12px 18px 0", fontSize: 12, color: "#a3a3a3", fontFamily: SANS }}>
               Next coach check-in with Claude: {fmtShort(next)}
             </div>
           );
@@ -5196,14 +3293,14 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
         const advice = surplusAdvice(trend.rate);
         const btn = { flex: 1, padding: "11px 8px", borderRadius: 12, border: "none", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: SANS };
         return (
-          <div style={{ margin: "12px 18px 4px", padding: "14px 16px", borderRadius: 14, background: "#ff3fc814", border: "1px solid #ff3fc844" }}>
-            <div style={{ fontSize: 11, letterSpacing: 2, color: "#ff3fc8", textTransform: "uppercase", fontFamily: SANS, fontWeight: 700, marginBottom: 6 }}>
+          <div style={{ margin: "12px 18px 4px", padding: "14px 16px", borderRadius: 14, background: "#e0a83a14", border: "1px solid #e0a83a44" }}>
+            <div style={{ fontSize: 11, letterSpacing: 2, color: "#e0a83a", textTransform: "uppercase", fontFamily: SANS, fontWeight: 700, marginBottom: 6 }}>
               {blockReview ? "Block review due" : "Check-in due"} · {fmtShort(latest)}
             </div>
             <div style={{ fontSize: 13, color: "#e8e8e8", fontFamily: SANS, lineHeight: 1.5 }}>
               {trend.now != null && <div style={{ marginBottom: 4 }}>7-day avg weight: <b>{trend.now.toFixed(1)} lb</b>{trend.before != null ? ` (was ${trend.before.toFixed(1)} two weeks ago)` : ""}</div>}
               <div>{advice.text}</div>
-              <div style={{ marginTop: 8, color: "#9a9a9a", fontSize: 12 }}>
+              <div style={{ marginTop: 8, color: "#c4c4c4", fontSize: 12 }}>
                 Export the coach report and backup, then send both to Claude in the Bodybuilding project with a line on energy, sleep, digestion and anything that felt off.
                 {blockReview ? " This one is the end-of-block review: bring progress photos too, and we'll plan the next block and deload." : ""}
               </div>
@@ -5218,7 +3315,7 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
                   const bump = t => ({ ...t, c: Math.max(0, t.c + advice.carbs) });
                   saveMacroTargets({ training: bump(macroTargets.training), rest: bump(macroTargets.rest) });
                   markCheckinDone(latest);
-                }} style={{ ...btn, background: "#ff3fc8", color: "#131313" }}>
+                }} style={{ ...btn, background: "#e0a83a", color: "#131313" }}>
                   {advice.action === "add" ? "Add" : "Remove"} 38g carbs & done
                 </button>
               )}
@@ -5233,14 +3330,14 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
         const meso = mesocycleWeek(entries, mesoOverride);
         const dimColor = "#e8e8e8";
         return (
-          <div onClick={() => setShowMesoEdit(true)} style={{ margin: "12px 18px 4px", padding: "14px 16px", borderRadius: 14, background: meso.isDeload ? "#e8e8e81a" : "#1c1c1c", cursor: "pointer" }}>
+          <div onClick={() => setShowMesoEdit(true)} style={{ margin: "12px 18px 4px", padding: "14px 16px", borderRadius: 14, background: meso.isDeload ? C.amber + "1a" : "#1c1c1c", cursor: "pointer" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
               <div style={{ fontSize: 11, letterSpacing: 2, color: dimColor, textTransform: "uppercase", fontFamily: SANS, fontWeight: 700 }}>
                 <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}><Flame size={13} strokeWidth={2.2} /> Mesocycle {meso.cycle} · Week {meso.week} of {meso.total}</span>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ fontSize: 11, color: "#5c5c5c", fontFamily: SANS }}>{meso.isDeload ? "DELOAD" : "ACCUMULATION"}</span>
-                <Pencil size={12} color="#5c5c5c" strokeWidth={2} />
+                <span style={{ fontSize: 11, color: meso.isDeload ? C.amber : "#a3a3a3", fontFamily: SANS, fontWeight: meso.isDeload ? 700 : 400 }}>{meso.isDeload ? "DELOAD" : "ACCUMULATION"}</span>
+                <Pencil size={12} color="#a3a3a3" strokeWidth={2} />
               </div>
             </div>
             <div style={{ display: "flex", gap: 5 }}>
@@ -5248,17 +3345,17 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
                 const wk = i + 1;
                 const isCurrent = wk === meso.week;
                 return (
-                  <div key={i} style={{ flex: 1, height: 6, borderRadius: 3, background: isCurrent ? "#e8e8e8" : wk < meso.week ? "#1c1c1c" : "#2e2e2e" }} />
+                  <div key={i} style={{ flex: 1, height: 6, borderRadius: 3, background: isCurrent ? (meso.isDeload ? C.amber : "#e8e8e8") : wk < meso.week ? "#1c1c1c" : "#2e2e2e" }} />
                 );
               })}
             </div>
             {meso.isDeload && (
-              <div style={{ fontSize: 12, color: "#e8e8e8", fontFamily: SANS, marginTop: 8 }}>
-                Deload week — drop volume ~50%, keep weights, leave 3–4 RIR
+              <div style={{ fontSize: 12, color: C.amber, fontFamily: SANS, marginTop: 8 }}>
+                Deload week: drop volume ~50%, keep weights, leave 3–4 RIR
               </div>
             )}
             {!meso.isDeload && meso.week >= 3 && (
-              <div style={{ fontSize: 12, color: "#9a9a9a", fontFamily: SANS, marginTop: 8 }}>
+              <div style={{ fontSize: 12, color: "#c4c4c4", fontFamily: SANS, marginTop: 8 }}>
                 Add a set to lagging muscles this week · deload in {meso.total - meso.week} wk{meso.total - meso.week !== 1 ? "s" : ""}
               </div>
             )}
@@ -5300,7 +3397,7 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
             <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 12 }}>
               <div style={{ fontSize: 12, fontWeight: 700, color: C.textMid, letterSpacing: 0.5, textTransform: "uppercase", fontFamily: SANS }}>This Cycle</div>
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <div style={{ fontSize: 12, fontFamily: MONO, color: doneCount === trainingDays.length ? LAKE.forest : C.textMid }}>
+                <div style={{ fontSize: 12, fontFamily: MONO, color: doneCount === trainingDays.length ? C.green : C.textMid }}>
                   {doneCount}/{trainingDays.length} done
                 </div>
                 <button onClick={() => { setAnchorEditValue(todayStr()); setShowAnchorEdit(true); }}
@@ -5368,16 +3465,16 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
       </div>
 
       {sorted.length === 0 ? (
-        <div style={{ margin: "40px 18px", textAlign: "center", color: "#5c5c5c" }}>
+        <div style={{ margin: "40px 18px", textAlign: "center", color: "#a3a3a3" }}>
           <div style={{ display: "flex", justifyContent: "center", marginBottom: 10 }}><ClipboardList size={30} color={C.textDim} strokeWidth={1.8} /></div>
-          <div style={{ fontSize: 15, fontWeight: 600, color: "#9a9a9a" }}>No sessions yet</div>
+          <div style={{ fontSize: 15, fontWeight: 600, color: "#c4c4c4" }}>No sessions yet</div>
           <div style={{ fontSize: 13, marginTop: 4 }}>Tap a program day above or log a new session</div>
         </div>
       ) : (
         <div style={{ padding: "4px 18px 100px" }}>
           {sorted.map(entry => {
             const prog = entry.programDay ? PROGRAM[entry.programDay] : null;
-            const color = prog?.color ?? "#5c5c5c";
+            const color = prog?.color ?? "#a3a3a3";
             const isRest = prog?.exercises?.length === 0;
             const mvDone = entry.movements.filter(m => m.sets.some(s => s.r)).length;
             const inProgress = !entry.completedAt && entry.date === today;
@@ -5389,11 +3486,11 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
                 <div style={{ padding: "14px 16px" }}>
                   <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 11, color: "#5c5c5c", fontFamily: SANS, letterSpacing: 1, marginBottom: 3, display: "flex", alignItems: "center", gap: 6 }}>
+                      <div style={{ fontSize: 11, color: "#a3a3a3", fontFamily: SANS, letterSpacing: 1, marginBottom: 3, display: "flex", alignItems: "center", gap: 6 }}>
                         {fmtDate(entry.date)}{prog ? ` · DAY ${entry.programDay}` : ""}
                         {entry.completedAt && <span style={{ color: "#e8e8e8", fontWeight: 800 }}>✓</span>}
                         {entry.location === "apartment" && (
-                          <span style={{ fontSize: 9, fontWeight: 700, color: "#ff3fc8", background: "#ff3fc822", padding: "2px 7px", borderRadius: 4, letterSpacing: 0.5, textTransform: "uppercase" }}>
+                          <span style={{ fontSize: 9, fontWeight: 700, color: "#e0a83a", background: "#e0a83a22", padding: "2px 7px", borderRadius: 4, letterSpacing: 0.5, textTransform: "uppercase" }}>
                             Apartment
                           </span>
                         )}
@@ -5405,7 +3502,7 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
                       </div>
                       <div style={{ fontSize: 17, fontWeight: 800, color: "#f2f2f2", lineHeight: 1.2 }}>{entry.customTitle || "Untitled Session"}</div>
                       {entry.note ? (
-                        <div style={{ fontSize: 13, color: "#9a9a9a", marginTop: 5, lineHeight: 1.4, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>{entry.note}</div>
+                        <div style={{ fontSize: 13, color: "#c4c4c4", marginTop: 5, lineHeight: 1.4, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>{entry.note}</div>
                       ) : null}
                     </div>
                     <div style={{ fontSize: 20, color: "#2e2e2e" }}>›</div>
@@ -5413,19 +3510,19 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
                   {!isRest && entry.movements.length > 0 && (
                     <div style={{ marginTop: 10, display: "flex", flexWrap: "wrap", gap: 6 }}>
                       {entry.movements.slice(0, 5).map(mv => (
-                        <span key={mv.id} style={{ fontSize: 11, padding: "3px 9px", borderRadius: 7, background: "#1c1c1c", color: "#9a9a9a", fontFamily: SANS }}>
+                        <span key={mv.id} style={{ fontSize: 11, padding: "3px 9px", borderRadius: 7, background: "#1c1c1c", color: "#c4c4c4", fontFamily: SANS }}>
                           {mv.programRef ? `${mv.programRef}. ` : ""}{mv.name || "–"}
                         </span>
                       ))}
                       {entry.movements.length > 5 && (
-                        <span style={{ fontSize: 11, padding: "3px 9px", borderRadius: 7, background: "#1c1c1c", color: "#5c5c5c" }}>
+                        <span style={{ fontSize: 11, padding: "3px 9px", borderRadius: 7, background: "#1c1c1c", color: "#a3a3a3" }}>
                           +{entry.movements.length - 5} more
                         </span>
                       )}
                     </div>
                   )}
                   {!isRest && (
-                    <div style={{ marginTop: 8, fontSize: 11, color: "#5c5c5c", fontFamily: SANS }}>
+                    <div style={{ marginTop: 8, fontSize: 11, color: "#a3a3a3", fontFamily: SANS }}>
                       {entry.movements.length} movement{entry.movements.length !== 1 ? "s" : ""}
                       {mvDone > 0 && ` · ${mvDone} logged`}
                     </div>
@@ -5444,7 +3541,7 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
             onClick={e => e.stopPropagation()}>
             <div style={{ width: 36, height: 4, borderRadius: 2, background: "#2e2e2e", margin: "0 auto 20px" }} />
             <div style={{ fontSize: 18, fontWeight: 700, color: "#f2f2f2", marginBottom: 6, fontFamily: SANS }}>Set Mesocycle Week</div>
-            <div style={{ fontSize: 13, color: "#9a9a9a", marginBottom: 18, fontFamily: SANS, lineHeight: 1.5 }}>
+            <div style={{ fontSize: 13, color: "#c4c4c4", marginBottom: 18, fontFamily: SANS, lineHeight: 1.5 }}>
               Which week of the {MESO_LENGTH}-week block are you in right now? It'll count forward from today.
             </div>
             <div style={{ display: "flex", gap: 8, marginBottom: 20 }}>
@@ -5456,13 +3553,13 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
                   <button key={wk} onClick={() => { saveMesoOverride({ anchorDate: todayStr(), weekAtAnchor: wk }); setShowMesoEdit(false); }}
                     style={{ flex: 1, padding: "16px 0", borderRadius: 12, background: current ? "#e8e8e8" : "#1c1c1c", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
                     <span style={{ fontSize: 20, fontWeight: 800, fontFamily: MONO, color: current ? "#0a0a0a" : "#f2f2f2" }}>{wk}</span>
-                    <span style={{ fontSize: 9, fontFamily: SANS, fontWeight: 700, letterSpacing: 0.5, color: current ? "#0a0a0a" : "#5c5c5c" }}>{isDeloadWk ? "DELOAD" : "WK"}</span>
+                    <span style={{ fontSize: 9, fontFamily: SANS, fontWeight: 700, letterSpacing: 0.5, color: current ? "#0a0a0a" : "#a3a3a3" }}>{isDeloadWk ? "DELOAD" : "WK"}</span>
                   </button>
                 );
               })}
             </div>
             <button onClick={() => { saveMesoOverride(null); setShowMesoEdit(false); }}
-              style={{ width: "100%", padding: "12px", borderRadius: 12, background: "transparent", color: "#9a9a9a", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: SANS }}>
+              style={{ width: "100%", padding: "12px", borderRadius: 12, background: "transparent", color: "#c4c4c4", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: SANS }}>
               Reset to automatic
             </button>
           </div>
@@ -5474,14 +3571,14 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
           onClick={() => setShowNewModal(false)}>
           <div style={{ background: "#131313", width: "100%", borderRadius: "24px 24px 0 0", padding: "24px 18px 44px", borderBottom: "none", boxSizing: "border-box", overflow: "hidden" }}
             onClick={e => e.stopPropagation()}>
-            <div style={{ width: 36, height: 4, borderRadius: 2, background: "#5c5c5c", margin: "0 auto 20px" }} />
+            <div style={{ width: 36, height: 4, borderRadius: 2, background: "#a3a3a3", margin: "0 auto 20px" }} />
             <div style={{ fontSize: 18, fontWeight: 800, color: "#f2f2f2", marginBottom: 16, fontFamily: SANS }}>Log Session</div>
             <div style={{ marginBottom: 14 }}>
               <label style={labelStyle}>Date</label>
               <div style={{ position: "relative" }}>
                 <div style={{ ...modalInput, display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer" }}>
                   <span>{newDate ? new Date(newDate + "T12:00:00").toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", year: "numeric" }) : "Select date"}</span>
-                  <span style={{ fontSize: 11, color: "#9a9a9a" }}>tap to change</span>
+                  <span style={{ fontSize: 11, color: "#c4c4c4" }}>tap to change</span>
                 </div>
                 <input type="date" value={newDate} onChange={e => setNewDate(e.target.value)}
                   style={{ position: "absolute", inset: 0, opacity: 0, width: "100%", height: "100%", cursor: "pointer" }} />
@@ -5490,7 +3587,7 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
             <div style={{ marginBottom: 18 }}>
               <label style={labelStyle}>Program Day (optional)</label>
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 6 }}>
-                <div onClick={() => setNewProgramDay(null)} style={{ padding: "7px 14px", borderRadius: 10, cursor: "pointer", fontSize: 13, fontWeight: 700, fontFamily: SANS, background: newProgramDay === null ? "#e8e8e8" : "#1c1c1c", color: newProgramDay === null ? "#131313" : "#9a9a9a" }}>Custom</div>
+                <div onClick={() => setNewProgramDay(null)} style={{ padding: "7px 14px", borderRadius: 10, cursor: "pointer", fontSize: 13, fontWeight: 700, fontFamily: SANS, background: newProgramDay === null ? "#e8e8e8" : "#1c1c1c", color: newProgramDay === null ? "#131313" : "#c4c4c4" }}>Custom</div>
                 {Object.entries(PROGRAM).map(([dn, d]) => (
                   <div key={dn} onClick={() => setNewProgramDay(Number(dn))} style={{ padding: "8px 12px", borderRadius: 10, cursor: "pointer", fontFamily: SANS, background: newProgramDay === Number(dn) ? d.color : "#1c1c1c", color: newProgramDay === Number(dn) ? "#131313" : d.color, textAlign: "center", minWidth: 56 }}>
                     <div style={{ fontSize: 15, fontWeight: 800 }}>{dn}</div>
@@ -5505,14 +3602,14 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
                 const subCount = PROGRAM[newProgramDay].exercises.filter(ex => GYM_SUBS[`${newProgramDay}.${ex.id}`]).length;
                 return (
                   <div style={{ marginTop: 10 }}>
-                    <div style={{ fontSize: 12, color: "#5c5c5c", fontFamily: SANS }}>→ {PROGRAM[newProgramDay].title} · {PROGRAM[newProgramDay].exercises.length} exercises pre-loaded</div>
+                    <div style={{ fontSize: 12, color: "#a3a3a3", fontFamily: SANS }}>→ {PROGRAM[newProgramDay].title} · {PROGRAM[newProgramDay].exercises.length} exercises pre-loaded</div>
                     {last ? (
                       <div style={{ fontSize: 12, color: "#e8e8e877", fontFamily: SANS, marginTop: 4 }}>✓ Last session {fmtDate(last.date)} · weights carried forward</div>
                     ) : (
-                      <div style={{ fontSize: 12, color: "#5c5c5c", fontFamily: SANS, marginTop: 4 }}>No previous session found · sets will start blank</div>
+                      <div style={{ fontSize: 12, color: "#a3a3a3", fontFamily: SANS, marginTop: 4 }}>No previous session found · sets will start blank</div>
                     )}
                     {newLocation !== "equinox" && subCount > 0 && (
-                      <div style={{ fontSize: 12, color: "#ff3fc8", fontFamily: SANS, marginTop: 4 }}>⇄ {subCount} exercise{subCount !== 1 ? "s" : ""} swapped for apartment equipment</div>
+                      <div style={{ fontSize: 12, color: "#e0a83a", fontFamily: SANS, marginTop: 4 }}>⇄ {subCount} exercise{subCount !== 1 ? "s" : ""} swapped for apartment equipment</div>
                     )}
                   </div>
                 );
@@ -5523,13 +3620,13 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
               <div style={{ display: "flex", gap: 8, marginTop: 6 }}>
                 {Object.entries(LOCATIONS).map(([key, loc]) => (
                   <div key={key} onClick={() => setNewLocation(key)}
-                    style={{ flex: 1, padding: "10px 12px", borderRadius: 10, cursor: "pointer", fontFamily: SANS, fontSize: 13, fontWeight: 700, textAlign: "center", background: newLocation === key ? "#e8e8e8" : "#1c1c1c", color: newLocation === key ? "#131313" : "#9a9a9a" }}>
+                    style={{ flex: 1, padding: "10px 12px", borderRadius: 10, cursor: "pointer", fontFamily: SANS, fontSize: 13, fontWeight: 700, textAlign: "center", background: newLocation === key ? "#e8e8e8" : "#1c1c1c", color: newLocation === key ? "#131313" : "#c4c4c4" }}>
                     {loc.label}
                   </div>
                 ))}
               </div>
               {newLocation !== "equinox" && (
-                <div style={{ fontSize: 11, color: "#5c5c5c", fontFamily: SANS, marginTop: 6, lineHeight: 1.4 }}>
+                <div style={{ fontSize: 11, color: "#a3a3a3", fontFamily: SANS, marginTop: 6, lineHeight: 1.4 }}>
                   Exercises with no apartment-friendly equivalent stay as programmed. Edit any movement name in-session if the swap still doesn't fit.
                 </div>
               )}
@@ -5545,641 +3642,4 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
         <MoreMenu open={showMoreMenu} onClose={() => setShowMoreMenu(false)} onSelect={(id) => { setShowMoreMenu(false); setTab(id); setView("journal"); }} />
     </Shell>
   );
-}
-
-// ── SHARED COMPONENTS ─────────────────────────────────────────────────────────
-function RestTimer({ restSecs, restLabel, color, timerState, onStart, onPause, onResume, onReset, onDismiss }) {
-  const active = timerState && (timerState.running || timerState.remaining < timerState.total);
-  const remaining = timerState?.remaining ?? restSecs;
-  const total = timerState?.total ?? restSecs;
-  const running = timerState?.running ?? false;
-  const done = timerState?.done ?? false;
-  const pct = total > 0 ? remaining / total : 1;
-  const R = 22, circ = 2 * Math.PI * R;
-  const dash = circ * pct;
-  const mins = Math.floor(remaining / 60), secs = remaining % 60;
-  const timeStr = mins > 0 ? `${mins}:${String(secs).padStart(2, "0")}` : `${secs}s`;
-  return (
-    <div style={{ margin: "2px 18px 8px", padding: "10px 14px", borderRadius: 14, background: done ? color + "1a" : "#131313", display: "flex", alignItems: "center", gap: 12, transition: "background 0.3s" }}>
-      <div style={{ position: "relative", width: 52, height: 52, flexShrink: 0 }}>
-        <svg width="52" height="52" style={{ transform: "rotate(-90deg)" }}>
-          <circle cx="26" cy="26" r={R} fill="none" stroke="#2e2e2e" strokeWidth="3" />
-          <circle cx="26" cy="26" r={R} fill="none" stroke={done ? color : running ? color : "#5c5c5c"} strokeWidth="3" strokeDasharray={`${dash} ${circ}`} strokeLinecap="round" style={{ transition: "stroke-dasharray 0.9s linear, stroke 0.3s" }} />
-        </svg>
-        <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: remaining >= 60 ? 11 : 13, fontWeight: 800, fontFamily: SANS, color: done ? color : running ? "#f2f2f2" : "#5c5c5c" }}>
-          {done ? "✓" : timeStr}
-        </div>
-      </div>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 11, letterSpacing: 1.5, textTransform: "uppercase", fontFamily: SANS, color: done ? color : "#5c5c5c", fontWeight: 700, marginBottom: 6 }}>
-          {done ? "Rest complete" : `Rest · ${restLabel}`}
-        </div>
-        <div style={{ display: "flex", gap: 6 }}>
-          {!active && !done && <button onClick={onStart} style={timerBtn(color, true)}>▶ Start</button>}
-          {active && running && <button onClick={onPause} style={timerBtn("#5c5c5c", false)}>⏸ Pause</button>}
-          {active && !running && !done && <button onClick={onResume} style={timerBtn(color, true)}>▶ Resume</button>}
-          {active && <button onClick={onReset} style={timerBtn("#2e2e2e", false)}>↺</button>}
-          {done && <button onClick={onDismiss} style={timerBtn(color, true)}>Next set →</button>}
-        </div>
-      </div>
-    </div>
-  );
-}
-function timerBtn(bg, bright) {
-  return { padding: "5px 12px", borderRadius: 8, border: "none", cursor: "pointer", background: bg, color: bright ? "#131313" : "#9a9a9a", fontSize: 12, fontWeight: 700, fontFamily: SANS };
-}
-function MacroChefModal({ remaining, onResult, onClose }) {
-  const [mode, setMode] = useState("home"); // home | kitchen | restaurant
-  const [input, setInput] = useState("");
-  const [restaurant, setRestaurant] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [response, setResponse] = useState(null);
-  const [parsedMeal, setParsedMeal] = useState(null); // { name, p, c, f, cal } extracted from Chef's answer for real logging
-
-  async function askChef() {
-    if (!input.trim()) return;
-    setLoading(true); setError(""); setResponse(null); setParsedMeal(null);
-    try {
-      const macroTarget = `${Math.round(remaining.calories)} kcal, ${Math.round(remaining.protein)}g protein, ${Math.round(remaining.carbs)}g carbs, ${Math.round(remaining.fat)}g fat`;
-      const prompt = mode === "kitchen"
-        ? `I need to hit these remaining macros today: ${macroTarget}. I have these ingredients available: ${input}. Suggest a meal or meals I can make that gets me as close as possible to those targets. Be practical and specific with quantities.`
-        : `I'm at ${restaurant || "a restaurant"} and need to hit these remaining macros today: ${macroTarget}. ${input ? `Menu context or preferences: ${input}.` : ""} Suggest specific menu items or ordering strategies to hit my targets as closely as possible.`;
-
-      const res = await apiFetch("/api/claude", {
-        method: "POST",
-        headers: appHeaders(),
-        body: JSON.stringify({
-          model: "claude-sonnet-4-5", max_tokens: 1200,
-          system: `You are a nutrition-focused personal chef. Give practical, specific meal suggestions that hit macro targets.
-
-Respond in TWO parts:
-1. A readable recommendation: the meal/order, ingredients with quantities, and brief prep tips. Format clearly.
-2. At the very end of your response, on its own line, a single JSON object with your FINAL settled-on meal's totals — the exact numbers a person would log after making/ordering exactly what you recommended (if you suggested a range or an "extra step to get closer", pick the version you actually recommend as the answer). Format exactly like this, no markdown fence around it:
-{"name": "short meal name", "p": grams protein, "c": grams carbs, "f": grams fat, "cal": total calories}`,
-          messages: [{ role: "user", content: prompt }],
-        }),
-      });
-      const data = await res.json();
-      if (data.error) throw new Error(data.error.message);
-      const fullText = data.content?.find(b => b.type === "text")?.text || "";
-
-      // Pull the trailing JSON block out for structured logging; keep the rest as the readable response
-      const jsonMatch = fullText.match(/\{[^{}]*"name"[^{}]*\}/);
-      if (jsonMatch) {
-        try {
-          const meal = JSON.parse(jsonMatch[0]);
-          setParsedMeal({
-            name: meal.name || "Chef meal",
-            p: parseFloat(meal.p) || 0,
-            c: parseFloat(meal.c) || 0,
-            f: parseFloat(meal.f) || 0,
-            cal: parseFloat(meal.cal) || macroCals(meal.p, meal.c, meal.f),
-          });
-        } catch { /* fall through — parsedMeal stays null, button falls back to manual logging */ }
-        setResponse(fullText.slice(0, jsonMatch.index).trim());
-      } else {
-        setResponse(fullText);
-      }
-    } catch (e) {
-      setError(e.message || "Could not get suggestions. Try again.");
-    }
-    setLoading(false);
-  }
-
-  return (
-    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)", display: "flex", alignItems: "flex-end", zIndex: 100 }} onClick={onClose}>
-      <div style={{ background: C.surface, width: "100%", borderRadius: "24px 24px 0 0", padding: "24px 18px 44px", borderBottom: "none", boxSizing: "border-box", maxHeight: "85vh", overflowY: "auto" }}
-        onClick={e => e.stopPropagation()}>
-        <div style={{ width: 36, height: 4, borderRadius: 2, background: C.line, margin: "0 auto 20px" }} />
-        <div style={{ fontSize: 18, fontWeight: 700, color: C.text, marginBottom: 4, fontFamily: SANS, display: "flex", alignItems: "center", gap: 8 }}>
-          <Utensils size={18} color={LAKE.forest} strokeWidth={2} /> Macro Chef
-        </div>
-        <div style={{ fontSize: 12, color: C.textDim, fontFamily: SANS, marginBottom: 16 }}>
-          Remaining today: {Math.round(remaining.protein)}p · {Math.round(remaining.carbs)}c · {Math.round(remaining.fat)}f · {Math.round(remaining.calories)} kcal
-        </div>
-
-        {mode === "home" && (
-          <div style={{ display: "flex", gap: 10 }}>
-            <button onClick={() => setMode("kitchen")} style={{ flex: 1, padding: "20px 12px", borderRadius: 14, background: C.surface2, color: C.text, cursor: "pointer", fontFamily: SANS, textAlign: "center" }}>
-              <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 4 }}>In My Kitchen</div>
-              <div style={{ fontSize: 11, color: C.textDim }}>Tell it what you have</div>
-            </button>
-            <button onClick={() => setMode("restaurant")} style={{ flex: 1, padding: "20px 12px", borderRadius: 14, background: C.surface2, color: C.text, cursor: "pointer", fontFamily: SANS, textAlign: "center" }}>
-              <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 4 }}>Eating Out</div>
-              <div style={{ fontSize: 11, color: C.textDim }}>Get ordering advice</div>
-            </button>
-          </div>
-        )}
-
-        {mode !== "home" && !response && (
-          <>
-            {mode === "restaurant" && (
-              <input value={restaurant} onChange={e => setRestaurant(e.target.value)} placeholder="Restaurant name (optional)"
-                style={{ width: "100%", background: C.surface2, borderRadius: 10, padding: "11px 14px", fontSize: 16, color: C.text, outline: "none", fontFamily: SANS, boxSizing: "border-box", marginBottom: 10 }} />
-            )}
-            <textarea value={input} onChange={e => setInput(e.target.value)} rows={3}
-              placeholder={mode === "kitchen" ? "e.g. chicken breast, rice, eggs, spinach, olive oil" : "e.g. menu has salads, bowls, grilled proteins"}
-              style={{ width: "100%", background: C.surface2, borderRadius: 10, padding: "11px 14px", fontSize: 16, color: C.text, outline: "none", resize: "none", fontFamily: SANS, boxSizing: "border-box", marginBottom: 10 }} />
-            <div style={{ display: "flex", gap: 8 }}>
-              <button onClick={() => setMode("home")} style={{ padding: "12px 16px", borderRadius: 10, background: "transparent", color: C.textMid, fontSize: 13, cursor: "pointer", fontFamily: SANS }}>Back</button>
-              <button onClick={askChef} disabled={loading || !input.trim()}
-                style={{ flex: 1, padding: "12px", borderRadius: 10, background: loading ? C.surface2 : LAKE.forest, border: "none", color: loading ? C.textDim : "#0a0a0a", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: SANS }}>
-                {loading ? "Thinking…" : "Ask Chef"}
-              </button>
-            </div>
-            {error && <div style={{ marginTop: 10, fontSize: 12, color: C.red, fontFamily: SANS }}>{error}</div>}
-          </>
-        )}
-
-        {response && (
-          <>
-            <div style={{ padding: "14px", borderRadius: 12, background: C.surface2, fontSize: 14, color: C.text, fontFamily: SANS, lineHeight: 1.6, whiteSpace: "pre-wrap", marginBottom: 12 }}>
-              {response}
-            </div>
-            {parsedMeal && (
-              <div style={{ padding: "12px 14px", borderRadius: 12, background: LAKE.sky + "14", fontSize: 13, color: LAKE.sky, fontFamily: SANS, marginBottom: 12 }}>
-                Will log: <strong>{parsedMeal.name}</strong> — {parsedMeal.cal} kcal · {parsedMeal.p}p / {parsedMeal.c}c / {parsedMeal.f}f
-              </div>
-            )}
-            <div style={{ display: "flex", gap: 8 }}>
-              <button onClick={() => { setResponse(null); setParsedMeal(null); setInput(""); }} style={{ flex: 1, padding: "12px", borderRadius: 10, background: "transparent", color: C.textMid, fontSize: 13, cursor: "pointer", fontFamily: SANS }}>Ask Again</button>
-              <button onClick={() => onResult(parsedMeal
-                ? { name: parsedMeal.name, p: parsedMeal.p, c: parsedMeal.c, f: parsedMeal.f, cal: parsedMeal.cal }
-                : { name: mode === "restaurant" ? (restaurant || "Restaurant meal") : "Kitchen meal", p: 0, c: 0, f: 0, cal: 0, note: "Logged from Macro Chef — edit macros manually" })}
-                style={{ flex: 1, padding: "12px", borderRadius: 10, background: LAKE.sky, border: "none", color: "#0a0a0a", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: SANS }}>
-                {parsedMeal ? "Log This Meal" : "Log Placeholder"}
-              </button>
-            </div>
-            <div style={{ fontSize: 10, color: C.textDim, fontFamily: SANS, marginTop: 8, textAlign: "center" }}>
-              {parsedMeal
-                ? "Macros are Chef's estimate for what it recommended — double-check against what you actually make/order."
-                : "Chef gives suggestions, not exact macros — log the real meal manually once you know what you ate."}
-            </div>
-          </>
-        )}
-      </div>
-    </div>
-  );
-}
-
-function CompletionSummary({ summary, onClose }) {
-  if (!summary) return null;
-  const { entry, prs } = summary;
-  const totalSets = entry.movements.reduce((n, mv) => n + mv.sets.filter(s => s.r).length, 0);
-
-  const typeLabel = { weight: "Weight PR", reps: "Rep PR", "1RM": "Est. 1RM PR" };
-
-  return (
-    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", display: "flex", alignItems: "flex-end", zIndex: 200 }}>
-      <div style={{ background: C.surface, width: "100%", borderRadius: "24px 24px 0 0", padding: "28px 18px 40px", boxSizing: "border-box", maxWidth: 430, margin: "0 auto", maxHeight: "88vh", overflowY: "auto" }}>
-        <div style={{ textAlign: "center", marginBottom: 22 }}>
-          <div style={{ display: "flex", justifyContent: "center", marginBottom: 10 }}>
-            <Trophy size={40} color={prs.length > 0 ? LAKE.sky : C.textDim} strokeWidth={1.6} />
-          </div>
-          <div style={{ fontSize: 22, fontWeight: 800, color: C.text, fontFamily: SANS }}>Workout Complete</div>
-          <div style={{ fontSize: 13, color: C.textDim, fontFamily: SANS, marginTop: 4 }}>
-            {entry.customTitle || "Session"} · {entry.movements.length} movements · {totalSets} sets
-          </div>
-        </div>
-
-        {prs.length > 0 ? (
-          <>
-            <div style={{ fontSize: 13, fontWeight: 700, color: LAKE.sky, textAlign: "center", marginBottom: 14, fontFamily: SANS }}>
-              {prs.length} PR{prs.length !== 1 ? "s" : ""} today
-            </div>
-            {prs.map((pr, i) => (
-              <div key={i} style={{ marginBottom: 10, padding: "14px 16px", borderRadius: 14, background: C.surface2 }}>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: C.text, fontFamily: SANS }}>{pr.name}</div>
-                  <div style={{ fontSize: 10, fontWeight: 700, color: LAKE.sky, background: LAKE.sky + "22", padding: "3px 8px", borderRadius: 6, fontFamily: SANS, letterSpacing: 0.3 }}>
-                    {typeLabel[pr.type]}
-                  </div>
-                </div>
-                <div style={{ fontSize: 13, fontFamily: MONO, color: C.textMid, marginBottom: 4 }}>
-                  {pr.newWeight}×{pr.newReps} <span style={{ color: C.textDim }}>vs</span> {pr.prevWeight}×{pr.prevReps} <span style={{ color: C.textDim }}>on {fmtDate(pr.prevDate)}</span>
-                </div>
-                <div style={{ fontSize: 12, fontFamily: SANS, color: LAKE.sky, fontWeight: 600 }}>
-                  {pr.type === "weight" && `+${pr.weightDelta}g heavier at ${pr.repDelta >= 0 ? "same or more" : "fewer"} reps`}
-                  {pr.type === "reps" && `+${pr.repDelta} rep${pr.repDelta !== 1 ? "s" : ""} at the same weight`}
-                  {pr.type === "1RM" && `est. 1RM up ${pr.prevE1RM} → ${pr.newE1RM} lbs (+${pr.e1rmDelta})`}
-                </div>
-              </div>
-            ))}
-          </>
-        ) : (
-          <div style={{ textAlign: "center", padding: "10px 20px 4px", color: C.textDim, fontSize: 13, fontFamily: SANS, lineHeight: 1.6 }}>
-            No PRs this session — keep logging, they'll show up here the moment you beat a previous best.
-          </div>
-        )}
-
-        <button onClick={onClose} style={{ width: "100%", marginTop: 20, padding: "15px", borderRadius: 14, background: LAKE.sky, border: "none", color: "#0a0a0a", fontSize: 15, fontWeight: 700, cursor: "pointer", fontFamily: SANS }}>
-          Done
-        </button>
-      </div>
-    </div>
-  );
-}
-
-function MoreMenu({ open, onClose, onSelect }) {
-  if (!open) return null;
-  const items = [
-    { id: "volume", label: "Volume", Icon: BarChart3, desc: "Sets per muscle vs MEV/MAV/MRV" },
-    { id: "progress", label: "Progress", Icon: TrendingUp, desc: "Consistency, lifts, PRs, balance" },
-    { id: "photos", label: "Progress Photos", Icon: Camera, desc: "Compare two dates side by side" },
-    { id: "data", label: "Data & Backup", Icon: Database, desc: "Export, import, session history" },
-  ];
-  return (
-    <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)", display: "flex", alignItems: "flex-end", zIndex: 100 }}>
-      <div onClick={e => e.stopPropagation()} style={{ background: C.surface, width: "100%", borderRadius: "24px 24px 0 0", padding: "10px 18px 40px", boxSizing: "border-box", maxWidth: 430, margin: "0 auto" }}>
-        <div style={{ width: 36, height: 4, borderRadius: 2, background: C.line, margin: "0 auto 18px" }} />
-        {items.map(item => (
-          <button key={item.id} onClick={() => onSelect(item.id)} style={{
-            width: "100%", display: "flex", alignItems: "center", gap: 14, padding: "14px 4px",
-            background: "none", border: "none", cursor: "pointer", textAlign: "left",
-          }}>
-            <div style={{ width: 40, height: 40, borderRadius: 12, background: C.surface2, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-              <item.Icon size={19} color={C.text} strokeWidth={1.8} />
-            </div>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 15, fontWeight: 600, color: C.text, fontFamily: SANS }}>{item.label}</div>
-              <div style={{ fontSize: 12, color: C.textDim, fontFamily: SANS, marginTop: 1 }}>{item.desc}</div>
-            </div>
-            <ChevronRight size={18} color={C.textDim} strokeWidth={2} />
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function ResumeBar({ session, onResume, onDismiss }) {
-  if (!session) return null;
-  const mvTotal = session.movements.length;
-  const mvDone = session.movements.filter(m => m.doneAt).length;
-  const isToday = session.date === todayStr();
-  const dateLabel = isToday ? "" : ` · ${fmtDate(session.date)}`;
-  return (
-    <div style={{
-      position: "fixed", bottom: 72, left: "50%", transform: "translateX(-50%)",
-      width: "calc(100% - 36px)", maxWidth: 394,
-      background: "linear-gradient(135deg, #1c1c1c, #161616)",
-      borderRadius: 16, padding: "11px 16px",
-      display: "flex", alignItems: "center", gap: 12,
-      zIndex: 49,
-      boxShadow: `0 4px 24px rgba(0,0,0,0.5), 0 0 0 1px ${LAKE.sky}22`,
-    }}>
-      <div onClick={onResume} style={{ display: "flex", alignItems: "center", gap: 12, flex: 1, minWidth: 0, cursor: "pointer" }}>
-        {/* Animated pulse dot */}
-        <div style={{ position: "relative", flexShrink: 0 }}>
-          <div style={{ width: 10, height: 10, borderRadius: "50%", background: LAKE.sky }} />
-          <div style={{ position: "absolute", inset: -3, borderRadius: "50%", border: `1.5px solid ${LAKE.sky}55`, animation: "pulse 2s infinite" }} />
-        </div>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 13, fontWeight: 700, color: LAKE.sky, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-            {session.customTitle || "Session in progress"}{dateLabel}
-          </div>
-          <div style={{ fontSize: 11, color: "#9a9a9a", fontFamily: SANS, marginTop: 1 }}>
-            {mvDone}/{mvTotal} movements done · tap to resume
-          </div>
-        </div>
-        <div style={{ fontSize: 18, color: LAKE.sky, flexShrink: 0 }}>›</div>
-      </div>
-      <button onClick={(e) => { e.stopPropagation(); if (window.confirm("Dismiss this in-progress session? It stays in your history — this just stops the reminder.")) onDismiss(); }}
-        style={{ width: 26, height: 26, borderRadius: 8, background: "#2a2a2a", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-        <X size={13} color="#9a9a9a" strokeWidth={2.5} />
-      </button>
-    </div>
-  );
-}
-
-function BottomNav({ tab, setTab, onOpenMenu }) {
-  const tabs = [
-    { id: "journal", label: "Journal", Icon: ClipboardList },
-    { id: "macros", label: "Macros", Icon: Utensils },
-    { id: "weight", label: "Weight", Icon: Scale },
-  ];
-  return (
-    <div style={{ position: "fixed", bottom: 0, left: "50%", transform: "translateX(-50%)", width: "100%", maxWidth: 430, background: "rgba(13,13,15,0.94)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", display: "flex", padding: "12px 0 28px", zIndex: 50 }}>
-      {tabs.map(t => {
-        const active = tab === t.id;
-        return (
-          <button key={t.id} onClick={() => setTab(t.id)} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 5, background: "none", border: "none", cursor: "pointer", padding: "6px 0", transition: "transform 0.15s", transform: active ? "translateY(-1px)" : "none" }}>
-            <t.Icon size={26} strokeWidth={active ? 2.4 : 1.8} color={active ? C.accent : C.textDim} />
-            <span style={{ fontSize: 11, letterSpacing: 0.3, fontFamily: SANS, color: active ? C.accent : C.textDim, fontWeight: active ? 700 : 500 }}>{t.label}</span>
-          </button>
-        );
-      })}
-      <button onClick={onOpenMenu} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 5, background: "none", border: "none", cursor: "pointer", padding: "6px 0" }}>
-        <MoreHorizontal size={26} strokeWidth={1.8} color={C.textDim} />
-        <span style={{ fontSize: 11, letterSpacing: 0.3, fontFamily: SANS, color: C.textDim, fontWeight: 500 }}>More</span>
-      </button>
-    </div>
-  );
-}
-function DailyBrief({ brief, onClose }) {
-  const label = { fontSize: 11, letterSpacing: 2, color: "#5c5c5c", textTransform: "uppercase", fontFamily: SANS, fontWeight: 700, marginBottom: 8 };
-  const tile = { flex: 1, padding: "12px 10px", borderRadius: 12, background: "#1c1c1c", textAlign: "center" };
-  const big = { fontSize: 22, fontWeight: 800, color: "#f2f2f2", fontFamily: SANS, lineHeight: 1.1 };
-  const small = { fontSize: 11, color: "#9a9a9a", fontFamily: SANS, marginTop: 4, lineHeight: 1.3 };
-  const gold = "#ff3fc8";
-  const { week, session, recovery, upcoming } = brief;
-  const wt = week.weight;
-  const dateLabel = new Date(brief.today + "T12:00:00").toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
-  const quoteText = typeof brief.quote === "string" ? brief.quote : brief.quote.q;
-  const quoteBy = typeof brief.quote === "string" ? null : brief.quote.by;
-  const shortDate = d => new Date(d + "T12:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" });
-  const liftRow = (l, i, first) => (
-    <div key={i} style={{ padding: "11px 0", borderTop: first ? "none" : "1px solid #2e2e2e" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 10 }}>
-        <div style={{ fontSize: 14, fontWeight: 700, color: "#f2f2f2", fontFamily: SANS, minWidth: 0 }}>{l.name}</div>
-        {l.sets ? <div style={{ fontSize: 13, fontWeight: 800, color: "#e8e8e8", fontFamily: SANS, flexShrink: 0 }}>{l.sets} x {l.reps}</div> : null}
-      </div>
-      <div style={{ fontSize: 12, color: "#9a9a9a", fontFamily: SANS, marginTop: 3 }}>
-        {l.last ? `Last: ${l.last}${l.lastDate ? " (" + shortDate(l.lastDate) + ")" : ""}` : "No history yet"}
-        {l.rest ? ` · Rest ${l.rest}` : ""}
-      </div>
-      <div style={{ fontSize: 13, fontWeight: 700, color: gold, fontFamily: SANS, marginTop: 3 }}>{l.target}</div>
-      {l.pr && <div style={{ fontSize: 12, fontWeight: 700, color: "#f2f2f2", fontFamily: SANS, marginTop: 3 }}>{l.pr}</div>}
-      {l.plateau && <div style={{ fontSize: 12, color: "#ffb3d9", fontFamily: SANS, marginTop: 3, lineHeight: 1.4 }}>{l.plateau}</div>}
-    </div>
-  );
-  const bullet = (lead, text) => (
-    <div style={{ padding: "8px 0", fontSize: 13, color: "#c9c9c9", fontFamily: SANS, lineHeight: 1.45 }}>
-      <span style={{ fontWeight: 800, color: "#f2f2f2" }}>{lead}. </span>{text}
-    </div>
-  );
-  return (
-    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)", display: "flex", alignItems: "flex-end", zIndex: 300 }} onClick={onClose}>
-      <div onClick={e => e.stopPropagation()} style={{ background: "#131313", width: "100%", maxHeight: "92vh", overflowY: "auto", borderRadius: "24px 24px 0 0", padding: "22px 18px 34px", boxSizing: "border-box" }}>
-        <div style={{ width: 36, height: 4, borderRadius: 2, background: "#5c5c5c", margin: "0 auto 18px" }} />
-        <div style={{ fontSize: 12, color: "#9a9a9a", fontFamily: SANS, marginBottom: 10 }}>{dateLabel}</div>
-        <div style={{ fontSize: 21, fontWeight: 800, color: "#f2f2f2", fontFamily: SANS, lineHeight: 1.3, marginBottom: 14 }}>{brief.headline}</div>
-        <div style={{ padding: "12px 14px", borderRadius: 12, background: "#1c1c1c", borderLeft: `3px solid ${gold}`, marginBottom: 22 }}>
-          <div style={{ fontSize: 14, fontStyle: "italic", color: "#e8e8e8", fontFamily: SANS, lineHeight: 1.45 }}>{quoteBy ? `"${quoteText}"` : quoteText}</div>
-          {quoteBy && <div style={{ fontSize: 11, color: "#9a9a9a", fontFamily: SANS, marginTop: 6, letterSpacing: 0.5 }}>{quoteBy}</div>}
-        </div>
-
-        {session && (
-          <>
-            <div style={label}>Today's workout</div>
-            <div style={{ padding: "14px 14px 4px", borderRadius: 14, background: "#1c1c1c", marginBottom: 22 }}>
-              <div style={{ fontSize: 16, fontWeight: 800, color: "#f2f2f2", fontFamily: SANS }}>Day {session.day} · {session.title}</div>
-              <div style={{ fontSize: 12, color: "#9a9a9a", fontFamily: SANS, marginTop: 4 }}>
-                {session.totalSets} working sets · {session.muscles.join(", ")}
-              </div>
-              {session.isDeload && <div style={{ fontSize: 12, fontWeight: 700, color: gold, fontFamily: SANS, marginTop: 8 }}>Deload week. Lighter loads, stop 3 to 4 reps short.</div>}
-              {session.overdue > 0 && <div style={{ fontSize: 12, fontWeight: 700, color: gold, fontFamily: SANS, marginTop: 8 }}>This session was due {session.overdue} day{session.overdue !== 1 ? "s" : ""} ago. Pick it up today.</div>}
-              <div style={{ marginTop: 6 }}>
-                {session.exercises.map((l, i) => liftRow(l, i, i === 0))}
-              </div>
-            </div>
-          </>
-        )}
-
-        {recovery && (
-          <>
-            <div style={label}>{recovery.done ? "Session done, now recover" : "Active rest day"}</div>
-            <div style={{ padding: "8px 14px", borderRadius: 14, background: "#1c1c1c", marginBottom: 22 }}>
-              {recovery.done
-                ? bullet("Cool down", "Easy 10 minute walk and stretch what you trained.")
-                : bullet("Move", "20 to 40 minutes of easy walking, bike or incline walk. Stay conversational.")}
-              {!recovery.done && bullet("Mobility", "10 minutes: hip flexor stretch, glute bridges, dead bugs, upper back openers.")}
-              {recovery.cal ? bullet("Fuel", `Hit ${recovery.done ? "your training day" : "your rest day"} target: ${recovery.cal.toLocaleString()} kcal and ${recovery.protein}g protein. Muscle is built on these days.`) : null}
-              {bullet("Sleep", "Aim for 7.5 hours tonight.")}
-            </div>
-            {upcoming && (
-              <>
-                <div style={label}>{upcoming.when}</div>
-                <div style={{ padding: "14px 14px 4px", borderRadius: 14, background: "#1c1c1c", marginBottom: 22 }}>
-                  <div style={{ fontSize: 15, fontWeight: 800, color: "#f2f2f2", fontFamily: SANS }}>
-                    Day {upcoming.day} · {upcoming.title}{upcoming.isDeload ? " · Deload week" : ""}
-                  </div>
-                  <div style={{ marginTop: 4 }}>
-                    {upcoming.lifts.map((l, i) => liftRow({ ...l, sets: null, rest: null }, i, i === 0))}
-                  </div>
-                </div>
-              </>
-            )}
-          </>
-        )}
-
-        <div style={label}>Last 7 days</div>
-        <div style={{ display: "flex", gap: 8, marginBottom: 6 }}>
-          <div style={tile}>
-            <div style={big}>{week.sessions}<span style={{ fontSize: 14, color: "#5c5c5c" }}>/{week.sessionTarget}</span></div>
-            <div style={small}>sessions</div>
-          </div>
-          <div style={tile}>
-            <div style={big}>{week.fedDays}<span style={{ fontSize: 14, color: "#5c5c5c" }}>/7</span></div>
-            <div style={small}>days at 90%+ of calories</div>
-          </div>
-          <div style={tile}>
-            <div style={big}>{wt.now != null ? wt.now.toFixed(1) : "–"}</div>
-            <div style={small}>{wt.now != null ? "avg lb" : "need 2+ weigh-ins"}</div>
-          </div>
-        </div>
-        {wt.delta != null && (
-          <div style={{ fontSize: 12, color: "#9a9a9a", fontFamily: SANS, marginBottom: 4 }}>
-            Weight {wt.delta >= 0 ? "+" : ""}{wt.delta.toFixed(1)} lb vs the prior week. <span style={{ color: wt.status === "On pace" ? "#e8e8e8" : gold, fontWeight: 700 }}>{wt.status}</span> (goal +0.5 to +1 per week).
-          </div>
-        )}
-
-        <button onClick={onClose} style={{ width: "100%", marginTop: 20, padding: "15px", borderRadius: 14, background: "#e8e8e8", border: "none", color: "#131313", fontSize: 15, fontWeight: 800, cursor: "pointer", fontFamily: SANS }}>
-          {brief.kind === "train" ? "LET'S GO" : "GOT IT"}
-        </button>
-      </div>
-    </div>
-  );
-}
-
-function Shell({ children }) {
-  return (
-    <div style={{ background: C.bg, minHeight: "100vh", color: C.text, fontFamily: SANS, maxWidth: 430, margin: "0 auto", overflowX: "hidden" }}>
-      <style>{`@keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.4;transform:scale(1.5)} }`}</style>
-      {children}
-    </div>
-  );
-}
-function TopBar({ left, right }) {
-  return <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "52px 18px 8px" }}>{left}{right}</div>;
-}
-function BackBtn({ onClick, label }) {
-  return <button onClick={onClick} style={{ background: "none", border: "none", cursor: "pointer", color: C.accent, fontSize: 15, fontWeight: 600, padding: 0, fontFamily: SANS, display: "flex", alignItems: "center", gap: 4 }}><ChevronLeft size={18} strokeWidth={2.4} /> {label}</button>;
-}
-function SectionLabel({ children }) {
-  return <div style={{ padding: "16px 18px 6px", fontSize: 11, letterSpacing: 2, color: "#5c5c5c", textTransform: "uppercase", fontFamily: SANS, fontWeight: 700 }}>{children}</div>;
-}
-function SwapSheet({ entry, mv, color, onPick, onClose }) {
-  const [q, setQ] = useState("");
-  const [reason, setReason] = useState(SWAP_REASONS[0]);
-  const [muscle, setMuscle] = useState("");
-  const alts = slotAlternatives(entry, mv);
-  const typed = q.trim();
-  const found = typed ? searchLibrary(typed, 8) : [];
-  const list = typed ? found : alts;
-  const exact = typed && libFind(typed);
-  const row = (ex, tag) => (
-    <div key={ex.name} onClick={() => onPick(ex, reason)}
-      style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, padding: "12px 14px", borderRadius: 12, background: "#1c1c1c", marginBottom: 8, cursor: "pointer" }}>
-      <div style={{ minWidth: 0 }}>
-        <div style={{ fontSize: 15, fontWeight: 700, color: "#f2f2f2", fontFamily: SANS }}>{ex.name}</div>
-        <div style={{ fontSize: 11, color: "#9a9a9a", fontFamily: SANS, marginTop: 2 }}>{ex.muscle || "Custom"} · {ex.type ?? "isolation"}</div>
-      </div>
-      {tag && <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: 0.5, color: "#0a0a0a", background: color, padding: "2px 7px", borderRadius: 4, flexShrink: 0 }}>{tag}</span>}
-    </div>
-  );
-  const baseName = (entry?.programDay && mv?.programRef) ? resolveExercise(entry.programDay, mv.programRef, entry.location)?.name : null;
-  return (
-    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.75)", display: "flex", alignItems: "flex-end", zIndex: 120 }} onClick={onClose}>
-      <div style={{ background: "#131313", width: "100%", maxHeight: "85vh", overflowY: "auto", borderRadius: "24px 24px 0 0", padding: "20px 18px 40px", boxSizing: "border-box" }} onClick={e => e.stopPropagation()}>
-        <div style={{ width: 36, height: 4, borderRadius: 2, background: "#5c5c5c", margin: "0 auto 16px" }} />
-        <div style={{ fontSize: 18, fontWeight: 800, color: "#f2f2f2", fontFamily: SANS, marginBottom: 12 }}>Swap exercise</div>
-        <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 12 }}>
-          {SWAP_REASONS.map(r => (
-            <button key={r} onClick={() => setReason(r)}
-              style={{ ...btnStyle(reason === r ? color : "#2e2e2e", reason === r ? "#131313" : "#9a9a9a"), padding: "6px 12px", fontSize: 12, fontWeight: 700 }}>{r}</button>
-          ))}
-        </div>
-        <input value={q} onChange={e => setQ(e.target.value)} placeholder="Search all exercises…"
-          style={{ width: "100%", boxSizing: "border-box", background: "#1c1c1c", border: "1px solid #2e2e2e", borderRadius: 10, padding: "11px 12px", fontSize: 15, color: "#f2f2f2", outline: "none", fontFamily: SANS, marginBottom: 12 }} />
-        {!typed && alts.length > 0 && <div style={{ fontSize: 10, letterSpacing: 2, color: "#5c5c5c", textTransform: "uppercase", fontFamily: SANS, marginBottom: 8 }}>Options for this slot</div>}
-        {list.map(ex => row(ex, baseName && nameKey(ex.name) === nameKey(baseName) ? "PROGRAMMED" : null))}
-        {typed && list.length === 0 && <div style={{ fontSize: 13, color: "#9a9a9a", fontFamily: SANS, marginBottom: 10 }}>No match in the library.</div>}
-        {typed && !exact && (
-          <div style={{ padding: "12px 14px", borderRadius: 12, background: "#1c1c1c", border: `1px dashed ${color}66` }}>
-            <div style={{ fontSize: 14, fontWeight: 700, color: "#f2f2f2", fontFamily: SANS, marginBottom: 8 }}>Create "{typed}" as new exercise</div>
-            <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 10 }}>
-              {MUSCLES.map(m => (
-                <button key={m} onClick={() => setMuscle(muscle === m ? "" : m)}
-                  style={{ ...btnStyle(muscle === m ? color : "#2e2e2e", muscle === m ? "#131313" : "#9a9a9a"), padding: "5px 10px", fontSize: 11, fontWeight: 700 }}>{m}</button>
-              ))}
-            </div>
-            <button onClick={() => { const ex = addCustomExercise({ name: typed, muscle: muscle || mv?.muscle || "", type: "isolation" }); if (ex) onPick(ex, reason); }}
-              style={{ ...btnStyle(color, "#131313"), padding: "9px 16px", fontSize: 13, fontWeight: 800 }}>Create and use</button>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-function Pill({ color, children }) {
-  return <span style={{ padding: "5px 13px", borderRadius: 20, background: color + "2a", fontSize: 12, fontWeight: 600, color, fontFamily: SANS, letterSpacing: 0.2 }}>{children}</span>;
-}
-function MvCard({ children, color, onClick }) {
-  return <div onClick={onClick} style={{ margin: "0 18px 10px", padding: "16px 18px", borderRadius: 18, background: C.surface, boxShadow: shadow, cursor: "pointer", transition: "transform 0.12s, border-color 0.2s" }}>{children}</div>;
-}
-function GhostBtn({ onClick, children }) {
-  return <button onClick={onClick} style={{ display: "block", width: "calc(100% - 36px)", margin: "4px 18px", padding: "13px", borderRadius: 14, background: "transparent", border: `1.5px dashed ${C.line}`, color: C.textDim, fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: SANS }}>{children}</button>;
-}
-function WarmupItem({ label, checked, onToggle }) {
-  return (
-    <div onClick={onToggle} style={{ margin: "0 18px 8px", padding: "14px 16px", borderRadius: 14, background: checked ? "#e8e8e814" : C.surface, boxShadow: shadow, cursor: "pointer", display: "flex", alignItems: "center", gap: 12 }}>
-      <div style={{ width: 26, height: 26, borderRadius: 8, flexShrink: 0, background: checked ? "#e8e8e8" : "#1c1c1c", display: "flex", alignItems: "center", justifyContent: "center", transition: "background 0.15s" }}>
-        {checked && <Check size={15} strokeWidth={3} color="#131313" />}
-      </div>
-      <div style={{ fontSize: 14, fontWeight: 600, color: checked ? "#e8e8e8" : C.text, fontFamily: SANS, textDecoration: checked ? "line-through" : "none", opacity: checked ? 0.75 : 1 }}>
-        {label}
-      </div>
-    </div>
-  );
-}
-
-// SetRow with weight, reps, RIR selector, and movement-type-aware feedback
-function SetRow({ num, weight, reps, rir, repsTarget, type, isLastSet, done, color, onW, onR, onRIR, onDelete, onDone }) {
-  const repRange = (() => {
-    if (!repsTarget) return null;
-    // Handle split format: "2×10-12, 2×15-20" — pick the range for this set number
-    const splitMatch = repsTarget.match(/(\d+)×(\d+)[–\-](\d+)/g);
-    if (splitMatch) {
-      let setCounter = 0;
-      for (const chunk of splitMatch) {
-        const cm = chunk.match(/(\d+)×(\d+)[–\-](\d+)/);
-        if (!cm) continue;
-        const count = parseInt(cm[1]);
-        setCounter += count;
-        if (num <= setCounter) {
-          return { min: parseInt(cm[2]), max: parseInt(cm[3]) };
-        }
-      }
-    }
-    // Standard single range: "10–12"
-    const m = repsTarget.match(/(\d+)\s*[–\-]\s*(\d+)/);
-    if (m) return { min: parseInt(m[1]), max: parseInt(m[2]) };
-    const single = repsTarget.match(/^(\d+)/);
-    if (single) return { min: parseInt(single[1]), max: parseInt(single[1]) };
-    return null;
-  })();
-  const repVal = parseFloat(reps);
-  const inRange = repRange && !isNaN(repVal) && repVal >= repRange.min && repVal <= repRange.max;
-  const belowRange = repRange && !isNaN(repVal) && repVal < repRange.min;
-  const aboveRange = repRange && !isNaN(repVal) && repVal > repRange.max;
-  const rirFb = rirFeedback(rir, type, isLastSet);
-
-  return (
-    <div style={{ margin: "0 18px 4px", padding: "12px 14px", borderRadius: 14, background: done ? color + "14" : "#1c1c1c", transition: "background 0.2s", opacity: done ? 0.75 : 1 }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-        <div style={{ width: 34, height: 34, borderRadius: 9, background: "#1c1c1c", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 17, fontWeight: 800, color: "#9a9a9a", fontFamily: SANS, flexShrink: 0 }}>{num}</div>
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <div style={{ fontSize: 10, letterSpacing: 1.5, color: "#5c5c5c", textTransform: "uppercase", fontFamily: SANS }}>Weight</div>
-          <input type="number" inputMode="decimal" value={weight} onChange={e => onW(e.target.value)} placeholder="0" style={setInput(color)} />
-          <div style={{ fontSize: 10, color: "#5c5c5c", fontFamily: SANS }}>lbs</div>
-        </div>
-        <div style={{ color: "#2e2e2e", fontSize: 16, fontWeight: 300 }}>×</div>
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-          <div style={{ fontSize: 10, letterSpacing: 1.5, color: "#5c5c5c", textTransform: "uppercase", fontFamily: SANS }}>
-            Reps{repRange ? ` ${repRange.min}–${repRange.max}` : ""}
-          </div>
-          <input type="number" inputMode="numeric" value={reps} onChange={e => onR(e.target.value)}
-            placeholder={repRange ? `${repRange.min}–${repRange.max}` : "0"}
-            style={{ ...setInput(color), borderColor: inRange ? LAKE.forest : belowRange ? "#e05a4d" : aboveRange ? LAKE.ochre : undefined }} />
-          <div style={{ fontSize: 10, fontFamily: SANS, fontWeight: 700, color: inRange ? LAKE.forest : belowRange ? "#e05a4d" : aboveRange ? LAKE.ochre : "#5c5c5c" }}>
-            {inRange ? "✓ in range" : belowRange ? "↓ go lighter" : aboveRange ? "↑ go heavier" : "reps"}
-          </div>
-        </div>
-        <button onClick={onDone} style={{ width: 44, height: 44, borderRadius: 12, flexShrink: 0, background: done ? LAKE.forest : C.surface2, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "transform 0.12s, background 0.15s", transform: done ? "scale(1.05)" : "scale(1)" }}><Check size={20} strokeWidth={3} color={done ? C.bg : C.textDim} /></button>
-        {onDelete && (
-          <button onClick={onDelete} style={{ width: 28, height: 28, borderRadius: 8, background: "#2a1a18", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><X size={15} strokeWidth={2.5} color={C.red} /></button>
-        )}
-      </div>
-      {/* RIR row — left-justified, aligned under "Weight" label above; feedback text sits in its own fixed-position slot so it never shifts the RIR buttons */}
-      <div style={{ display: "flex", alignItems: "center", marginTop: 10, paddingTop: 10, borderTop: "1px solid #1c1c1c", paddingLeft: 44 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
-          <div style={{ fontSize: 10, letterSpacing: 1.5, color: "#5c5c5c", textTransform: "uppercase", fontFamily: SANS, flexShrink: 0 }}>RIR</div>
-          <div style={{ display: "flex", gap: 5 }}>
-            {["0", "1", "2", "3", "4"].map(v => {
-              const sel = String(rir) === v;
-              return (
-                <button key={v} onClick={() => onRIR(sel ? "" : v)} style={{
-                  width: 30, height: 30, borderRadius: 8, cursor: "pointer",
-                  background: sel ? color : "#1c1c1c",
-                  color: sel ? "#131313" : "#9a9a9a",
-                  fontSize: 13, fontWeight: 800, fontFamily: SANS,
-                }}>{v}</button>
-              );
-            })}
-          </div>
-        </div>
-        <div style={{ flex: 1, minWidth: 0, textAlign: "right", paddingLeft: 10 }}>
-          {rirFb && (
-            <div style={{ fontSize: 10, fontFamily: SANS, fontWeight: 700, color: rirFb.color, lineHeight: 1.2 }}>
-              {rirFb.msg}
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function setInput(color) {
-  return { width: "100%", background: "#1c1c1c", borderRadius: 10, padding: "8px 6px", fontSize: 20, fontWeight: 800, color: "#f2f2f2", textAlign: "center", outline: "none", border: "none", WebkitAppearance: "none", fontFamily: MONO };
-}
-const bigInput = { width: "100%", background: "transparent", border: "none", borderBottom: "1.5px solid #2e2e2e", padding: "6px 0", fontSize: 22, fontWeight: 800, color: "#f2f2f2", outline: "none", fontFamily: SANS, letterSpacing: -0.5, boxSizing: "border-box" };
-const ghostInput = { width: "100%", background: "transparent", border: "none", padding: "4px 0", outline: "none", fontFamily: SANS, boxSizing: "border-box", color: "#9a9a9a" };
-const noteArea = { width: "calc(100% - 36px)", margin: "0 18px", background: "#131313", borderRadius: 14, padding: "12px 14px", fontSize: 16, color: "#9a9a9a", outline: "none", resize: "none", fontFamily: "'DM Sans', sans-serif", lineHeight: 1.6, boxSizing: "border-box" };
-const modalInput = { width: "100%", background: "#1c1c1c", borderRadius: 10, padding: "11px 14px", fontSize: 16, color: "#f2f2f2", outline: "none", fontFamily: SANS, boxSizing: "border-box" };
-const labelStyle = { fontSize: 11, letterSpacing: 2, color: "#5c5c5c", textTransform: "uppercase", fontFamily: SANS, fontWeight: 700 };
-function btnStyle(bg, text) {
-  return { padding: "7px 14px", borderRadius: 10, background: bg, border: "none", color: text, fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: SANS };
 }
