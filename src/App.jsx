@@ -5092,6 +5092,65 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
           </div>
           );
         })()}
+        {/* ── 7-DAY AVERAGE: daily weigh-ins as dots, rolling 7-day mean as a line ── */}
+        {chartData.length >= 2 && (() => {
+          const toLb = w => (w.unit === "kg" ? parseFloat(w.weight) * 2.20462 : parseFloat(w.weight));
+          const pts = chartData.map(w => ({ date: w.date, v: toLb(w) })).filter(p => !isNaN(p.v));
+          if (pts.length < 2) return null;
+          const avgIn = (from, to) => {
+            const xs = pts.filter(p => p.date >= from && p.date <= to).map(p => p.v);
+            return xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : null;
+          };
+          const today = todayStr();
+          const lastDate = pts[pts.length - 1].date;
+          // Anchor on today; if there's no weigh-in this week, anchor on the latest one.
+          const end = avgIn(addDays(today, -6), today) != null ? today : lastDate;
+          const curAvg = avgIn(addDays(end, -6), end);
+          const prevAvg = avgIn(addDays(end, -13), addDays(end, -7));
+          const delta = curAvg != null && prevAvg != null ? curAvg - prevAvg : null;
+          // Plot the last 60 days of weigh-ins (or all of them if fewer)
+          const startDate = addDays(lastDate, -59);
+          const shown = pts.filter(p => p.date >= startDate);
+          const rolling = shown.map(p => ({ date: p.date, v: avgIn(addDays(p.date, -6), p.date) }));
+          const W = 340, H = 130, L = 34, T = 8, B = 18;
+          const all = shown.map(p => p.v).concat(rolling.map(r => r.v));
+          const lo = Math.floor(Math.min(...all) - 0.5), hi = Math.ceil(Math.max(...all) + 0.5);
+          const span = Math.max(1, daysBetween(shown[0].date, lastDate));
+          const x = d => L + (daysBetween(shown[0].date, d) / span) * (W - L - 4);
+          const y = v => T + (1 - (v - lo) / Math.max(hi - lo, 1)) * (H - T - B);
+          const line = rolling.map((r, i) => `${i === 0 ? "M" : "L"}${x(r.date).toFixed(1)},${y(r.v).toFixed(1)}`).join(" ");
+          const fmtD = d => new Date(d + "T12:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" });
+          return (
+            <div style={{ margin: "12px 18px 0", padding: "16px", borderRadius: 16, background: "#131313" }}>
+              <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 6 }}>
+                <div style={{ fontSize: 11, letterSpacing: 2, color: "#5c5c5c", textTransform: "uppercase", fontFamily: SANS }}>7-Day Average</div>
+                <div style={{ fontSize: 10, color: "#5c5c5c", fontFamily: SANS }}>dots = weigh-ins · line = 7-day avg</div>
+              </div>
+              <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: 10 }}>
+                <span style={{ fontSize: 26, fontWeight: 900, color: "#e8e8e8", fontFamily: MONO }}>{curAvg != null ? curAvg.toFixed(1) : "–"}</span>
+                <span style={{ fontSize: 12, color: "#5c5c5c", fontFamily: SANS }}>lbs</span>
+                <span style={{ fontSize: 12, fontFamily: MONO, fontWeight: 700, color: delta == null ? "#5c5c5c" : "#9a9a9a" }}>
+                  {delta == null ? "not enough data for last week" : `${delta > 0 ? "+" : ""}${delta.toFixed(1)} vs previous 7 days`}
+                </span>
+              </div>
+              <svg width="100%" viewBox={`0 0 ${W} ${H}`} style={{ display: "block" }}>
+                {[0, 0.5, 1].map(f => {
+                  const v = lo + f * (hi - lo);
+                  return (
+                    <g key={f}>
+                      <line x1={L} y1={y(v)} x2={W} y2={y(v)} stroke="#2e2e2e" strokeWidth="1" strokeDasharray="3,4" />
+                      <text x={L - 4} y={y(v) + 3} fontSize="9" fill="#5c5c5c" textAnchor="end" fontFamily="monospace">{v.toFixed(0)}</text>
+                    </g>
+                  );
+                })}
+                {shown.map((p, i) => <circle key={i} cx={x(p.date)} cy={y(p.v)} r="2.4" fill="#5c5c5c" />)}
+                <path d={line} fill="none" stroke="#e8e8e8" strokeWidth="2.2" strokeLinejoin="round" strokeLinecap="round" />
+                <text x={L} y={H - 4} fontSize="9" fill="#5c5c5c" fontFamily="monospace">{fmtD(shown[0].date)}</text>
+                <text x={W} y={H - 4} fontSize="9" fill="#5c5c5c" textAnchor="end" fontFamily="monospace">{fmtD(lastDate)}</text>
+              </svg>
+            </div>
+          );
+        })()}
         <div style={{ padding: "14px 18px 4px" }}>
           <button onClick={() => { setWeightDate(todayStr()); setWeightInput(""); setShowWeightForm(true); }}
             style={{ width: "100%", padding: "14px", borderRadius: 14, background: "#e8e8e8", border: "none", color: "#131313", fontSize: 15, fontWeight: 800, cursor: "pointer", fontFamily: SANS }}>
