@@ -1,6 +1,7 @@
 import { BarChart3, Camera, ChevronRight, ClipboardList, Database, MoreHorizontal, Scale, TrendingUp, Utensils, X } from "../icons.jsx";
 import { C, LAKE, SANS, STONE, INK } from "../theme.js";
 import { fmtDate, todayStr } from "../lib/utils.js";
+import { useKeyboardOpen } from "../lib/viewport.js";
 
 export function MoreMenu({ open, onClose, onSelect }) {
   if (!open) return null;
@@ -35,14 +36,15 @@ export function MoreMenu({ open, onClose, onSelect }) {
 }
 
 export function ResumeBar({ session, onResume, onDismiss }) {
-  if (!session) return null;
+  const keyboardOpen = useKeyboardOpen();
+  if (!session || keyboardOpen) return null;
   const mvTotal = session.movements.length;
   const mvDone = session.movements.filter(m => m.doneAt).length;
   const isToday = session.date === todayStr();
   const dateLabel = isToday ? "" : ` · ${fmtDate(session.date)}`;
   return (
     <div style={{
-      position: "fixed", bottom: 72, left: "50%", transform: "translateX(-50%)",
+      position: "fixed", bottom: "calc(72px + max(0px, env(safe-area-inset-bottom) - 28px))", left: 0, right: 0, margin: "0 auto",
       width: "calc(100% - 36px)", maxWidth: 394,
       background: C.sheet, border: C.cardBorder,
       borderRadius: 16, padding: "11px 16px",
@@ -75,13 +77,17 @@ export function ResumeBar({ session, onResume, onDismiss }) {
 }
 
 export function BottomNav({ tab, setTab, onOpenMenu }) {
+  // Hidden while typing: on iOS a fixed bar otherwise rides up with the keyboard
+  // and can get stranded mid-screen after it closes.
+  const keyboardOpen = useKeyboardOpen();
+  if (keyboardOpen) return null;
   const tabs = [
     { id: "journal", label: "Journal", Icon: ClipboardList },
     { id: "macros", label: "Macros", Icon: Utensils },
     { id: "weight", label: "Weight", Icon: Scale },
   ];
   return (
-    <div style={{ position: "fixed", bottom: 0, left: "50%", transform: "translateX(-50%)", width: "100%", maxWidth: 430, background: "rgba(8,8,8,0.88)", borderTop: "1px solid rgba(255,255,255,0.08)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", display: "flex", padding: "12px 0 28px", zIndex: 50 }}>
+    <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, margin: "0 auto", width: "100%", maxWidth: 430, background: "rgba(8,8,8,0.88)", borderTop: "1px solid rgba(255,255,255,0.08)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", display: "flex", padding: "12px 0 max(28px, env(safe-area-inset-bottom))", zIndex: 50 }}>
       {tabs.map(t => {
         const active = tab === t.id;
         return (
