@@ -16,6 +16,7 @@ import { RestTimer } from "./components/RestTimer.jsx";
 import { MacroChefModal } from "./components/MacroChefModal.jsx";
 import { CompletionSummary } from "./components/CompletionSummary.jsx";
 import { BottomNav, MoreMenu, ResumeBar } from "./components/Nav.jsx";
+import { FoodSearchSheet } from "./components/FoodSearchSheet.jsx";
 import { DailyBrief } from "./components/DailyBrief.jsx";
 import { PhotoWeightCaption, SliderCompare } from "./components/PhotoCompare.jsx";
 import { BackBtn, GhostBtn, MvCard, Pill, SectionLabel, Shell, SwapSheet, TopBar, WarmupItem } from "./components/ui.jsx";
@@ -1782,46 +1783,44 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
           </button>
         </div>
 
-        {/* Food search across all history */}
+        {/* Food search across all history: a full-screen sheet sized to the space above the
+            keyboard, with the field pinned on top so matches always show right under it. */}
         {showMacroSearch && (
-          <div style={{ padding: "0 18px 12px" }}>
-            <input value={macroSearchQuery} onChange={e => setMacroSearchQuery(e.target.value)} placeholder="Search food history…" autoFocus
-              style={{ width: "100%", padding: "11px 14px", borderRadius: 12, background: C.surface2, color: C.text, fontSize: 16, fontFamily: SANS, outline: "none", boxSizing: "border-box", marginBottom: 10 }} />
-            {macroSearchQuery.trim().length > 0 && (() => {
-              const q = macroSearchQuery.toLowerCase();
+          <FoodSearchSheet
+            query={macroSearchQuery}
+            setQuery={setMacroSearchQuery}
+            onClose={() => { setShowMacroSearch(false); setMacroSearchQuery(""); }}
+            results={(() => {
+              const q = macroSearchQuery.trim().toLowerCase();
+              if (!q) return [];
               const results = [];
               Object.keys(macros).sort((a, b) => b.localeCompare(a)).forEach(dateKey => {
                 (macros[dateKey]?.entries ?? []).forEach(e => {
                   if (e.name?.toLowerCase().includes(q)) results.push({ ...e, date: dateKey });
                 });
               });
-              return results.length === 0 ? (
-                <div style={{ padding: "16px 0", textAlign: "center", color: C.textDim, fontSize: 12, fontFamily: SANS }}>No matches</div>
-              ) : (
-                <div>
-                  {results.slice(0, 30).map(r => {
-                    const fk = `search-${r.date}-${r.id}`;
-                    const flashing = macroFlashKey === fk;
-                    return (
-                    <div key={`${r.date}-${r.id}`} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 14px", borderRadius: 12, background: C.surface, border: C.cardBorder, marginBottom: 6, animation: flashing ? "wjFlash 650ms ease-out" : "none" }}>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: 12, fontWeight: 600, color: C.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.name}</div>
-                        <div style={{ fontSize: 12, color: C.textDim, fontFamily: MONO, fontVariantNumeric: "tabular-nums", marginTop: 2 }}>{fmtDate(r.date)} · {r.cal} kcal · {Math.round(r.p)}p/{Math.round(r.c)}c/{Math.round(r.f)}f</div>
-                      </div>
-                      <button onClick={() => { if (macroFlashKey) return; logAgainWithFeedback(r, fk, () => { setShowMacroSearch(false); setMacroSearchQuery(""); }); }}
-                        aria-label="Add to today"
-                        style={{ width: 36, height: 36, borderRadius: 10, background: flashing ? STONE.cipollino : C.surface2, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "background 0.15s" }}>
-                        {flashing
-                          ? <span style={{ display: "flex", animation: "wjPop 300ms ease-out" }}><Check size={16} color={C.ink} strokeWidth={3} /></span>
-                          : <Plus size={15} color={LAKE.sky} strokeWidth={2.5} />}
-                      </button>
-                    </div>
-                    );
-                  })}
+              return results.slice(0, 30);
+            })()}
+            renderRow={r => {
+              const fk = `search-${r.date}-${r.id}`;
+              const flashing = macroFlashKey === fk;
+              return (
+                <div key={`${r.date}-${r.id}`} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", borderRadius: 12, background: C.surface, border: C.cardBorder, marginBottom: 6, animation: flashing ? "wjFlash 650ms ease-out" : "none" }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 15, fontWeight: 600, color: C.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.name}</div>
+                    <div style={{ fontSize: 12, color: C.textDim, fontFamily: MONO, fontVariantNumeric: "tabular-nums", marginTop: 2 }}>{fmtDate(r.date)} · {r.cal} kcal · {Math.round(r.p)}p/{Math.round(r.c)}c/{Math.round(r.f)}f</div>
+                  </div>
+                  <button onClick={() => { if (macroFlashKey) return; logAgainWithFeedback(r, fk, () => { setShowMacroSearch(false); setMacroSearchQuery(""); }); }}
+                    aria-label="Add to today"
+                    style={{ width: 40, height: 40, borderRadius: 10, background: flashing ? STONE.cipollino : C.surface2, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "background 0.15s", flexShrink: 0 }}>
+                    {flashing
+                      ? <span style={{ display: "flex", animation: "wjPop 300ms ease-out" }}><Check size={16} color={C.ink} strokeWidth={3} /></span>
+                      : <Plus size={16} color={LAKE.sky} strokeWidth={2.5} />}
+                  </button>
                 </div>
               );
-            })()}
-          </div>
+            }}
+          />
         )}
 
         {/* Entries list */}
