@@ -11,6 +11,7 @@ import { addDays, checkinSchedule, daysBetween, surplusAdvice, weightTrend } fro
 import { buildDailyBrief, todayPlan } from "./lib/dailyBrief.js";
 import { mesocycleWeek } from "./lib/mesocycle.js";
 import { driveListPhotos } from "./lib/photos.js";
+import { backupToDrive, driveConnect, fetchDriveBackup, fmtLastBackup, listDriveBackups, useAutoDriveBackup, useDriveStatus } from "./lib/driveBackup.js";
 import { DEFAULT_MACRO_TARGETS, dayTotals, extractMacroTargets, loadMacroTargets, loadMacros, macroCals, migrateMacroBackup, saveMacroTargetsLS, saveMacrosLS } from "./lib/macros.js";
 import { RestTimer } from "./components/RestTimer.jsx";
 import { MacroChefModal } from "./components/MacroChefModal.jsx";
@@ -28,6 +29,7 @@ import { bigInput, btnStyle, ghostInput, labelStyle, modalInput, noteArea } from
 // is due (first open each day, or coming back to it on a new day).
 export default function App() {
   const [brief, setBrief] = useState(null);
+  useAutoDriveBackup();
   return (
     <>
       <AppInner onBrief={setBrief} />
@@ -65,10 +67,65 @@ function BackupNudge() {
       <div style={{ flex: 1, fontSize: 12, color: C.text }}>
         {days === Infinity ? "Your journal has never been backed up." : `Last backup ${Math.floor(days)} days ago.`} Save a copy to Drive.
       </div>
-      <button onClick={async () => { if (await saveBackupFile(backupFromStorage())) setShow(false); }} style={{ padding: "7px 12px", borderRadius: 10, border: "none", background: STONE.primary, color: C.ink, fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: SANS }}>Back up</button>
+      <button onClick={async () => { if (await backupToDrive({ force: true }) || await saveBackupFile(backupFromStorage())) setShow(false); }} style={{ padding: "7px 12px", borderRadius: 10, border: "none", background: STONE.primary, color: C.ink, fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: SANS }}>Back up</button>
       <button onClick={() => { try { localStorage.setItem("wj_backup_snooze", todayStr()); } catch {} setShow(false); }} style={{ width: 26, height: 26, borderRadius: 8, background: C.surface3, border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
         <X size={13} color={C.textMid} strokeWidth={2.5} />
       </button>
+    </div>
+  );
+}
+
+// Data tab card: automatic Google Drive backup status, Back up now, and restore.
+function DriveBackupCard({ onRestore }) {
+  const st = useDriveStatus();
+  const [files, setFiles] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState("");
+  const btn = { flex: 1, padding: "12px", borderRadius: 12, border: "none", background: "rgba(215,212,216,0.13)", color: C.text, fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: SANS };
+  const line = {
+    ok: `Last backed up ${fmtLastBackup(st.last)}`,
+    saving: "Backing up now…",
+    idle: st.last ? `Last backed up ${fmtLastBackup(st.last)}` : "Waiting for the first backup",
+    offline: st.last ? `Last backed up ${fmtLastBackup(st.last)}. Offline, will retry.` : "Offline, will retry.",
+    not_configured: "Drive backup is not connected yet.",
+    needs_passcode: "Enter your app passcode once to turn this on.",
+    error: st.message || "Last attempt failed. Will retry.",
+  }[st.state] || "";
+  const bad = ["error", "not_configured", "needs_passcode"].includes(st.state);
+  async function openRestore() {
+    setErr(""); setBusy(true);
+    try { setFiles(await listDriveBackups()); } catch (e) { setErr(e.message); } finally { setBusy(false); }
+  }
+  async function restore(f) {
+    if (!window.confirm(`Restore your full history from Drive? Anything missing on this phone is added back. Nothing here is deleted.`)) return;
+    setBusy(true); setErr("");
+    try { onRestore(await fetchDriveBackup(f.id), f.name); setFiles(null); } catch (e) { setErr(e.message); } finally { setBusy(false); }
+  }
+  return (
+    <div style={{ padding: "16px 18px 4px" }}>
+      <div style={{ fontSize: 12, letterSpacing: 0.2, color: C.textDim, fontFamily: SANS, fontWeight: 600, marginBottom: 10 }}>Google Drive</div>
+      <div style={{ background: C.surface2, borderRadius: 14, padding: "14px" }}>
+        <div style={{ fontSize: 13, color: bad ? C.alert : C.text, fontFamily: SANS, marginBottom: 4 }}>{line}</div>
+        <div style={{ fontSize: 12, color: C.textDim, fontFamily: SANS, marginBottom: 12 }}>Saves on its own to one history file in Bodybuilding App on Drive. It only grows: nothing on Drive is ever lost.</div>
+        <div style={{ display: "flex", gap: 10 }}>
+          {st.state === "not_configured"
+            ? <button onClick={() => driveConnect().catch(e => alert(e.message))} style={btn}>Connect Drive</button>
+            : <button disabled={st.state === "saving"} onClick={() => backupToDrive({ force: true })} style={btn}>Back up now</button>}
+          <button disabled={busy} onClick={files ? () => setFiles(null) : openRestore} style={btn}>{files ? "Close" : busy ? "Loading…" : "Restore"}</button>
+        </div>
+        {err && <div style={{ marginTop: 10, fontSize: 12, color: C.alert, fontFamily: SANS }}>{err}</div>}
+        {files && (
+          <div style={{ marginTop: 12, maxHeight: 260, overflowY: "auto" }}>
+            {files.length === 0 && <div style={{ fontSize: 12, color: C.textDim, fontFamily: SANS }}>No Drive backups yet.</div>}
+            {files.map(f => (
+              <div key={f.id} onClick={() => !busy && restore(f)} style={{ display: "flex", justifyContent: "space-between", padding: "10px 2px", borderTop: `1px solid ${C.line}`, cursor: "pointer", fontFamily: SANS }}>
+                <span style={{ fontSize: 13, color: C.text }}>Full history · saved {fmtLastBackup(f.modifiedTime)}</span>
+                <span style={{ fontSize: 12, color: C.textDim }}>{f.size ? `${Math.max(1, Math.round(f.size / 1024))} KB` : ""}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -2824,6 +2881,8 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
             <div><div style={{ fontSize: 15, fontWeight: 600, color: C.alert, fontFamily: SANS }}>{weightLog.length}</div><div style={{ fontSize: 12, color: C.textDim, letterSpacing: 0.2, fontFamily: SANS }}>Weigh-ins</div></div>
           </div>
         </div>
+
+        <DriveBackupCard onRestore={(data, name) => handleImport(new File([JSON.stringify(data)], name, { type: "application/json" }))} />
 
         {/* Export / Import + Coach Export */}
         <div style={{ padding: "16px 18px 8px" }}>
