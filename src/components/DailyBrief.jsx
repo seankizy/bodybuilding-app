@@ -23,6 +23,7 @@ export function DailyBrief({ brief, onClose }) {
         {l.rest ? ` · Rest ${l.rest}` : ""}
       </div>
       <div style={{ fontSize: 12, fontWeight: 600, color: warnTint, fontFamily: SANS, marginTop: 3 }}>{l.target}</div>
+      {l.cue && <div style={{ fontSize: 12, color: C.textMid, fontFamily: SANS, marginTop: 3 }}>{l.cue}</div>}
       {l.pr && <div style={{ fontSize: 12, fontWeight: 600, color: C.text, fontFamily: SANS, marginTop: 3 }}>{l.pr}</div>}
       {l.plateau && <div style={{ fontSize: 12, color: C.warn, fontFamily: SANS, marginTop: 3, lineHeight: 1.4 }}>{l.plateau}</div>}
     </div>
@@ -51,7 +52,7 @@ export function DailyBrief({ brief, onClose }) {
               <div style={{ fontSize: 12, color: C.textMid, fontFamily: SANS, marginTop: 4 }}>
                 {session.totalSets} working sets · {session.muscles.join(", ")}
               </div>
-              {session.isDeload && <div style={{ fontSize: 12, fontWeight: 600, color: warnTint, fontFamily: SANS, marginTop: 8 }}>Deload week. Lighter loads, stop 3 to 4 reps short.</div>}
+              {session.isDeload && <div style={{ fontSize: 12, fontWeight: 600, color: warnTint, fontFamily: SANS, marginTop: 8 }}>Deload. Every lift below has its exact weight. RIR 3 to 4, nothing to failure.</div>}
               {session.overdue > 0 && <div style={{ fontSize: 12, fontWeight: 600, color: warnTint, fontFamily: SANS, marginTop: 8 }}>This session was due {session.overdue} day{session.overdue !== 1 ? "s" : ""} ago. Pick it up today.</div>}
               <div style={{ marginTop: 6 }}>
                 {session.exercises.map((l, i) => liftRow(l, i, i === 0))}
@@ -84,6 +85,17 @@ export function DailyBrief({ brief, onClose }) {
                 </div>
               </>
             )}
+          </>
+        )}
+
+        {brief.nutrition && (
+          <>
+            <div style={label}>Deload nutrition</div>
+            <div style={{ padding: "8px 14px", borderRadius: 14, background: C.surface2, marginBottom: 22 }}>
+              {brief.nutrition.map((t, i) => (
+                <div key={i} style={{ padding: "6px 0", fontSize: 12, color: i === 0 ? C.text : C.textMid, fontFamily: SANS, lineHeight: 1.45, fontWeight: i === 0 ? 600 : 400 }}>{t}</div>
+              ))}
+            </div>
           </>
         )}
 

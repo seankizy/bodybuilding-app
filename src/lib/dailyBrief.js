@@ -4,6 +4,8 @@ import { CYCLE_DAYS, detectPlateau, parseRepRange, prForecast, suggestProgressio
 import { addDays, daysBetween } from "./checkins.js";
 import { mesocycleWeek } from "./mesocycle.js";
 import { macroCals } from "./macros.js";
+import { cueFor, deloadNow, deloadNutrition, deloadPlanFor, deloadStatus, loadDeload } from "./deload.js";
+import { weightTrend } from "./checkins.js";
 
 // ── DAILY BRIEF ──────────────────────────────────────────────────────────────
 // A popup on the first open each day, built to get you moving. On a training day
@@ -250,7 +252,16 @@ export function buildDailyBrief({ entries, weightLog, macros, macroTargets, meso
   const dayIndex = daysBetween("2026-01-01", today);
   const plan = todayPlan(entries, today);
   const quote = briefPick(BRIEF_QUOTES, dayIndex);
-  const isDeload = mesocycleWeek(entries, mesoOverride).isDeload;
+  const isDeload = deloadNow(entries, today, mesocycleWeek(entries, mesoOverride).isDeload);
+  const dl = loadDeload();
+  const dlSt = deloadStatus(dl, entries, today);
+  // During a planned deload each lift shows its exact prescription; the next-block cue rides along.
+  const withDeload = (day, l) => {
+    if (dlSt.status !== "active") return l;
+    const p = deloadPlanFor(entries, dl, day, l.name, location ?? "equinox");
+    const cue = cueFor(dl, l.name);
+    return p ? { ...l, sets: p.sets, target: `Deload: ${p.text}. RIR 3 to 4, no sets to failure.`, plateau: null, pr: null, cue: cue ? `Next block: ${cue.short}` : null } : l;
+  };
   const exercisesFor = day => coachOrder(day, PROGRAM[day].exercises.map(ex => resolveExercise(day, ex.id, location) ?? ex), entries);
 
   let headline, session = null, recovery = null, upcoming = null;
@@ -260,9 +271,8 @@ export function buildDailyBrief({ entries, weightLog, macros, macroTargets, meso
     session = {
       day: plan.day, title: PROGRAM[plan.day].title, tag: PROGRAM[plan.day].tag,
       overdue: plan.overdue, isDeload,
-      totalSets: exs.reduce((s, ex) => s + ex.sets, 0),
+      exercises: exs.map(ex => withDeload(plan.day, briefLift(entries, ex, isDeload, location))),
       muscles: [...new Set(exs.map(ex => ex.muscle).filter(Boolean))],
-      exercises: exs.map(ex => briefLift(entries, ex, isDeload, location)),
     };
   } else {
     headline = briefPick(BRIEF_REST_LINES, dayIndex);
@@ -278,7 +288,7 @@ export function buildDailyBrief({ entries, weightLog, macros, macroTargets, meso
       day: plan.day, title: PROGRAM[plan.day].title,
       when: away <= 1 ? "Tomorrow" : `In ${away} days`,
       isDeload,
-      lifts: exercisesFor(plan.day).slice(0, 2).map(ex => briefLift(entries, ex, isDeload, location)),
+      lifts: exercisesFor(plan.day).slice(0, 2).map(ex => withDeload(plan.day, briefLift(entries, ex, isDeload, location))),
     };
   }
 
@@ -302,8 +312,10 @@ export function buildDailyBrief({ entries, weightLog, macros, macroTargets, meso
     weight = { now, prev, delta, status: delta < 0.4 ? "Under pace" : delta <= 1.1 ? "On pace" : "Above pace" };
   }
 
+  if (session) session.totalSets = session.exercises.reduce((n, l) => n + (l.sets || 0), 0);
+  const nutrition = dlSt.status === "active" ? deloadNutrition(weightTrend(weightLog, today).rate) : null;
   return {
-    today, kind: plan.kind, headline, quote,
+    today, kind: plan.kind, headline, quote, nutrition,
     session, recovery, upcoming,
     week: { sessions, sessionTarget: BRIEF_SESSION_TARGET, fedDays, weight },
   };

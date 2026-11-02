@@ -89,6 +89,7 @@ export function backupFromStorage() {
     mesoOverride: read("wj_meso", null), cycleAnchor,
     macros: read("wj_macros", {}), macroTargets: read("wj_macro_targets", DEFAULT_MACRO_TARGETS),
     photoAlign: read("wj_photo_align", {}),
+    deload: read("wj_deload", null),
   };
 }
 export function daysSinceBackup() {
@@ -140,6 +141,7 @@ export function downloadCSV(entries, weights) {
 }
 export function downloadJSON(entries, weights, mesoOverride, cycleAnchor, macros, macroTargets) {
   const payload = { version: 4, exportedAt: new Date().toISOString(), entries, weights, mesoOverride: mesoOverride ?? null, cycleAnchor: cycleAnchor ?? null, macros: macros ?? {}, macroTargets: macroTargets ?? DEFAULT_MACRO_TARGETS };
+  try { payload.deload = JSON.parse(localStorage.getItem("wj_deload") || "null"); } catch { payload.deload = null; }
   return saveBackupFile(payload);
 }
 export function readJSONBackup(file) {
