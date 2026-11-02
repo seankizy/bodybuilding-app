@@ -90,7 +90,7 @@ function DriveBackupCard({ onRestore }) {
     saving: "Backing up now…",
     idle: st.last ? `Last backed up ${fmtLastBackup(st.last)}` : "Waiting for the first backup",
     offline: st.last ? `Last backed up ${fmtLastBackup(st.last)}. Offline, will retry.` : "Offline, will retry.",
-    not_configured: "Drive backup is not connected yet.",
+    not_configured: "Not connected yet. Tap Connect Drive and sign in as seankizy@gmail.com.",
     needs_passcode: "Enter your app passcode once to turn this on.",
     error: st.message || "Last attempt failed. Will retry.",
   }[st.state] || "";
@@ -106,12 +106,12 @@ function DriveBackupCard({ onRestore }) {
   }
   return (
     <div style={{ padding: "16px 18px 4px" }}>
-      <div style={{ fontSize: 12, letterSpacing: 0.2, color: C.textDim, fontFamily: SANS, fontWeight: 600, marginBottom: 10 }}>Google Drive</div>
+      <div style={{ fontSize: 12, letterSpacing: 0.2, color: C.textDim, fontFamily: SANS, fontWeight: 600, marginBottom: 10 }}>Backup to Google Drive</div>
       <div style={{ background: C.surface2, borderRadius: 14, padding: "14px" }}>
         <div style={{ fontSize: 13, color: bad ? C.alert : C.text, fontFamily: SANS, marginBottom: 4 }}>{line}</div>
         <div style={{ fontSize: 12, color: C.textDim, fontFamily: SANS, marginBottom: 12 }}>Saves on its own to one history file in Bodybuilding App on Drive. It only grows: nothing on Drive is ever lost.</div>
         <div style={{ display: "flex", gap: 10 }}>
-          {st.state === "not_configured"
+          {!st.last && st.state !== "saving"
             ? <button onClick={() => driveConnect().catch(e => alert(e.message))} style={btn}>Connect Drive</button>
             : <button disabled={st.state === "saving"} onClick={() => backupToDrive({ force: true })} style={btn}>Back up now</button>}
           <button disabled={busy} onClick={files ? () => setFiles(null) : openRestore} style={btn}>{files ? "Close" : busy ? "Loading…" : "Restore"}</button>
