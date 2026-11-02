@@ -2,6 +2,7 @@ import { C } from "../theme.js";
 import { BLOCK_START, COACH_SINCE, COACH_TARGETS, LOCATIONS, MESO_LENGTH, PROGRAM, canonName, loggedSince, nameKey, programExByName, programExFor, slotAlternatives } from "../program.js";
 import { fmtDate, localDateStr } from "./utils.js";
 import { daysBetween } from "./checkins.js";
+import { nextBlockTarget } from "./deload.js";
 
 // ── RIR FEEDBACK (movement-type aware) ────────────────────────────────────────
 // Compounds: leave 1–2 in the tank. Isolation: failure OK on the last set.
@@ -256,6 +257,10 @@ export function suggestProgression(entries, mvName, repsTarget, type, opts = {})
   if (coachT && !loggedSince(entries.filter(e => e.id !== excludeEntryId), mvName, COACH_SINCE)) {
     return { action: "coach", weight: coachT.weight, lastWeight: null, lastDate: null, reason: coachT.note };
   }
+
+  // Next-block restart targets from the deload review, until the lift is logged after the deload.
+  const nb = isDeloadWeek ? null : nextBlockTarget(entries, mvName, localDateStr(new Date()), excludeEntryId);
+  if (nb) return { action: "coach", weight: nb.weight, lastWeight: null, lastDate: null, reason: nb.note };
 
   // Block starting weight takes priority until the movement is logged once in the
   // current block, so the card agrees with the weight that was pre-filled.

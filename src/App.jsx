@@ -11,6 +11,8 @@ import { addDays, checkinSchedule, daysBetween, surplusAdvice, weightTrend } fro
 import { buildDailyBrief, todayPlan } from "./lib/dailyBrief.js";
 import { mesocycleWeek } from "./lib/mesocycle.js";
 import { driveListPhotos } from "./lib/photos.js";
+import { cueFor, deloadNow, deloadNutrition, deloadPlanFor, deloadStatus, loadDeload, nextBlockTarget, nextCycleStart, saveDeload, scheduleDeload } from "./lib/deload.js";
+import { CueLine, DeloadBanner, DeloadPlanLine, DeloadToday } from "./components/Deload.jsx";
 import { DEFAULT_MACRO_TARGETS, dayTotals, extractMacroTargets, loadMacroTargets, loadMacros, macroCals, migrateMacroBackup, saveMacroTargetsLS, saveMacrosLS } from "./lib/macros.js";
 import { RestTimer } from "./components/RestTimer.jsx";
 import { MacroChefModal } from "./components/MacroChefModal.jsx";
@@ -31,6 +33,7 @@ export default function App() {
     <>
       <AppInner onBrief={setBrief} />
       <BackupNudge />
+      <DeloadBanner />
       {brief && (
         <DailyBrief brief={brief} onClose={() => {
           try { localStorage.setItem("wj_brief_seen", brief.today); } catch {}
@@ -72,8 +75,26 @@ function BackupNudge() {
   );
 }
 
+// Deload info for one movement in a session: the planned prescription while the
+// deload runs, and the next-block cue (a preview during it, the target after it).
+function deloadInfo(entries, entry, mv) {
+  const d = loadDeload();
+  if (!d || !mv?.name) return null;
+  const st = deloadStatus(d, entries, entry?.date ?? todayStr());
+  if (st.status === "off" || st.status === "scheduled") return null;
+  const cue = cueFor(d, mv.name);
+  if (st.status === "active") {
+    const plan = mv.deloadPlan ?? (entry?.programDay ? deloadPlanFor(entries, d, entry.programDay, mv.name, entry.location ?? "equinox") : null);
+    return { active: true, plan, cue, label: "Next block" };
+  }
+  // After the deload, keep cues up for the first full cycle of the new block.
+  if (entry?.date && st.end && entry.date <= addDays(st.end, 10)) return { active: false, plan: null, cue, label: "Target" };
+  return null;
+}
+
 function AppInner({ onBrief }) {
   const [entries, setEntries] = useState([]);
+  const [, setDeloadRev] = useState(0);
   const [view, setView] = useState("journal");
   const [activeId, setActiveId] = useState(null);
   const [activeMvId, setActiveMvId] = useState(null);
@@ -504,17 +525,23 @@ function AppInner({ onBrief }) {
         const useStartWeight = ex.startWeight != null && !loggedSince(entries, ex.name, BLOCK_START);
         const coachT = COACH_TARGETS[ex.name];
         const useCoach = !!coachT && !loggedSince(entries, ex.name, COACH_SINCE);
-        const seeded = Array.from({ length: ex.sets }, (_, i) => ({
-          w: useCoach ? String(coachT.weight) : useStartWeight ? String(ex.startWeight) : (lastSets[i]?.w ?? ""),
-          r: (useCoach || useStartWeight) ? "" : (lastSets[i]?.r ?? ""),
+        // Planned deload: exact sets and weight. After it, next-block restart targets.
+        const dl = loadDeload();
+        const dlPlan = deloadStatus(dl, entries, newDate).status === "active" ? deloadPlanFor(entries, dl, newProgramDay, ex.name, newLocation) : null;
+        const nb = dlPlan ? null : nextBlockTarget(entries, ex.name, newDate);
+        const nSets = dlPlan ? dlPlan.sets : ex.sets;
+        const seeded = Array.from({ length: nSets }, (_, i) => ({
+          w: dlPlan ? (dlPlan.weight ? String(dlPlan.weight) : "") : nb ? String(nb.weight) : useCoach ? String(coachT.weight) : useStartWeight ? String(ex.startWeight) : (lastSets[i]?.w ?? ""),
+          r: (dlPlan || nb || useCoach || useStartWeight) ? "" : (lastSets[i]?.r ?? ""),
           rir: "",
         }));
         return {
           ...newMovement(ex.name),
           id: Date.now() + Math.random(),
           programRef: ex.id,
-          setsTarget: ex.sets,
+          setsTarget: nSets,
           repsTarget: ex.reps,
+          deloadPlan: dlPlan ?? null,
           rest: ex.rest,
           type: ex.type ?? "compound",
           muscle: ex.muscle ?? "",
@@ -843,7 +870,7 @@ function AppInner({ onBrief }) {
             entries, activeMv.name, activeMv.repsTarget,
             progEx?.type ?? activeMv.type ?? "isolation",
             {
-              isDeloadWeek: meso.isDeload, excludeEntryId: activeEntry.id,
+              isDeloadWeek: deloadNow(entries, activeEntry.date, meso.isDeload), excludeEntryId: activeEntry.id,
               loadStep: progEx?.loadStep ?? activeMv.loadStep ?? null,
               bodyweight: !!(progEx?.bodyweight ?? activeMv.bodyweight),
               startWeight: progEx?.startWeight ?? null,
@@ -851,8 +878,11 @@ function AppInner({ onBrief }) {
               setsTarget: activeMv.setsTarget ?? progEx?.sets ?? null,
             }
           );
-          const sug = applyReadiness(sug0, readinessLevel(activeEntry.readiness));
-          if (!sug) return null;
+          const di = deloadInfo(entries, activeEntry, activeMv);
+          const sug = di?.plan
+            ? { action: "deload", weight: di.plan.weight ?? 0, reason: `Deload plan: ${di.plan.text}. ${di.plan.note}` }
+            : applyReadiness(sug0, readinessLevel(activeEntry.readiness));
+          if (!sug) return (di?.cue ? <div style={{ margin: "0 18px 14px" }}><CueLine cue={di.cue} label={di.label} /></div> : null);
           const LABEL = {
             add_weight: "Add weight", add_reps: "Chase reps",
             hold: sug.calibrate ? "Calibrate" : "Hold steady", back_off: "Ease off", deload: "Deload",
@@ -892,6 +922,7 @@ function AppInner({ onBrief }) {
                   Apply {sug.weight} lbs to unlogged sets
                 </button>
               )}
+              {di?.cue && <CueLine cue={di.cue} label={di.label} />}
             </div>
           );
         })()}
@@ -902,7 +933,7 @@ function AppInner({ onBrief }) {
           const progEx = programExFor(activeEntry, activeMv);
           const o = {
             excludeEntryId: activeEntry.id, location: activeEntry.location ?? "equinox",
-            bodyweight: !!(progEx?.bodyweight ?? activeMv.bodyweight), isDeloadWeek: meso.isDeload,
+            bodyweight: !!(progEx?.bodyweight ?? activeMv.bodyweight), isDeloadWeek: deloadNow(entries, activeEntry.date, meso.isDeload),
             type: progEx?.type ?? activeMv.type ?? "isolation", loadStep: progEx?.loadStep ?? activeMv.loadStep ?? null,
             repsTarget: activeMv.repsTarget, setsTarget: activeMv.setsTarget ?? progEx?.sets ?? null,
             entry: activeEntry, mv: activeMv,
@@ -910,7 +941,7 @@ function AppInner({ onBrief }) {
           const plateau = detectPlateau(entries, activeMv.name, o);
           const setSug = suggestSetCount(entries, activeMv.name, o);
           const firstW = activeMv.sets.find(st => parseFloat(st.w) > 0)?.w;
-          const pr = meso.isDeload ? null : prForecast(entries, activeMv.name, firstW, activeMv.repsTarget, activeEntry.id);
+          const pr = deloadNow(entries, activeEntry.date, meso.isDeload) ? null : prForecast(entries, activeMv.name, firstW, activeMv.repsTarget, activeEntry.id);
           const level = readinessLevel(activeEntry.readiness);
           const slotKey = activeEntry.programDay && activeMv.programRef ? `${activeEntry.programDay}.${activeMv.programRef}` : null;
           const card = (accent, label, body, extra) => (
@@ -1216,6 +1247,10 @@ function AppInner({ onBrief }) {
                             </span>
                           ))}
                         </div>
+                        {(() => { const di = deloadInfo(entries, activeEntry, mv); return di ? (<>
+                          {di.plan && <DeloadPlanLine plan={di.plan} />}
+                          <CueLine cue={di.cue} label={di.label} />
+                        </>) : null; })()}
                       </div>
                       {/* Up/down reorder buttons */}
                       <div style={{ display: "flex", flexDirection: "column", gap: 4, flexShrink: 0 }} onClick={e => e.stopPropagation()}>
@@ -2788,6 +2823,7 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
           setWeightLog(prev => [...prev, ...wToAdd].sort((a, b) => b.date.localeCompare(a.date)));
         }
         if (newMeso) saveMesoOverride(newMeso);
+        if (raw?.deload?.startDate && !loadDeload()) { saveDeload(raw.deload); setDeloadRev(n => n + 1); }
         if (newAnchor) saveCycleAnchor(newAnchor);
         let macroNote = "";
         if (newMacros && Object.keys(newMacros).length > 0) {
@@ -3225,7 +3261,13 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
         const cycleDay = plan.kind === "done" ? plan.doneDay
           : plan.kind === "train" ? plan.day
           : ((((plan.day - 1 - daysBetween(today, plan.due)) % CYCLE_DAYS) + CYCLE_DAYS) % CYCLE_DAYS) + 1;
-        const meso = mesocycleWeek(entries, mesoOverride);
+        const meso0 = mesocycleWeek(entries, mesoOverride);
+        const dl = loadDeload();
+        const dlSt = deloadStatus(dl, entries, today);
+        const meso = { ...meso0, isDeload: deloadNow(entries, today, meso0.isDeload) };
+        const dlDay = plan.kind === "done" ? null : plan.day;
+        const dlLines = dl && dlDay && (dlSt.status === "active" || (dlSt.status === "scheduled" && dlSt.daysAway <= 3))
+          ? (dl.plans?.[newLocation ?? "equinox"]?.[dlSt.status === "scheduled" ? 1 : dlDay] ?? []) : null;
         const nextProg = PROGRAM[plan.day];
         const todaysOpen = entries.find(e => !e.completedAt && e.date === today);
         const resumeTarget = todaysOpen ?? inProgressSession;
@@ -3273,6 +3315,15 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
                 Start {nextProg?.tag ?? "next session"} early
               </button>
             ) : null}
+            <DeloadToday status={dlSt.status} startDate={dl?.startDate} suggestedStart={nextCycleStart(entries, today)}
+              day={dlSt.status === "scheduled" ? 1 : dlDay} lines={dlLines}
+              onOn={() => {
+                const start = nextCycleStart(entries, today);
+                const pick = window.prompt("Deload starts on (YYYY-MM-DD). This is your next Day 1:", start);
+                if (!pick || !/^\d{4}-\d{2}-\d{2}$/.test(pick.trim())) return;
+                scheduleDeload(entries, today, pick.trim()); setDeloadRev(n => n + 1);
+              }}
+              onOff={() => { if (window.confirm("Turn off the deload cycle?")) { saveDeload(null); setDeloadRev(n => n + 1); } }} />
           </div>
         );
       })()}
