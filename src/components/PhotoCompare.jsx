@@ -24,8 +24,8 @@ export function photoTakenLabel(photo, { short = false } = {}) {
   if (!photo?.date) return "Date unknown";
   const d = new Date(photo.date + "T12:00:00");
   const txt = short ? d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : fmtDate(photo.date);
-  if (!photo.dateApprox) return `Taken ${txt}`;
-  return short ? `About ${txt}` : `About ${txt} (${SRC[photo.dateSource] || "approximate"})`;
+  if (!photo.dateApprox) return txt;
+  return short ? `~${txt}` : `~${txt} (approx., ${SRC[photo.dateSource] || "no photo date"})`;
 }
 export function PhotoTakenLine({ photo, slot }) {
   return (

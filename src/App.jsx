@@ -2777,7 +2777,7 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
               )}
               {photoSlotA && photoSlotB && (
                 <div style={{ textAlign: "center", padding: "12px 16px", borderRadius: 12, background: C.surface2, fontSize: 12, color: C.textMid, fontFamily: SANS }}>
-                  {photoTakenLabel(photoSlotA)} → {photoTakenLabel(photoSlotB)}
+                  {photoTakenLabel(photoSlotA, { short: true })} to {photoTakenLabel(photoSlotB, { short: true })}
                   {" · "}
                   {photoSlotA.date && photoSlotB.date ? `${Math.abs(daysBetween(photoSlotA.date, photoSlotB.date))} days apart` : "Days apart unknown"}
                 </div>
