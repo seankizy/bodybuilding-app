@@ -28,7 +28,9 @@ export function restToSeconds(restStr) {
   return 60;
 }
 export function fmtDate(iso) {
-  const d = new Date(iso + "T12:00:00");
+  if (!iso || !/^\d{4}-\d{2}-\d{2}/.test(String(iso))) return "Date unknown";
+  const d = new Date(String(iso).slice(0, 10) + "T12:00:00");
+  if (isNaN(d)) return "Date unknown";
   return d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", year: "numeric" });
 }
 export function newEntry(dateStr) {

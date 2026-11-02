@@ -8,6 +8,7 @@ import { daysBetween } from "../lib/checkins.js";
 // ── PHOTO COMPARE HELPERS ────────────────────────────────────────────────────
 // Body weight logged nearest to a photo date (either side), for the compare captions.
 export function nearestWeight(weightLog, date) {
+  if (!date) return null;
   let best = null;
   for (const w of weightLog ?? []) {
     if (isNaN(parseFloat(w.weight))) continue;
@@ -25,7 +26,7 @@ export function PhotoWeightCaption({ weightLog, date }) {
           <span style={{ fontFamily: MONO, fontVariantNumeric: "tabular-nums", fontWeight: 600, color: C.text }}>{nw.weight} {nw.unit}</span>
           <span style={{ color: C.textDim }}>{nw.daysOff === 0 ? " · same day" : ` · weighed ${fmtDate(nw.date)}`}</span>
         </>
-      ) : <span style={{ color: C.textDim }}>No weigh-in logged</span>}
+      ) : <span style={{ color: C.textDim }}>{date ? "No weigh-in logged" : "Photo date unknown"}</span>}
     </div>
   );
 }
