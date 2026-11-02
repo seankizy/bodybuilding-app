@@ -21,7 +21,7 @@ import { CompletionSummary } from "./components/CompletionSummary.jsx";
 import { BottomNav, MoreMenu, ResumeBar } from "./components/Nav.jsx";
 import { FoodSearchSheet } from "./components/FoodSearchSheet.jsx";
 import { DailyBrief } from "./components/DailyBrief.jsx";
-import { PhotoWeightCaption, SliderCompare } from "./components/PhotoCompare.jsx";
+import { PhotoTakenLine, PhotoWeightCaption, SliderCompare, photoTakenLabel } from "./components/PhotoCompare.jsx";
 import { BackBtn, GhostBtn, MvCard, Pill, SectionLabel, Shell, SwapSheet, TopBar, WarmupItem } from "./components/ui.jsx";
 import { SetRow } from "./components/SetRow.jsx";
 import { bigInput, btnStyle, ghostInput, labelStyle, modalInput, noteArea } from "./components/styles.js";
@@ -2524,9 +2524,10 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
 
     const photosByDate = {};
     (drivePhotos ?? []).forEach(p => {
-      (photosByDate[p.date] = photosByDate[p.date] ?? []).push(p);
+      const key = p.date ?? "unknown";
+      (photosByDate[key] = photosByDate[key] ?? []).push(p);
     });
-    const dates = Object.keys(photosByDate).sort((a, b) => b.localeCompare(a));
+    const dates = Object.keys(photosByDate).sort((a, b) => (a === "unknown") - (b === "unknown") || b.localeCompare(a));
 
     function ZoomableImage({ fileId, alt }) {
       const containerRef = useRef(null);
@@ -2704,9 +2705,7 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
           </div>
           {photo && (
             <>
-              <div style={{ textAlign: "center", marginTop: 8, fontSize: 12, fontWeight: 600, color: C.text, fontFamily: SANS }}>
-                {fmtDate(photo.date)}
-              </div>
+              <PhotoTakenLine photo={photo} />
               <PhotoWeightCaption weightLog={weightLog} date={photo.date} />
               <button onClick={onPick} style={{
                 display: "block", width: "100%", marginTop: 8, padding: "10px", borderRadius: 10,
@@ -2759,7 +2758,7 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
                   <div style={{ display: "flex", gap: 12, marginTop: 10 }}>
                     {[["A", photoSlotA], ["B", photoSlotB]].map(([slot, ph]) => (
                       <div key={slot} style={{ flex: 1, textAlign: "center" }}>
-                        <div style={{ fontSize: 12, fontWeight: 600, color: C.text, fontFamily: SANS }}>{slot} · {fmtDate(ph.date)}</div>
+                        <PhotoTakenLine photo={ph} slot={slot} />
                         <PhotoWeightCaption weightLog={weightLog} date={ph.date} />
                         <button onClick={() => setPhotoPickerSlot(slot)} style={{
                           display: "block", width: "100%", marginTop: 8, padding: "10px", borderRadius: 10,
@@ -2778,9 +2777,9 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
               )}
               {photoSlotA && photoSlotB && (
                 <div style={{ textAlign: "center", padding: "12px 16px", borderRadius: 12, background: C.surface2, fontSize: 12, color: C.textMid, fontFamily: SANS }}>
-                  {fmtDate(photoSlotA.date)} → {fmtDate(photoSlotB.date)}
+                  {photoTakenLabel(photoSlotA, { short: true })} to {photoTakenLabel(photoSlotB, { short: true })}
                   {" · "}
-                  {Math.abs(Math.round((new Date(photoSlotB.date) - new Date(photoSlotA.date)) / 86400000))} days apart
+                  {photoSlotA.date && photoSlotB.date ? `${Math.abs(daysBetween(photoSlotA.date, photoSlotB.date))} days apart` : "Days apart unknown"}
                 </div>
               )}
               {dates.length === 0 && (

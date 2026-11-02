@@ -8,6 +8,7 @@ import { daysBetween } from "../lib/checkins.js";
 // ── PHOTO COMPARE HELPERS ────────────────────────────────────────────────────
 // Body weight logged nearest to a photo date (either side), for the compare captions.
 export function nearestWeight(weightLog, date) {
+  if (!date) return null;
   let best = null;
   for (const w of weightLog ?? []) {
     if (isNaN(parseFloat(w.weight))) continue;
@@ -16,16 +17,34 @@ export function nearestWeight(weightLog, date) {
   }
   return best;
 }
+// The day the photo was taken, labeled as the photo date. Exact only when it came
+// from the photo's own capture info; otherwise marked approximate with its source.
+const SRC = { filename: "from file name", "drive:createdTime": "upload date", "drive:modifiedTime": "file changed date" };
+export function photoTakenLabel(photo, { short = false } = {}) {
+  if (!photo?.date) return "Date unknown";
+  const d = new Date(photo.date + "T12:00:00");
+  const txt = short ? d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : fmtDate(photo.date);
+  if (!photo.dateApprox) return txt;
+  return short ? `~${txt}` : `~${txt} (approx., ${SRC[photo.dateSource] || "no photo date"})`;
+}
+export function PhotoTakenLine({ photo, slot }) {
+  return (
+    <div style={{ textAlign: "center", marginTop: 8, fontSize: 12, fontWeight: 600, color: photo?.date && !photo.dateApprox ? C.text : C.textMid, fontFamily: SANS }}>
+      {slot ? `${slot} · ` : ""}{photoTakenLabel(photo)}
+    </div>
+  );
+}
 export function PhotoWeightCaption({ weightLog, date }) {
   const nw = nearestWeight(weightLog, date);
+  const rel = nw && date ? daysBetween(date, nw.date) : 0;
   return (
     <div style={{ textAlign: "center", marginTop: 3, fontSize: 12, color: C.textMid, fontFamily: SANS }}>
       {nw ? (
         <>
           <span style={{ fontFamily: MONO, fontVariantNumeric: "tabular-nums", fontWeight: 600, color: C.text }}>{nw.weight} {nw.unit}</span>
-          <span style={{ color: C.textDim }}>{nw.daysOff === 0 ? " · same day" : ` · weighed ${fmtDate(nw.date)}`}</span>
+          <span style={{ color: C.textDim }}>{nw.daysOff === 0 ? " · weighed same day" : ` · weighed ${fmtDate(nw.date)}, ${Math.abs(rel)} day${Math.abs(rel) !== 1 ? "s" : ""} ${rel > 0 ? "after" : "before"} the photo`}</span>
         </>
-      ) : <span style={{ color: C.textDim }}>No weigh-in logged</span>}
+      ) : <span style={{ color: C.textDim }}>{date ? "No weigh-in logged" : "Photo date unknown"}</span>}
     </div>
   );
 }
@@ -140,8 +159,8 @@ export function SliderCompare({ a, b }) {
             </div>
           </>
         )}
-        <div style={{ ...tag, left: 10 }}>A · {fmtDate(a.date)}</div>
-        <div style={{ ...tag, right: 10 }}>B · {fmtDate(b.date)}</div>
+        <div style={{ ...tag, left: 10 }}>A · {photoTakenLabel(a, { short: true })}</div>
+        <div style={{ ...tag, right: 10 }}>B · {photoTakenLabel(b, { short: true })}</div>
         {align && <div style={{ ...tag, top: "auto", bottom: 10, left: 10, right: 10, textAlign: "center" }}>Drag to move A, pinch to resize. Line up shoulders and hips.</div>}
       </div>
       <div style={{ display: "flex", gap: 8, marginTop: 10, flexWrap: "wrap", alignItems: "center" }}>
