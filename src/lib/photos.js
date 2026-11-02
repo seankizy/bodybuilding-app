@@ -22,7 +22,8 @@ export async function driveListPhotos() {
 
 // The day a photo was taken, from its own info: EXIF capture time (read on the server),
 // then a date in the file name, then when the file was created or changed on Drive.
-// Returns { date: "YYYY-MM-DD" | null, dateSource }.
+// Returns { date: "YYYY-MM-DD" | null, dateSource, dateApprox }. Only the photo's own
+// capture time counts as exact; a file name or Drive date is marked approximate.
 export function photoDate(f) {
   const ok = (y, m, d) => {
     const Y = +y, M = +m, D = +d;
@@ -30,12 +31,12 @@ export function photoDate(f) {
     return `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
   };
   const t = /^(\d{4})[-:](\d{2})[-:](\d{2})/.exec(f.takenAt || "");
-  if (t) { const d = ok(t[1], t[2], t[3]); if (d) return { date: d, dateSource: f.takenSource || "exif" }; }
+  if (t) { const d = ok(t[1], t[2], t[3]); if (d) return { date: d, dateSource: f.takenSource || "exif", dateApprox: false }; }
   const n = /(20\d{2})[-_.]?(\d{2})[-_.]?(\d{2})/.exec(f.name || "");
-  if (n) { const d = ok(n[1], n[2], n[3]); if (d) return { date: d, dateSource: "filename" }; }
+  if (n) { const d = ok(n[1], n[2], n[3]); if (d) return { date: d, dateSource: "filename", dateApprox: true }; }
   for (const k of ["createdTime", "modifiedTime"]) {
     const dt = f[k] ? new Date(f[k]) : null;
-    if (dt && !isNaN(dt)) return { date: localDateStr(dt), dateSource: `drive:${k}` };
+    if (dt && !isNaN(dt)) return { date: localDateStr(dt), dateSource: `drive:${k}`, dateApprox: true };
   }
-  return { date: null, dateSource: null };
+  return { date: null, dateSource: null, dateApprox: true };
 }
