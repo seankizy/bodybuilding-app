@@ -1,22 +1,37 @@
 // Automatic journal backups to Google Drive (Sean's "Bodybuilding App" folder).
 // Everything is behind APP_PASSCODE, and every read or delete is limited to that folder.
-//   GET  /api/backup                 -> { configured, files: [{ id, name, modifiedTime, size }] }  newest first
+//   GET  /api/backup                 -> { configured, files: [the history file] }
 //   GET  /api/backup?id=FILE_ID      -> the backup JSON (for restore)
-//   POST /api/backup  {journal JSON} -> saves today's file (one per day, overwritten through the day), prunes old copies
+//   POST /api/backup  {journal JSON} -> merges into workout-journal-history.json (cumulative, never shrinks)
 //   GET  /api/backup?op=connect&k=PASSCODE -> one-time Google sign-in to get the refresh token
 const { checkPasscode } = require("./_auth");
 const g = require("./_google");
 
-const KEEP = 30;          // daily copies kept in Drive
-const PREFIX = "workout-journal-";
+// One cumulative file. Each save merges what the phone sends into what Drive already
+// holds, so history only ever grows: a session, weigh-in, or food entry that is missing
+// on the phone (cleared storage, new phone) is never lost from Drive.
+const FILE = "workout-journal-history.json";
 
-const today = () => new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(new Date()); // YYYY-MM-DD
-
-async function listBackups() {
-  const q = encodeURIComponent(`'${g.folderId()}' in parents and name contains '${PREFIX}' and trashed = false`);
+async function findFile() {
+  const q = encodeURIComponent(`'${g.folderId()}' in parents and name = '${FILE}' and trashed = false`);
   const fields = encodeURIComponent("files(id,name,modifiedTime,size)");
-  const data = await g.drive(`/drive/v3/files?q=${q}&fields=${fields}&orderBy=name desc&pageSize=200`);
-  return (data.files || []).filter(f => f.name.startsWith(PREFIX) && f.name.endsWith(".json"));
+  const data = await g.drive(`/drive/v3/files?q=${q}&fields=${fields}&pageSize=5`);
+  return (data.files || [])[0] || null;
+}
+const byId = (oldList, newList) => {
+  const m = new Map();
+  (Array.isArray(oldList) ? oldList : []).forEach(x => m.set(String(x.id), x));
+  (Array.isArray(newList) ? newList : []).forEach(x => m.set(String(x.id), x)); // phone wins for the same item
+  return [...m.values()].sort((a, b) => String(b.date || "").localeCompare(String(a.date || "")));
+};
+function mergeJournal(prev, next) {
+  if (!prev) return next;
+  const macros = { ...(prev.macros || {}) };
+  Object.entries(next.macros || {}).forEach(([day, v]) => {
+    const old = macros[day];
+    macros[day] = old ? { ...old, ...v, entries: byId(old.entries, v.entries) } : v;
+  });
+  return { ...prev, ...next, entries: byId(prev.entries, next.entries), weights: byId(prev.weights, next.weights), macros };
 }
 
 module.exports = async (req, res) => {
@@ -46,7 +61,8 @@ module.exports = async (req, res) => {
 
   try {
     if (req.method === "GET" && !req.query.id) {
-      return res.status(200).json({ configured: true, files: await listBackups() });
+      const f = await findFile();
+      return res.status(200).json({ configured: true, files: f ? [f] : [] });
     }
 
     if (req.method === "GET") {
@@ -61,25 +77,21 @@ module.exports = async (req, res) => {
     if (req.method === "POST") {
       const body = typeof req.body === "string" ? JSON.parse(req.body) : (req.body || {});
       if (!body || !Array.isArray(body.entries)) return res.status(400).json({ error: { message: "Backup must include entries" } });
-      const name = `${PREFIX}${today()}.json`;
-      const json = JSON.stringify(body);
-      const existing = (await listBackups()).find(f => f.name === name);
+      const existing = await findFile();
+      const prev = existing ? await g.drive(`/drive/v3/files/${existing.id}?alt=media`).catch(() => null) : null;
+      const merged = mergeJournal(prev, body);
+      merged.savedAt = new Date().toISOString();
+      const json = JSON.stringify(merged);
 
       const boundary = "wjbackup" + Date.now();
-      const meta = existing ? { name } : { name, parents: [g.folderId()], mimeType: "application/json" };
+      const meta = existing ? { name: FILE } : { name: FILE, parents: [g.folderId()], mimeType: "application/json" };
       const multipart = `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify(meta)}\r\n` +
         `--${boundary}\r\nContent-Type: application/json\r\n\r\n${json}\r\n--${boundary}--`;
       const path = existing
         ? `/upload/drive/v3/files/${existing.id}?uploadType=multipart&fields=id,name,modifiedTime,size`
         : `/upload/drive/v3/files?uploadType=multipart&fields=id,name,modifiedTime,size`;
       const saved = await g.drive(path, { method: existing ? "PATCH" : "POST", headers: { "Content-Type": `multipart/related; boundary=${boundary}` }, body: multipart });
-
-      // Keep the newest KEEP daily copies; older ones go to Drive's trash (recoverable for 30 days).
-      const all = await listBackups();
-      for (const old of all.slice(KEEP)) {
-        await g.drive(`/drive/v3/files/${old.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ trashed: true }) }).catch(() => {});
-      }
-      return res.status(200).json({ ok: true, file: saved, kept: Math.min(all.length, KEEP) });
+      return res.status(200).json({ ok: true, file: saved, sessions: merged.entries.length });
     }
 
     return res.status(405).json({ error: { message: "GET or POST only" } });

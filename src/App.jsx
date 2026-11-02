@@ -96,7 +96,7 @@ function DriveBackupCard({ onRestore }) {
     try { setFiles(await listDriveBackups()); } catch (e) { setErr(e.message); } finally { setBusy(false); }
   }
   async function restore(f) {
-    if (!window.confirm(`Restore from ${f.name}? Anything missing on this phone is added back. Nothing here is deleted.`)) return;
+    if (!window.confirm(`Restore your full history from Drive? Anything missing on this phone is added back. Nothing here is deleted.`)) return;
     setBusy(true); setErr("");
     try { onRestore(await fetchDriveBackup(f.id), f.name); setFiles(null); } catch (e) { setErr(e.message); } finally { setBusy(false); }
   }
@@ -105,7 +105,7 @@ function DriveBackupCard({ onRestore }) {
       <div style={{ fontSize: 12, letterSpacing: 0.2, color: C.textDim, fontFamily: SANS, fontWeight: 600, marginBottom: 10 }}>Google Drive</div>
       <div style={{ background: C.surface2, borderRadius: 14, padding: "14px" }}>
         <div style={{ fontSize: 13, color: bad ? C.alert : C.text, fontFamily: SANS, marginBottom: 4 }}>{line}</div>
-        <div style={{ fontSize: 12, color: C.textDim, fontFamily: SANS, marginBottom: 12 }}>Saves on its own to Bodybuilding App in Drive, one file a day, last 30 days kept.</div>
+        <div style={{ fontSize: 12, color: C.textDim, fontFamily: SANS, marginBottom: 12 }}>Saves on its own to one history file in Bodybuilding App on Drive. It only grows: nothing on Drive is ever lost.</div>
         <div style={{ display: "flex", gap: 10 }}>
           {st.state === "not_configured"
             ? <button onClick={() => { window.location.href = driveConnectUrl(); }} style={btn}>Connect Drive</button>
@@ -118,7 +118,7 @@ function DriveBackupCard({ onRestore }) {
             {files.length === 0 && <div style={{ fontSize: 12, color: C.textDim, fontFamily: SANS }}>No Drive backups yet.</div>}
             {files.map(f => (
               <div key={f.id} onClick={() => !busy && restore(f)} style={{ display: "flex", justifyContent: "space-between", padding: "10px 2px", borderTop: `1px solid ${C.line}`, cursor: "pointer", fontFamily: SANS }}>
-                <span style={{ fontSize: 13, color: C.text }}>{fmtDate(f.name.replace("workout-journal-", "").replace(".json", ""))}</span>
+                <span style={{ fontSize: 13, color: C.text }}>Full history · saved {fmtLastBackup(f.modifiedTime)}</span>
                 <span style={{ fontSize: 12, color: C.textDim }}>{f.size ? `${Math.max(1, Math.round(f.size / 1024))} KB` : ""}</span>
               </div>
             ))}
