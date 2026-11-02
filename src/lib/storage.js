@@ -88,6 +88,7 @@ export function backupFromStorage() {
     entries: read("wj_entries", []), weights: read("wj_weights", []),
     mesoOverride: read("wj_meso", null), cycleAnchor,
     macros: read("wj_macros", {}), macroTargets: read("wj_macro_targets", DEFAULT_MACRO_TARGETS),
+    photoAlign: read("wj_photo_align", {}),
   };
 }
 export function daysSinceBackup() {
