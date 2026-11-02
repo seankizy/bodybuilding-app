@@ -11,7 +11,7 @@ import { addDays, checkinSchedule, daysBetween, surplusAdvice, weightTrend } fro
 import { buildDailyBrief, todayPlan } from "./lib/dailyBrief.js";
 import { mesocycleWeek } from "./lib/mesocycle.js";
 import { driveListPhotos } from "./lib/photos.js";
-import { backupToDrive, driveConnectUrl, fetchDriveBackup, fmtLastBackup, listDriveBackups, useAutoDriveBackup, useDriveStatus } from "./lib/driveBackup.js";
+import { backupToDrive, driveConnect, fetchDriveBackup, fmtLastBackup, listDriveBackups, useAutoDriveBackup, useDriveStatus } from "./lib/driveBackup.js";
 import { DEFAULT_MACRO_TARGETS, dayTotals, extractMacroTargets, loadMacroTargets, loadMacros, macroCals, migrateMacroBackup, saveMacroTargetsLS, saveMacrosLS } from "./lib/macros.js";
 import { RestTimer } from "./components/RestTimer.jsx";
 import { MacroChefModal } from "./components/MacroChefModal.jsx";
@@ -108,7 +108,7 @@ function DriveBackupCard({ onRestore }) {
         <div style={{ fontSize: 12, color: C.textDim, fontFamily: SANS, marginBottom: 12 }}>Saves on its own to one history file in Bodybuilding App on Drive. It only grows: nothing on Drive is ever lost.</div>
         <div style={{ display: "flex", gap: 10 }}>
           {st.state === "not_configured"
-            ? <button onClick={() => { window.location.href = driveConnectUrl(); }} style={btn}>Connect Drive</button>
+            ? <button onClick={() => driveConnect().catch(e => alert(e.message))} style={btn}>Connect Drive</button>
             : <button disabled={st.state === "saving"} onClick={() => backupToDrive({ force: true })} style={btn}>Back up now</button>}
           <button disabled={busy} onClick={files ? () => setFiles(null) : openRestore} style={btn}>{files ? "Close" : busy ? "Loading…" : "Restore"}</button>
         </div>

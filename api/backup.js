@@ -3,7 +3,7 @@
 //   GET  /api/backup                 -> { configured, files: [the history file] }
 //   GET  /api/backup?id=FILE_ID      -> the backup JSON (for restore)
 //   POST /api/backup  {journal JSON} -> merges into workout-journal-history.json (cumulative, never shrinks)
-//   GET  /api/backup?op=connect&k=PASSCODE -> one-time Google sign-in to get the refresh token
+//   GET  /api/backup?op=connect (passcode header) -> { url } for the one-time Google sign-in
 const { checkPasscode } = require("./_auth");
 const g = require("./_google");
 
@@ -39,7 +39,7 @@ module.exports = async (req, res) => {
   if (!checkPasscode(req, res)) return;
 
   if (req.query.op === "connect") {
-    if (!g.clientReady()) return res.status(503).send("Set GOOGLE_OAUTH_CLIENT_ID and GOOGLE_OAUTH_CLIENT_SECRET in Vercel first, then redeploy.");
+    if (!g.clientReady()) return res.status(503).json({ error: { code: "not_configured", message: "Set GOOGLE_OAUTH_CLIENT_ID and GOOGLE_OAUTH_CLIENT_SECRET in Vercel first, then redeploy." } });
     const url = "https://accounts.google.com/o/oauth2/v2/auth?" + new URLSearchParams({
       client_id: process.env.GOOGLE_OAUTH_CLIENT_ID,
       redirect_uri: g.redirectUri(req),
@@ -50,9 +50,7 @@ module.exports = async (req, res) => {
       login_hint: "seankizy@gmail.com",
       state: g.signState(),
     });
-    res.statusCode = 302;
-    res.setHeader("Location", url);
-    return res.end();
+    return res.status(200).json({ url });
   }
 
   if (!g.isConfigured()) {

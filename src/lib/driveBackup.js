@@ -1,9 +1,9 @@
 // Automatic backup of the journal to Google Drive through /api/backup.
 // Runs on its own: when the app opens, every few minutes while it is open, and when it goes
 // to the background. It only uploads when something changed since the last upload, and the
-// server keeps one file per day (the last 30 days) in the "Bodybuilding App" Drive folder.
+// server merges it into one cumulative history file in the "Bodybuilding App" Drive folder.
 import { useEffect, useState } from "react";
-import { apiFetch, backupFromStorage } from "./storage.js";
+import { apiFetch, appHeaders, backupFromStorage } from "./storage.js";
 
 const LS = { last: "wj_last_backup", hash: "wj_backup_hash", status: "wj_drive_status" };
 const INTERVAL_MS = 5 * 60 * 1000;
@@ -74,8 +74,13 @@ export async function fetchDriveBackup(id) {
   if (!resp.ok) throw new Error(data.error?.message || "Could not read that backup");
   return data;
 }
-export function driveConnectUrl() {
-  return `/api/backup?op=connect&k=${encodeURIComponent(storedPasscode())}`;
+// Asks the server for the Google sign-in link with the passcode in a header (never in
+// the URL, so it stays out of history and logs), then goes there.
+export async function driveConnect() {
+  const resp = await apiFetch("/api/backup?op=connect", { headers: appHeaders() });
+  const data = await resp.json().catch(() => ({}));
+  if (!resp.ok || !data.url) throw new Error(data?.error?.message || "Could not start the Google sign-in.");
+  window.location.href = data.url;
 }
 
 // Mount once at the app root.
