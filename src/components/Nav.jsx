@@ -2,6 +2,7 @@ import { BarChart3, Camera, ChevronRight, ClipboardList, Database, MoreHorizonta
 import { C, LAKE, SANS, STONE, INK } from "../theme.js";
 import { fmtDate, todayStr } from "../lib/utils.js";
 import { useKeyboardOpen } from "../lib/viewport.js";
+import { buildLabel } from "../lib/buildInfo.js";
 
 export function MoreMenu({ open, onClose, onSelect }) {
   if (!open) return null;
@@ -30,6 +31,7 @@ export function MoreMenu({ open, onClose, onSelect }) {
             <ChevronRight size={18} color={C.textDim} strokeWidth={2} />
           </button>
         ))}
+        <div style={{ fontSize: 11, color: C.textDim, fontFamily: SANS, textAlign: "center", marginTop: 14, letterSpacing: 0.2 }}>{buildLabel()}</div>
       </div>
     </div>
   );

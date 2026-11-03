@@ -10,10 +10,11 @@ import { CYCLE_DAYS, READINESS_SLEEP, READINESS_SORE, READINESS_TEXT, VOLUME_LAN
 import { downloadCoachPDF } from "./lib/coachReport.js";
 import { addDays, checkinSchedule, daysBetween, surplusAdvice, weightTrend } from "./lib/checkins.js";
 import { buildDailyBrief, todayPlan } from "./lib/dailyBrief.js";
-import { mesocycleWeek } from "./lib/mesocycle.js";
+import { mesoDiagnostics, mesocycleWeek } from "./lib/mesocycle.js";
+import { buildLabel } from "./lib/buildInfo.js";
 import { driveListPhotos } from "./lib/photos.js";
 import { backupToDrive, driveConnect, fetchDriveBackup, fmtLastBackup, listDriveBackups, useAutoDriveBackup, useDriveStatus } from "./lib/driveBackup.js";
-import { cueFor, deloadNow, deloadNutrition, deloadPlanFor, deloadStatus, loadDeload, nextBlockTarget, nextCycleStart, saveDeload, scheduleDeload } from "./lib/deload.js";
+import { cueFor, deloadNow, deloadNutrition, deloadPlanFor, deloadRecordProblem, deloadStatus, loadDeload, nextBlockTarget, nextCycleStart, saveDeload, scheduleDeload } from "./lib/deload.js";
 import { CueLine, DeloadBanner, DeloadPlanLine, DeloadToday } from "./components/Deload.jsx";
 import { DEFAULT_MACRO_TARGETS, dayTotals, extractMacroTargets, loadMacroTargets, loadMacros, macroCals, migrateMacroBackup, saveMacroTargetsLS, saveMacrosLS } from "./lib/macros.js";
 import { RestTimer } from "./components/RestTimer.jsx";
@@ -2995,6 +2996,7 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
         <div style={{ padding: "52px 18px 20px", background: "transparent" }}>
           <div style={{ fontSize: 12, letterSpacing: 0.2, color: C.textDim, fontFamily: SANS, marginBottom: 4 }}>Backup & History</div>
           <div style={{ ...TITLE, color: C.text }}>Data</div>
+          <div style={{ fontSize: 11, color: C.textDim, fontFamily: SANS, marginTop: 4 }}>{buildLabel()}</div>
           <div style={{ display: "flex", gap: 20, marginTop: 10 }}>
             <div><div style={{ fontSize: 15, fontWeight: 600, color: C.text, fontFamily: SANS }}>{totalSessions}</div><div style={{ fontSize: 12, color: C.textDim, letterSpacing: 0.2, fontFamily: SANS }}>Sessions</div></div>
             <div><div style={{ fontSize: 15, fontWeight: 600, color: C.text, fontFamily: SANS }}>{totalSets}</div><div style={{ fontSize: 12, color: C.textDim, letterSpacing: 0.2, fontFamily: SANS }}>Sets Logged</div></div>
@@ -3547,6 +3549,11 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
                 );
               })}
             </div>
+            {deloadRecordProblem(entries, todayStr()) && (
+              <div style={{ fontSize: 12, color: INK.stone, fontWeight: 600, fontFamily: SANS, marginTop: 8 }}>
+                Deload plan starts before this cycle is done. Tap to fix.
+              </div>
+            )}
             {meso.isDeload && (
               <div style={{ fontSize: 12, color: INK.stone, fontWeight: 600, fontFamily: SANS, marginTop: 8 }}>
                 Deload cycle: about half the sets, lighter loads, leave 3 to 4 RIR
@@ -3756,6 +3763,41 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
                 );
               })}
             </div>
+            {(() => {
+              // How today's cycle was worked out, plus one-tap fixes for stored state that
+              // disagrees with the log. Nothing here touches logged sessions.
+              const today = todayStr();
+              const dx = mesoDiagnostics(entries, mesoOverride, today);
+              const prob = deloadRecordProblem(entries, today);
+              const dl = loadDeload();
+              const dlSt = deloadStatus(dl, entries, today);
+              const fmt = d => new Date(d + "T12:00:00").toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
+              const srcText = {
+                auto: `Counted automatically from ${fmt(dx.anchor)}.`,
+                "block-pin": `Counted from the block start, ${fmt(dx.anchor)}.`,
+                manual: `Set by hand: cycle ${dx.raw?.cycleAtAnchor} on ${fmt(dx.anchor)}.`,
+                "legacy-ignored": `An old week-based setting (week ${dx.raw?.weekAtAnchor} on ${dx.raw?.anchorDate}) is ignored; counting from ${fmt(dx.anchor)}.`,
+              }[dx.source];
+              const row = { fontSize: 12, color: C.textMid, fontFamily: SANS, lineHeight: 1.6 };
+              const fixBtn = { width: "100%", marginTop: 8, padding: "12px", borderRadius: 12, background: STONE.carrara, color: C.ink, border: "none", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: SANS };
+              return (
+                <div style={{ padding: "12px 14px", borderRadius: 12, background: C.surface2, marginBottom: 14 }}>
+                  <div style={{ ...row, color: C.text, fontWeight: 600 }}>Now: Cycle {dx.cycleInBlock} of {dx.total}{dx.isDeload ? " · Deload" : ""}{dlSt.status === "active" ? " · Deload plan running" : ""}</div>
+                  <div style={row}>{srcText} {dx.sessionsCounted} completed sessions counted{dx.last ? `, last Day ${dx.last.day} on ${fmt(dx.last.date)}` : ""}.{dx.inProgress.length ? ` Today's Day ${dx.inProgress.join(", ")} is in progress and counts once you finish it.` : ""}</div>
+                  <div style={row}>Deload plan: {dl ? `${dlSt.status === "scheduled" ? "starts" : dlSt.status === "active" ? "started" : "ran from"} ${fmt(dl.startDate)}` : "none"}.</div>
+                  {prob && (
+                    <>
+                      <div style={{ ...row, color: C.warn, marginTop: 6 }}>The deload plan starts {fmt(prob.start)}, before this cycle is finished. It should start at your next Day 1, {fmt(prob.suggested)}.</div>
+                      <button style={fixBtn} onClick={() => { scheduleDeload(entries, today, prob.suggested); setDeloadRev(n => n + 1); }}>Move deload to {fmt(prob.suggested)}</button>
+                    </>
+                  )}
+                  {(dx.source === "manual" || dx.source === "legacy-ignored") && (
+                    <button style={{ ...fixBtn, background: C.surface3, color: C.text }} onClick={() => { saveMesoOverride(null); }}>Clear the old setting, count from the log</button>
+                  )}
+                  <div style={{ ...row, color: C.textDim, marginTop: 6, fontSize: 11 }}>{buildLabel()}</div>
+                </div>
+              );
+            })()}
             <button onClick={() => { saveMesoOverride(null); setShowMesoEdit(false); }}
               style={{ width: "100%", padding: "12px", borderRadius: 12, background: "transparent", color: C.textMid, fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: SANS }}>
               Reset to automatic

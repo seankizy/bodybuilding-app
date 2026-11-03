@@ -249,3 +249,19 @@ export function deloadNutrition(rate) {
   if (rate != null) lines.push(`Current trend: ${rate >= 0 ? "+" : ""}${rate.toFixed(2)} lb a week.`);
   return lines;
 }
+
+// Is a stored deload plan out of step with the cycle? A deload must start at a Day 1.
+// It is wrong when it is already running (or due) before the current cycle's Day 6 and
+// Day 7 are done, i.e. it starts earlier than the next Day 1 and no Day 1 has been
+// logged since its start. Returns null when fine, else { start, suggested, status }.
+export function deloadRecordProblem(entries, today) {
+  const d = loadDeload();
+  if (!d) return null;
+  const st = deloadStatus(d, entries, today);
+  if (st.status === "done") return null;
+  const day1Since = entries.some(e => e.completedAt && Number(e.programDay) === 1 && e.date >= d.startDate);
+  if (day1Since) return null;
+  const suggested = nextCycleStart(entries, today);
+  if (d.startDate >= suggested) return null;
+  return { start: d.startDate, suggested, status: st.status };
+}
