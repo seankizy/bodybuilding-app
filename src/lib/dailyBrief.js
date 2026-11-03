@@ -234,7 +234,7 @@ export function briefLift(entries, ex, isDeload, location = null) {
   else if (sug.calibrate) target = `New machine here. Start near ${w}, find the load that fits ${ex.reps}`;
   else if (sug.action === "hold") target = w > 0 ? `Stay at ${w}, build toward ${range?.max ?? ""} reps` : `Build toward ${range?.max ?? ""} reps`;
   else if (sug.action === "back_off") target = `Ease back to ${w}`;
-  else if (sug.action === "deload") target = w > 0 ? `Deload week, use ${w}` : "Deload week, 2 easy sets";
+  else if (sug.action === "deload") target = w > 0 ? `Deload cycle, use ${w}` : "Deload cycle, 2 easy sets";
   else if (sug.action === "block_start") target = `Start at ${w}, log RIR every set`;
   else target = "Match it, then add a rep";
   const plateau = detectPlateau(entries, ex.name, { bodyweight: !!ex.bodyweight, location, isDeloadWeek: isDeload, type: ex.type, loadStep: ex.loadStep ?? null });
@@ -278,6 +278,8 @@ export function buildDailyBrief({ entries, weightLog, macros, macroTargets, meso
     headline = briefPick(BRIEF_REST_LINES, dayIndex);
     const t = macroTargets?.[plan.kind === "done" ? "training" : "rest"];
     const away = daysBetween(today, plan.due);
+    // The next session may open the deload cycle (or end it), so judge it on its own date.
+    const upDeload = deloadNow(entries, plan.due, mesocycleWeek(entries, mesoOverride, plan.due).isDeload);
     recovery = {
       done: plan.kind === "done",
       doneTitle: plan.kind === "done" ? PROGRAM[plan.doneDay]?.title : null,
@@ -287,8 +289,8 @@ export function buildDailyBrief({ entries, weightLog, macros, macroTargets, meso
     upcoming = {
       day: plan.day, title: PROGRAM[plan.day].title,
       when: away <= 1 ? "Tomorrow" : `In ${away} days`,
-      isDeload,
-      lifts: exercisesFor(plan.day).slice(0, 2).map(ex => withDeload(plan.day, briefLift(entries, ex, isDeload, location))),
+      isDeload: upDeload,
+      lifts: exercisesFor(plan.day).slice(0, 2).map(ex => withDeload(plan.day, briefLift(entries, ex, upDeload, location))),
     };
   }
 

@@ -171,7 +171,7 @@ function AppInner({ onBrief }) {
   const [weightUnit, setWeightUnit] = useState("lbs");
   const [showWeightForm, setShowWeightForm] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [mesoOverride, setMesoOverride] = useState(null); // { anchorDate, weekAtAnchor }
+  const [mesoOverride, setMesoOverride] = useState(null); // { anchorDate, cycleAtAnchor } (older: weekAtAnchor, read as a cycle)
   const [cycleAnchor, setCycleAnchor] = useState(null); // ISO date string — manual cycle reset
   // Macro tracking state
   const [macros, setMacros] = useState({});
@@ -920,7 +920,7 @@ function AppInner({ onBrief }) {
 
         {/* Autoregulated progression suggestion — advisory only, never auto-applied */}
         {(() => {
-          const meso = mesocycleWeek(entries, mesoOverride);
+          const meso = mesocycleWeek(entries, mesoOverride, activeEntry.date);
           // Read exercise settings from the program so sessions created before a program
           // change still get the right step size, bodyweight handling, and start weight.
           const progEx = programExFor(activeEntry, activeMv);
@@ -987,7 +987,7 @@ function AppInner({ onBrief }) {
 
         {/* Smart coaching: PR forecast, plateau, set count. Advisory only. */}
         {(() => {
-          const meso = mesocycleWeek(entries, mesoOverride);
+          const meso = mesocycleWeek(entries, mesoOverride, activeEntry.date);
           const progEx = programExFor(activeEntry, activeMv);
           const o = {
             excludeEntryId: activeEntry.id, location: activeEntry.location ?? "equinox",
@@ -2216,7 +2216,7 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
           return (
             <div style={{ margin: "12px 18px 4px", padding: "14px 16px", borderRadius: 14, background: STONE.venato, color: INK.stone }}>
               <div style={{ fontSize: 12, fontWeight: 600, color: INK.stone, marginBottom: 8, display: "flex", alignItems: "center", gap: 6 }}>
-                <Flame size={14} color={INK.stone} strokeWidth={2} /> Deload week: volume targets
+                <Flame size={14} color={INK.stone} strokeWidth={2} /> Deload cycle: volume targets
               </div>
               {Object.entries(VOLUME_LANDMARKS).map(([muscle, lm]) => (
                 <div key={muscle} style={{ display: "flex", justifyContent: "space-between", padding: "5px 0", borderBottom: "1px solid rgba(0,0,0,0.1)" }}>
@@ -3347,7 +3347,7 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
                 <span style={{ fontSize: 12, fontFamily: MONO, fontVariantNumeric: "tabular-nums", color: C.textMid }}>Day {cycleDay} of {CYCLE_DAYS}</span>
                 <span style={{ fontSize: 12, color: C.textDim }}>·</span>
                 <span style={{ fontSize: 12, fontFamily: MONO, fontVariantNumeric: "tabular-nums", color: meso.isDeload ? C.amber : C.textMid, fontWeight: meso.isDeload ? 600 : 400 }}>
-                  Week {meso.week}{meso.isDeload ? " · Deload" : ""}
+                  Cycle {meso.cycleInBlock} of {meso.total}{meso.isDeload ? " · Deload" : ""}
                 </span>
               </div>
             </div>
@@ -3444,7 +3444,7 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
           <div onClick={() => setShowMesoEdit(true)} style={{ margin: "12px 18px 4px", padding: "14px 16px", borderRadius: 14, background: STONE.venato, cursor: "pointer", boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.25)" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
               <div style={{ fontSize: 12, letterSpacing: 0.2, color: dimColor, fontFamily: SANS, fontWeight: 600 }}>
-                <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}><Flame size={13} strokeWidth={2.2} /> Mesocycle {meso.cycle} · Week {meso.week} of {meso.total}</span>
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}><Flame size={13} strokeWidth={2.2} /> Mesocycle {meso.block} · Cycle {meso.cycleInBlock} of {meso.total}</span>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <span style={{ fontSize: 12, color: INK.stone, fontFamily: SANS, fontWeight: meso.isDeload ? 600 : 500 }}>{meso.isDeload ? "Deload" : "Accumulation"}</span>
@@ -3462,12 +3462,12 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
             </div>
             {meso.isDeload && (
               <div style={{ fontSize: 12, color: INK.stone, fontWeight: 600, fontFamily: SANS, marginTop: 8 }}>
-                Deload week: drop volume ~50%, keep weights, leave 3–4 RIR
+                Deload cycle: about half the sets, lighter loads, leave 3 to 4 RIR
               </div>
             )}
             {!meso.isDeload && meso.week >= 3 && (
               <div style={{ fontSize: 12, color: INK.stone, fontFamily: SANS, marginTop: 8 }}>
-                Add a set to lagging muscles this week · deload in {meso.total - meso.week} wk{meso.total - meso.week !== 1 ? "s" : ""}
+                {meso.total - meso.week === 1 ? "Last training cycle · deload starts at the next Day 1" : `Add a set to lagging muscles this cycle · deload in ${meso.total - meso.week} cycles`}
               </div>
             )}
           </div>
@@ -3651,9 +3651,9 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
           <div style={{ background: C.sheet, width: "100%", borderRadius: "24px 24px 0 0", padding: "24px 18px 44px", borderBottom: "none", boxSizing: "border-box" }}
             onClick={e => e.stopPropagation()}>
             <div style={{ width: 36, height: 4, borderRadius: 2, background: C.surface3, margin: "0 auto 20px" }} />
-            <div style={{ fontSize: 15, fontWeight: 600, color: C.text, marginBottom: 6, fontFamily: SANS }}>Set Mesocycle Week</div>
+            <div style={{ fontSize: 15, fontWeight: 600, color: C.text, marginBottom: 6, fontFamily: SANS }}>Set Mesocycle Cycle</div>
             <div style={{ fontSize: 12, color: C.textMid, marginBottom: 18, fontFamily: SANS, lineHeight: 1.5 }}>
-              Which week of the {MESO_LENGTH}-week block are you in right now? It'll count forward from today.
+              Which 8-day cycle of the {MESO_LENGTH}-cycle block are you in right now? It counts forward from your logged sessions: a new cycle starts at each Day 1.
             </div>
             <div style={{ display: "flex", gap: 8, marginBottom: 20 }}>
               {Array.from({ length: MESO_LENGTH }, (_, i) => {
@@ -3661,10 +3661,10 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
                 const isDeloadWk = wk === MESO_LENGTH;
                 const current = mesocycleWeek(entries, mesoOverride).week === wk;
                 return (
-                  <button key={wk} onClick={() => { saveMesoOverride({ anchorDate: todayStr(), weekAtAnchor: wk }); setShowMesoEdit(false); }}
+                  <button key={wk} onClick={() => { saveMesoOverride({ anchorDate: todayStr(), cycleAtAnchor: wk, unit: "cycle" }); setShowMesoEdit(false); }}
                     style={{ flex: 1, padding: "16px 0", borderRadius: 12, background: current ? STONE.carrara : C.surface2, cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
                     <span style={{ fontSize: 15, fontWeight: 600, fontFamily: MONO, fontVariantNumeric: "tabular-nums", color: current ? C.ink : C.text }}>{wk}</span>
-                    <span style={{ fontSize: 12, fontFamily: SANS, fontWeight: 600, letterSpacing: 0.2, color: current ? C.ink : C.textDim }}>{isDeloadWk ? "Deload" : "Wk"}</span>
+                    <span style={{ fontSize: 12, fontFamily: SANS, fontWeight: 600, letterSpacing: 0.2, color: current ? C.ink : C.textDim }}>{isDeloadWk ? "Deload" : "Cycle"}</span>
                   </button>
                 );
               })}

@@ -81,10 +81,11 @@ export const PROGRAM = {
 };
 
 
-// Mesocycle config: 6 training weeks then a deload week (week 7). That's a deload
-// roughly every 5 to 6 eight-day cycles, per the Sep 29, 2026 program review.
-export const MESO_LENGTH = 7; // weeks per block, last week is the deload
-export const MESO_START = "2026-05-07"; // week 1 anchor (first logged session)
+// Mesocycle config, counted in 8-day CYCLES from the log, never calendar weeks
+// (Sean, Nov 3, 2026). Five training cycles, then one deload cycle. Six cycles is
+// 48 days, the same span as the old 7-week block, and matches "a deload roughly every
+// 5 to 6 eight-day cycles" from the Sep 29, 2026 program review.
+export const MESO_LENGTH = 6; // cycles per block, the last cycle is the deload
 
 // Start of the current training block (lean bulk, Sep 2026). Exercises with a
 // `startWeight` seed that load on their FIRST session on or after this date;
