@@ -1,5 +1,6 @@
 import { C } from "../theme.js";
-import { BLOCK_START, COACH_SINCE, COACH_TARGETS, LOCATIONS, MESO_LENGTH, PROGRAM, canonName, loggedSince, nameKey, programExByName, programExFor, slotAlternatives } from "../program.js";
+import { BLOCK_START, COACH_SINCE, COACH_TARGETS, LOCATIONS, PROGRAM, canonName, loggedSince, nameKey, programExByName, programExFor, slotAlternatives } from "../program.js";
+import { isDeloadCycleOn } from "./mesocycle.js";
 import { fmtDate, localDateStr } from "./utils.js";
 import { daysBetween } from "./checkins.js";
 import { nextBlockTarget } from "./deload.js";
@@ -327,7 +328,7 @@ export function suggestProgression(entries, mvName, repsTarget, type, opts = {})
     if (isDeloadWeek) {
       return {
         action: "deload", weight: 0, lastWeight: 0, lastDate,
-        reason: "Deload week. Cut to 2 sets and stop well short of failure.",
+        reason: "Deload cycle. Cut to 2 sets and stop well short of failure.",
       };
     }
     if (range && topSet.r >= range.max) {
@@ -362,7 +363,7 @@ export function suggestProgression(entries, mvName, repsTarget, type, opts = {})
       action: "deload",
       weight: down(topSet.w, 0.85),
       lastWeight: topSet.w, lastDate,
-      reason: "Deload week. Drop load about 15% and leave 3+ reps in reserve.",
+      reason: "Deload cycle. Drop load about 15% and leave 3+ reps in reserve.",
     };
   }
 
@@ -545,16 +546,15 @@ export function sessionScore(sess) {
   }
   return best;
 }
-// Deload-week sessions are light on purpose; they never count toward a stall or a
-// set-count change.
-export function isDeloadDate(date) {
-  const d = daysBetween(BLOCK_START, date);
-  if (d < 0) return false;
-  return Math.floor(d / 7) % MESO_LENGTH === MESO_LENGTH - 1;
+// Deload-cycle sessions are light on purpose; they never count toward a stall or a
+// set-count change. Counted in 8-day cycles from the log, never calendar weeks.
+export function isDeloadDate(date, entries) {
+  if (date < BLOCK_START) return false;
+  return isDeloadCycleOn(entries, date);
 }
 export function workingSessions(entries, mvName, o = {}) {
   const all = movementSessions(entries, mvName, o.excludeEntryId ?? null, !!o.bodyweight, o.location ?? null);
-  const out = all.filter(x => x.date >= BLOCK_START && !isDeloadDate(x.date));
+  const out = all.filter(x => x.date >= BLOCK_START && !isDeloadDate(x.date, entries));
   out.crossGym = !!all.crossGym;
   return out;
 }

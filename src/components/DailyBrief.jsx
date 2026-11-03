@@ -77,7 +77,7 @@ export function DailyBrief({ brief, onClose }) {
                 <div style={label}>{upcoming.when}</div>
                 <div style={{ padding: "14px 14px 4px", borderRadius: 14, background: C.surface2, marginBottom: 22 }}>
                   <div style={{ fontSize: 15, fontWeight: 600, color: C.text, fontFamily: SANS }}>
-                    Day {upcoming.day} · {upcoming.title}{upcoming.isDeload ? " · Deload week" : ""}
+                    Day {upcoming.day} · {upcoming.title}{upcoming.isDeload ? " · Deload cycle" : ""}
                   </div>
                   <div style={{ marginTop: 4 }}>
                     {upcoming.lifts.map((l, i) => liftRow({ ...l, sets: null, rest: null }, i, i === 0))}
