@@ -3,6 +3,7 @@ import { Camera, Check, ChevronLeft, ChevronRight, ClipboardList, Dumbbell, Flam
 import { C, LAKE, SANS, MONO, STONE, INK, fill, inkOn, TITLE, HERO, shadow } from "./theme.js";
 import { BLOCK_START, COACH_NOTES, COACH_SINCE, COACH_TARGETS, GYM_SUBS, LOCATIONS, MESO_LENGTH, PROGRAM, canonName, coachOrder, libFind, loggedSince, nameKey, programExFor, resolveExercise, saveSetOverride, searchLibrary } from "./program.js";
 import { buildSwappedMovement, lastMovementByName, migrateNames } from "./lib/movements.js";
+import { loadEquipment, machineMax, rawEquipment, saveRawEquipment, setMachineMax } from "./lib/equipment.js";
 import { fmtDate, localDateStr, newEntry, newMovement, restToSeconds, todayStr } from "./lib/utils.js";
 import { apiFetch, appHeaders, backupFromStorage, daysSinceBackup, downloadCSV, downloadJSON, getLastSession, isMacroOnlyBackup, loadEntries, loadWeights, readJSONBackup, saveBackupFile, saveEntries, saveWeights } from "./lib/storage.js";
 import { CYCLE_DAYS, READINESS_SLEEP, READINESS_SORE, READINESS_TEXT, VOLUME_LANDMARKS, allMovementNames, applyReadiness, bestSetForMovement, collectSessionPRs, cycleVolume, detailedPRForMovement, detectPlateau, estimateOneRM, getPersonalRecords, isNewPR, movementHistory, prForecast, pushPullBalance, readinessLevel, segmentPastCycles, sessionHeatmap, suggestProgression, suggestSetCount, volumeStatus } from "./lib/training.js";
@@ -79,6 +80,51 @@ function BackupNudge() {
 }
 
 // Data tab card: automatic Google Drive backup status, Back up now, and restore.
+// Settings: max load per machine at each gym. Suggestions never go above these.
+function EquipmentCard({ onChange }) {
+  const [, setRev] = useState(0);
+  const eq = loadEquipment();
+  const bump = () => { setRev(n => n + 1); onChange?.(); };
+  const edit = (loc, name, cur) => {
+    const v = window.prompt(`Max load for ${name} at ${LOCATIONS[loc]?.label ?? loc} (lb). Leave blank to remove the limit.`, cur ? String(cur) : "");
+    if (v === null) return;
+    setMachineMax(loc, name, v.trim()); bump();
+  };
+  const add = loc => {
+    const name = window.prompt(`Machine at ${LOCATIONS[loc]?.label ?? loc}: exercise name exactly as in the app (e.g. Leg Press Machine)`, "");
+    if (!name || !name.trim()) return;
+    edit(loc, name.trim(), null);
+  };
+  return (
+    <div style={{ padding: "16px 18px 4px" }}>
+      <div style={{ fontSize: 12, letterSpacing: 0.2, color: C.textDim, fontFamily: SANS, fontWeight: 600, marginBottom: 10 }}>Gym equipment</div>
+      <div style={{ padding: "12px 14px", borderRadius: 14, background: C.surface, border: C.cardBorder }}>
+        <div style={{ fontSize: 12, color: C.textMid, fontFamily: SANS, lineHeight: 1.5, marginBottom: 8 }}>
+          Max load per machine. Suggestions never go above it; past the max they move to reps, tempo, pauses, then single-limb work.
+        </div>
+        {Object.keys(LOCATIONS).map(loc => {
+          const rows = Object.entries(eq[loc] ?? {});
+          return (
+            <div key={loc} style={{ marginTop: 10 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <span style={{ fontSize: 12, fontWeight: 600, color: C.text, fontFamily: SANS }}>{LOCATIONS[loc].label}</span>
+                <button onClick={() => add(loc)} style={{ background: "transparent", border: "none", color: C.textMid, fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: SANS, padding: 0 }}>Add machine</button>
+              </div>
+              {rows.length === 0 && <div style={{ fontSize: 12, color: C.textDim, fontFamily: SANS, marginTop: 4 }}>No limits set</div>}
+              {rows.map(([name, max]) => (
+                <div key={name} onClick={() => edit(loc, name, max)} style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: "1px solid rgba(255,255,255,0.06)", cursor: "pointer" }}>
+                  <span style={{ fontSize: 12, color: C.textMid, fontFamily: SANS }}>{name}</span>
+                  <span style={{ fontSize: 12, color: C.text, fontFamily: MONO, fontVariantNumeric: "tabular-nums" }}>{max} lb</span>
+                </div>
+              ))}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 function DriveBackupCard({ onRestore }) {
   const st = useDriveStatus();
   const [files, setFiles] = useState(null);
@@ -142,7 +188,9 @@ function deloadInfo(entries, entry, mv) {
   if (st.status === "off" || st.status === "scheduled") return null;
   const cue = cueFor(d, mv.name);
   if (st.status === "active") {
-    const plan = mv.deloadPlan ?? (entry?.programDay ? deloadPlanFor(entries, d, entry.programDay, mv.name, entry.location ?? "equinox") : null);
+    const mx = machineMax(entry?.location ?? "equinox", mv.name);
+    const frozen = mv.deloadPlan && !(mx > 0 && mv.deloadPlan.weight > mx) ? mv.deloadPlan : null;
+    const plan = frozen ?? (entry?.programDay ? deloadPlanFor(entries, d, entry.programDay, mv.name, entry.location ?? "equinox") : null);
     return { active: true, plan, cue, label: "Next block" };
   }
   // After the deload, keep cues up for the first full cycle of the new block.
@@ -588,8 +636,11 @@ function AppInner({ onBrief }) {
         const dlPlan = deloadStatus(dl, entries, newDate).status === "active" ? deloadPlanFor(entries, dl, newProgramDay, ex.name, newLocation) : null;
         const nb = dlPlan ? null : nextBlockTarget(entries, ex.name, newDate);
         const nSets = dlPlan ? dlPlan.sets : ex.sets;
+        // Never pre-fill more than this gym's machine holds (Settings: Gym equipment).
+        const mMax = ex.bodyweight ? null : machineMax(newLocation, ex.name);
+        const capW = w => (mMax > 0 && parseFloat(w) > mMax ? String(mMax) : w);
         const seeded = Array.from({ length: nSets }, (_, i) => ({
-          w: dlPlan ? (dlPlan.weight ? String(dlPlan.weight) : "") : nb ? String(nb.weight) : useCoach ? String(coachT.weight) : useStartWeight ? String(ex.startWeight) : (lastSets[i]?.w ?? ""),
+          w: capW(dlPlan ? (dlPlan.weight ? String(dlPlan.weight) : "") : nb ? String(nb.weight) : useCoach ? String(coachT.weight) : useStartWeight ? String(ex.startWeight) : (lastSets[i]?.w ?? "")),
           r: (dlPlan || nb || useCoach || useStartWeight) ? "" : (lastSets[i]?.r ?? ""),
           rir: "",
         }));
@@ -903,20 +954,36 @@ function AppInner({ onBrief }) {
           })()}
         </div>
 
-        {activeMv.lastSets && activeMv.lastDate && (
+        {(() => {
+          // Last time on this gym's machine; the other gym only when there is no history here.
+          const here = activeEntry.location ?? "equinox";
+          const prior = entries.filter(e => e.id !== activeEntry.id && e.date <= activeEntry.date);
+          const h = lastMovementByName(prior, activeMv.name, here);
+          const last = h ? { sets: h.mv.sets, date: h.date, location: h.location, cross: h.crossGym }
+            : activeMv.lastSets && activeMv.lastDate ? { sets: activeMv.lastSets, date: activeMv.lastDate, location: activeMv.lastLocation, cross: !!activeMv.lastLocation && activeMv.lastLocation !== here } : null;
+          if (!last) return null;
+          const mx = activeMv.bodyweight ? null : machineMax(here, activeMv.name);
+          const over = mx > 0 && last.sets.some(s => parseFloat(s.w) > mx);
+          return (
           <div style={{ margin: "0 18px 14px", padding: "10px 14px", borderRadius: 12, background: C.surface }}>
             <div style={{ fontSize: 12, letterSpacing: 0.2, color: C.textDim, fontFamily: SANS, marginBottom: 6 }}>
-              Last session · {fmtDate(activeMv.lastDate)}{activeMv.lastLocation ? ` · ${LOCATIONS[activeMv.lastLocation]?.short ?? ""}` : ""}
+              {last.cross ? "No history at this gym yet · last at " : "Last session · "}{last.cross ? (LOCATIONS[last.location]?.short ?? "other gym") : fmtDate(last.date)}{last.cross ? ` · ${fmtDate(last.date)}` : (last.location ? ` · ${LOCATIONS[last.location]?.short ?? ""}` : "")}
             </div>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-              {activeMv.lastSets.map((s, i) => (
+              {last.sets.map((s, i) => (
                 <span key={i} style={{ fontSize: 12, fontFamily: SANS, fontWeight: 600, padding: "4px 9px", borderRadius: 7, background: C.surface2, color: "rgba(238,233,224,0.53)" }}>
                   {s.w ? `${s.w}lbs` : "BW"}×{s.r || "?"}
                 </span>
               ))}
             </div>
+            {(last.cross || over) && (
+              <div style={{ fontSize: 12, color: C.textMid, fontFamily: SANS, marginTop: 6, lineHeight: 1.5 }}>
+                {last.cross ? "Different machine, so these loads are only a reference." : ""}{over ? ` This machine maxes out at ${mx} lb.` : ""}
+              </div>
+            )}
           </div>
-        )}
+          );
+        })()}
 
         {/* Autoregulated progression suggestion — advisory only, never auto-applied */}
         {(() => {
@@ -980,6 +1047,23 @@ function AppInner({ onBrief }) {
                   Apply {sug.weight} lbs to unlogged sets
                 </button>
               )}
+              {!(progEx?.bodyweight ?? activeMv.bodyweight) && (() => {
+                const here = activeEntry.location ?? "equinox";
+                const mx = machineMax(here, activeMv.name);
+                return (
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginTop: 10, fontSize: 12, color: C.textDim, fontFamily: SANS }}>
+                    <span>{LOCATIONS[here]?.short ?? here} · {mx ? `machine max ${mx} lb` : "no machine max set"}</span>
+                    <button onClick={() => {
+                      const v = window.prompt(`Max load on this machine at ${LOCATIONS[here]?.label ?? here} (lb). Leave blank for no limit.`, mx ? String(mx) : "");
+                      if (v === null) return;
+                      setMachineMax(here, activeMv.name, v.trim());
+                      setDeloadRev(n => n + 1);
+                    }} style={{ background: "transparent", border: "none", color: C.textMid, fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: SANS, padding: 0 }}>
+                      {mx ? "Edit max" : "Set max"}
+                    </button>
+                  </div>
+                );
+              })()}
               {di?.cue && <CueLine cue={di.cue} label={di.label} />}
             </div>
           );
@@ -2879,6 +2963,7 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
         }
         if (newMeso) saveMesoOverride(newMeso);
         if (raw?.deload?.startDate && !loadDeload()) { saveDeload(raw.deload); setDeloadRev(n => n + 1); }
+        if (raw?.equipment && typeof raw.equipment === "object" && Object.keys(rawEquipment()).length === 0) saveRawEquipment(raw.equipment);
         if (newAnchor) saveCycleAnchor(newAnchor);
         let macroNote = "";
         if (newMacros && Object.keys(newMacros).length > 0) {
@@ -2918,6 +3003,8 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
         </div>
 
         <DriveBackupCard onRestore={(data, name) => handleImport(new File([JSON.stringify(data)], name, { type: "application/json" }))} />
+
+        <EquipmentCard onChange={() => setDeloadRev(n => n + 1)} />
 
         {/* Export / Import + Coach Export */}
         <div style={{ padding: "16px 18px 8px" }}>
