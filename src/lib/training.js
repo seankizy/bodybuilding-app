@@ -4,6 +4,7 @@ import { isDeloadCycleOn } from "./mesocycle.js";
 import { fmtDate, localDateStr } from "./utils.js";
 import { daysBetween } from "./checkins.js";
 import { nextBlockTarget } from "./deload.js";
+import { capSuggestion, machineMax } from "./equipment.js";
 
 // ── RIR FEEDBACK (movement-type aware) ────────────────────────────────────────
 // Compounds: leave 1–2 in the tank. Isolation: failure OK on the last set.
@@ -247,7 +248,24 @@ export function accessorySetsNeeded(totalSets) {
 //
 // Deliberately conservative: reads only logged sets, never auto-applies
 // anything, and holds steady rather than guessing when the signal is weak.
+// Public entry point: the engine's suggestion, capped at this gym's machine max
+// (see lib/equipment.js). Never suggests more than the machine can hold.
 export function suggestProgression(entries, mvName, repsTarget, type, opts = {}) {
+  const sug = suggestProgressionCore(entries, mvName, repsTarget, type, opts);
+  if (!sug || opts.bodyweight) return sug;
+  const max = opts.machineMax !== undefined ? opts.machineMax : machineMax(opts.location, mvName);
+  if (!(max > 0) || !(sug.weight > max)) return sug;
+  const sessions = movementSessions(entries, mvName, opts.excludeEntryId ?? null, false, opts.location ?? null);
+  const recent = sessions[0];
+  return capSuggestion(sug, {
+    max, repsTarget,
+    label: LOCATIONS[opts.location]?.short,
+    lastTop: recent?.topSet ?? null,
+    crossGym: !!sessions.crossGym,
+    otherLabel: recent ? LOCATIONS[recent.location]?.short : null,
+  });
+}
+function suggestProgressionCore(entries, mvName, repsTarget, type, opts = {}) {
   const {
     isDeloadWeek = false, excludeEntryId = null,
     loadStep = null, bodyweight = false, startWeight = null, location = null, setsTarget = null,

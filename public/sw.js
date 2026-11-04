@@ -1,4 +1,4 @@
-const CACHE = "workout-v4";
+const CACHE = "workout-v6";
 const ASSETS = ["/", "/index.html"];
 
 // Install — cache core assets
@@ -17,11 +17,30 @@ self.addEventListener("activate", e => {
   );
 });
 
-// Fetch — network first, fall back to cache
+// Fetch: network first, cache only when offline.
+// Page loads are fetched as a fresh, plain request (re-wrapping a navigate request with
+// options can throw on some engines, which used to drop straight to the copy of
+// index.html cached at install, i.e. an old build). Each good page load refreshes that
+// cached copy, so the offline fallback is the latest build too.
 self.addEventListener("fetch", e => {
-  e.respondWith(
-    fetch(e.request, e.request.mode === "navigate" ? { cache: "no-store" } : undefined).catch(() => caches.match(e.request))
-  );
+  const req = e.request;
+  if (req.method !== "GET") return;
+  if (req.mode === "navigate") {
+    e.respondWith((async () => {
+      try {
+        const fresh = await fetch(new Request(req.url, { cache: "no-store", credentials: "same-origin" }));
+        if (fresh && fresh.ok) {
+          const copy = fresh.clone();
+          caches.open(CACHE).then(c => c.put("/index.html", copy)).catch(() => {});
+        }
+        return fresh;
+      } catch {
+        return (await caches.match("/index.html")) || (await caches.match("/")) || Response.error();
+      }
+    })());
+    return;
+  }
+  e.respondWith(fetch(req).catch(() => caches.match(req)));
 });
 
 // Timer notification — triggered from the app via postMessage

@@ -13,6 +13,7 @@ import { PROGRAM, LOCATIONS, canonName, nameKey, resolveExercise } from "../prog
 import { lastMovementByName } from "./movements.js";
 import { addDays, daysBetween } from "./checkins.js";
 import { todayPlan } from "./dailyBrief.js";
+import { machineMax } from "./equipment.js";
 
 const KEY = "wj_deload";
 export const CYCLE_LEN = 8;
@@ -98,11 +99,15 @@ export function prescribe(entries, ex, startDate, location) {
   const reps = repTarget(ex.reps);
   const top = lastTop(entries, ex.name, startDate, location);
   let weight = null;
-  if (!ex.bodyweight && top && top.w > 0) {
-    const inc = increment(ex, top.w);
-    weight = Math.round((top.w * 0.875) / inc) * inc;
-    if (weight > top.w * 0.9) weight -= inc;
-    if (weight < top.w * 0.85 - 0.001 && weight + inc <= top.w * 0.9) weight += inc;
+  // Never base the deload on more than this gym's machine can hold (lib/equipment.js).
+  const max = machineMax(location, ex.name);
+  const capped = !!(top && max > 0 && top.w > max);
+  const base = top ? (capped ? max : top.w) : 0;
+  if (!ex.bodyweight && top && base > 0) {
+    const inc = increment(ex, base);
+    weight = Math.round((base * 0.875) / inc) * inc;
+    if (weight > base * 0.9) weight -= inc;
+    if (weight < base * 0.85 - 0.001 && weight + inc <= base * 0.9) weight += inc;
     weight = Math.max(inc, Math.round(weight * 10) / 10);
   }
   const repsTxt = reps ? `${reps}${perSide(ex.reps)}` : ex.reps;
@@ -111,7 +116,8 @@ export function prescribe(entries, ex, startDate, location) {
     name: ex.name, slot: ex.id, sets, reps, repsRange: ex.reps, weight, rir: "3 to 4", rest: ex.rest, substituted: !!ex.substituted,
     lastTop: top ? { w: top.w, r: top.r, date: top.date } : null,
     text,
-    note: weight ? `Down from ${top.w} x ${top.r}. RIR 3 to 4, no set to failure.`
+    note: weight && capped ? `This machine maxes out at ${max} lb, so about 15% under that. RIR 3 to 4, no set to failure.`
+      : weight ? `Down from ${top.w} x ${top.r}. RIR 3 to 4, no set to failure.`
       : ex.bodyweight ? "Bodyweight. Stop 3 to 4 reps short of failure."
       : "No recent log here. Pick a load about 15% under your usual and stop 3 to 4 reps short.",
   };
@@ -137,8 +143,11 @@ export function deloadPlanFor(entries, d, day, name, location = "equinox") {
   const want = nameKey(name);
   const stored = d.plans?.[location]?.[day]?.find(p => nameKey(p.name) === want)
     ?? (d.plans?.[location] ? Object.values(d.plans[location]).flat().find(p => nameKey(p.name) === want) : null);
-  if (stored) return stored;
-  const ex = exercisesForDay(day, location).find(x => nameKey(x.name) === want);
+  // A stored plan from before a machine max was set must still respect it.
+  const max = machineMax(location, name);
+  if (stored && !(max > 0 && stored.weight > max)) return stored;
+  const ex = exercisesForDay(day, location).find(x => nameKey(x.name) === want)
+    ?? (stored ? { name: stored.name, id: stored.slot, sets: stored.sets >= 2 ? stored.sets * 2 : 1, reps: stored.repsRange, rest: stored.rest } : null);
   return ex ? prescribe(entries, ex, d.startDate, location) : null;
 }
 
@@ -239,4 +248,20 @@ export function deloadNutrition(rate) {
   ];
   if (rate != null) lines.push(`Current trend: ${rate >= 0 ? "+" : ""}${rate.toFixed(2)} lb a week.`);
   return lines;
+}
+
+// Is a stored deload plan out of step with the cycle? A deload must start at a Day 1.
+// It is wrong when it is already running (or due) before the current cycle's Day 6 and
+// Day 7 are done, i.e. it starts earlier than the next Day 1 and no Day 1 has been
+// logged since its start. Returns null when fine, else { start, suggested, status }.
+export function deloadRecordProblem(entries, today) {
+  const d = loadDeload();
+  if (!d) return null;
+  const st = deloadStatus(d, entries, today);
+  if (st.status === "done") return null;
+  const day1Since = entries.some(e => e.completedAt && Number(e.programDay) === 1 && e.date >= d.startDate);
+  if (day1Since) return null;
+  const suggested = nextCycleStart(entries, today);
+  if (d.startDate >= suggested) return null;
+  return { start: d.startDate, suggested, status: st.status };
 }

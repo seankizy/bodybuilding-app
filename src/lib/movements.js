@@ -88,7 +88,7 @@ export function lastMovementByName(entries, name, location = null) {
     for (const e of sorted) {
       if (!ok(e)) continue;
       const mv = e.movements.find(m => m.name && nameKey(m.name) === want && m.sets.some(s => (s.w !== "" && s.w != null) || (s.r !== "" && s.r != null)));
-      if (mv) return { mv, date: e.date, location: e.location ?? "equinox" };
+      if (mv) return { mv, date: e.date, location: e.location ?? "equinox", crossGym: !!location && (e.location ?? "equinox") !== location };
     }
   }
   return null;

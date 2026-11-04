@@ -28,20 +28,34 @@ function localToday() {
 
 // Completed training sessions on/after the anchor, oldest first, each tagged with its
 // running cycle number. Returns { anchor, startCycle, sessions: [{ date, day, cycle }] }.
-export function cycleTimeline(entries, override) {
+// How the override is read. A cycle-based override (unit "cycle", from the new edit
+// sheet) is used as is. An older week-based override is trusted only as the block pin
+// (weekAtAnchor 1); any other week number meant calendar weeks, which would land on the
+// wrong cycle, so it is ignored and the automatic count from BLOCK_START is used.
+export function readMesoOverride(override) {
   const ov = override === undefined ? readOverride() : override;
-  const anchor = ov?.anchorDate || BLOCK_START;
-  const startCycle = Math.max(1, Number(ov?.cycleAtAnchor ?? ov?.weekAtAnchor ?? 1) || 1);
+  if (!ov || !ov.anchorDate) return { anchor: BLOCK_START, startCycle: 1, source: "auto", raw: ov ?? null };
+  if (ov.unit === "cycle" || ov.cycleAtAnchor != null) {
+    return { anchor: ov.anchorDate, startCycle: Math.max(1, Number(ov.cycleAtAnchor) || 1), source: "manual", raw: ov };
+  }
+  if (Number(ov.weekAtAnchor ?? 1) === 1) return { anchor: ov.anchorDate, startCycle: 1, source: "block-pin", raw: ov };
+  return { anchor: BLOCK_START, startCycle: 1, source: "legacy-ignored", raw: ov };
+}
+
+export function cycleTimeline(entries, override) {
+  const { anchor, startCycle, source, raw } = readMesoOverride(override);
+  // Only completed training sessions count; an in-progress session never moves the count.
   const done = (entries || [])
-    .filter(e => e.completedAt && e.date >= anchor && PROGRAM[e.programDay]?.exercises?.length > 0)
+    .filter(e => e.completedAt && e.date >= anchor && PROGRAM[Number(e.programDay)]?.exercises?.length > 0)
     .sort((a, b) => a.date.localeCompare(b.date) || String(a.completedAt).localeCompare(String(b.completedAt)));
   let cycle = startCycle, seen = false;
   const sessions = done.map(e => {
-    if (e.programDay === 1 && seen) cycle++;
+    const day = Number(e.programDay);
+    if (day === 1 && seen) cycle++;
     seen = true;
-    return { date: e.date, day: e.programDay, cycle };
+    return { date: e.date, day, cycle };
   });
-  return { anchor, startCycle, sessions };
+  return { anchor, startCycle, source, raw, sessions };
 }
 
 // Running cycle number (1-based, across blocks) for a date.
@@ -80,4 +94,14 @@ export function mesocycleWeek(entries, override, today = localToday()) {
     week: p.cycleInBlock, cycleInBlock: p.cycleInBlock, total: MESO_LENGTH,
     isDeload: p.isDeload, cycle: p.block, block: p.block, cycleIndex: idx, unit: "cycle",
   };
+}
+
+// Plain account of how today's cycle was worked out, for the mesocycle sheet.
+export function mesoDiagnostics(entries, override, today = localToday()) {
+  const t = cycleTimeline(entries, override);
+  const m = mesocycleWeek(entries, override, today);
+  const upto = t.sessions.filter(s => s.date <= today);
+  const last = upto[upto.length - 1] ?? null;
+  const inProgress = (entries || []).filter(e => !e.completedAt && e.date === today && e.programDay).map(e => Number(e.programDay));
+  return { ...m, anchor: t.anchor, source: t.source, raw: t.raw, sessionsCounted: upto.length, last, inProgress };
 }
