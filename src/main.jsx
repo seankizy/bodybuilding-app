@@ -65,3 +65,16 @@ document.addEventListener("visibilitychange", () => {
 setInterval(() => {
   if (document.visibilityState === "visible") checkForNewBuild("prompt");
 }, 2 * 60 * 1000);
+
+// A home screen icon saved from a one-off Vercel deployment URL never updates (that
+// deployment is frozen forever) and keeps its own separate data. Say so, and point to
+// the live app, after exporting a backup.
+const LIVE_HOST = "bodybuilding-app-kappa.vercel.app";
+window.addEventListener("load", () => {
+  const h = location.hostname;
+  if (h === LIVE_HOST || h === "localhost" || h === "127.0.0.1" || !h.endsWith(".vercel.app")) return;
+  const bar = document.createElement("div");
+  bar.setAttribute("style", "position:fixed;left:12px;right:12px;bottom:calc(env(safe-area-inset-bottom,0px) + 90px);z-index:9999;padding:12px 14px;border-radius:14px;border:1px solid rgba(255,255,255,0.25);background:rgba(20,20,22,0.95);color:#eee9e0;font:500 13px/1.45 -apple-system,system-ui,sans-serif");
+  bar.textContent = "This copy of the app is an old frozen version and will not update. Export a backup in Data first, then open " + LIVE_HOST + " in Safari, import it, and add that to your Home Screen.";
+  document.body.appendChild(bar);
+});
