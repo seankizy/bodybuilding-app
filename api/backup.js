@@ -54,7 +54,10 @@ module.exports = async (req, res) => {
   }
 
   if (!g.isConfigured()) {
-    return res.status(503).json({ configured: false, error: { code: "not_configured", message: "Drive backup is not set up on the server yet." } });
+    const message = g.clientReady()
+      ? "Not connected yet. Tap Connect Drive and sign in as seankizy@gmail.com."
+      : "Drive sign-in is not set up on the server yet (Google client keys missing).";
+    return res.status(503).json({ configured: false, clientReady: g.clientReady(), error: { code: "not_configured", message } });
   }
 
   try {
