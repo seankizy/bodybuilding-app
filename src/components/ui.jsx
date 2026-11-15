@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Check, ChevronLeft } from "../icons.jsx";
-import { C, SANS, STONE, INK, fill, shadow } from "../theme.js";
+import { C, SAFE_TOP, SANS, STONE, INK, fill, shadow } from "../theme.js";
 import { MUSCLES, SWAP_REASONS, addCustomExercise, libFind, nameKey, resolveExercise, searchLibrary, slotAlternatives } from "../program.js";
 import { btnStyle } from "./styles.js";
 
@@ -13,12 +13,15 @@ export function Shell({ children }) {
 @keyframes wjHighlight { 0% { box-shadow: inset 0 0 0 1.5px rgba(185,199,180,0.9); background-color: rgba(185,199,180,0.18); } 100% { box-shadow: inset 0 0 0 1.5px rgba(185,199,180,0); background-color: rgba(185,199,180,0); } }
 @keyframes wjPop { 0% { transform: scale(0.6); } 60% { transform: scale(1.15); } 100% { transform: scale(1); } }
 @keyframes wjToast { 0% { opacity: 0; transform: translate(-50%, -16px) scale(0.96); } 12% { opacity: 1; transform: translate(-50%, 0) scale(1.02); } 20% { transform: translate(-50%, 0) scale(1); } 85% { opacity: 1; transform: translate(-50%, 0); } 100% { opacity: 0; transform: translate(-50%, -8px); } }`}</style>
+      {/* Status bar backdrop: exactly the safe-area height, never catches taps. Keeps scrolled content from sitting under the clock. */}
+      <div aria-hidden="true" style={{ position: "fixed", top: 0, left: 0, right: 0, height: "env(safe-area-inset-top, 0px)", background: "rgba(8,8,8,0.92)", zIndex: 40, pointerEvents: "none" }} />
       {children}
     </div>
   );
 }
 export function TopBar({ left, right }) {
-  return <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "52px 18px 8px" }}>{left}{right}</div>;
+  // Sits fully below the status bar so Back and Delete are never under the clock or Dynamic Island.
+  return <div style={{ position: "relative", zIndex: 5, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, padding: "52px 18px 8px", paddingTop: SAFE_TOP, minHeight: 44 }}>{left}{right}</div>;
 }
 export function BackBtn({ onClick, label }) {
   return <button onClick={onClick} style={{ background: "none", border: "none", cursor: "pointer", color: C.accent, fontSize: 15, fontWeight: 600, padding: 0, fontFamily: SANS, display: "flex", alignItems: "center", gap: 4 }}><ChevronLeft size={18} strokeWidth={2.4} /> {label}</button>;

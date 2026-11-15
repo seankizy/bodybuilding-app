@@ -3,6 +3,8 @@
 // Dark Nero Marquina ground, ivory text, and real stone textures for every
 // status fill. Inter for everything; Cormorant Garamond only for screen titles
 // and hero numbers. Four sizes only: 32 / 44 (Cormorant), 15 / 12 (Inter).
+// Top of every screen clears the iPhone status bar / Dynamic Island (black-translucent PWA).
+export const SAFE_TOP = "max(52px, calc(env(safe-area-inset-top, 0px) + 14px))";
 export const SANS = "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
 // Numbers use Inter with tabular figures (set globally in index.html), so MONO is Inter.
 export const MONO = SANS;
