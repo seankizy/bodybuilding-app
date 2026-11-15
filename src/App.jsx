@@ -24,6 +24,8 @@ import { BottomNav, MoreMenu, ResumeBar } from "./components/Nav.jsx";
 import { FoodSearchSheet } from "./components/FoodSearchSheet.jsx";
 import { DailyBrief } from "./components/DailyBrief.jsx";
 import { PhotoTakenLine, PhotoWeightCaption, SliderCompare, photoTakenLabel } from "./components/PhotoCompare.jsx";
+import { MachinesScreen } from "./components/Machines.jsx";
+import { machineFor } from "./lib/machines.js";
 import { BackBtn, GhostBtn, MvCard, Pill, SectionLabel, Shell, SwapSheet, TopBar, WarmupItem } from "./components/ui.jsx";
 import { SetRow } from "./components/SetRow.jsx";
 import { bigInput, btnStyle, ghostInput, labelStyle, modalInput, noteArea } from "./components/styles.js";
@@ -264,6 +266,7 @@ function AppInner({ onBrief }) {
   const [showChef, setShowChef] = useState(false);
   const [showMesoEdit, setShowMesoEdit] = useState(false);
   const [showMoreMenu, setShowMoreMenu] = useState(false);
+  const [machineZoom, setMachineZoom] = useState(null); // machine photo shown over a live workout
   const [selectedCycleIdx, setSelectedCycleIdx] = useState(null); // null = current cycle; index into pastCycles otherwise
   const [scrubIdx, setScrubIdx] = useState(null); // index into weight chart data being scrubbed, null = not scrubbing
   const weightChartRef = useRef(null);
@@ -955,6 +958,26 @@ function AppInner({ onBrief }) {
           })()}
         </div>
 
+        {(() => {
+          const mach = machineFor(activeEntry.location ?? "equinox", activeMv.name);
+          if (!mach) return null;
+          return (
+            <>
+            <div onClick={() => setMachineZoom(mach)} style={{ margin: "0 18px 10px", padding: "8px 12px", borderRadius: 12, background: C.surface, display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}>
+              <img src={mach.photo} alt="" style={{ width: 44, height: 44, borderRadius: 8, objectFit: "cover" }} />
+              <div style={{ flex: 1, fontSize: 13, color: C.textMid, fontFamily: SANS }}>{mach.brand} {mach.name}<br />Starts at <b style={{ color: C.text }}>{mach.startLb} lb</b> empty</div>
+              <div style={{ fontSize: 12, color: C.textDim, fontFamily: SANS }}>Photo</div>
+            </div>
+            {machineZoom && (
+              <div onClick={() => setMachineZoom(null)} style={{ position: "fixed", inset: 0, zIndex: 250, background: "rgba(0,0,0,0.94)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 14, gap: 12 }}>
+                <img src={machineZoom.photo} alt={machineZoom.name} style={{ maxWidth: "100%", maxHeight: "78vh", borderRadius: 12 }} />
+                <div style={{ color: C.text, fontFamily: SANS, fontSize: 15, fontWeight: 600 }}>{machineZoom.name} · {machineZoom.startLb} lb empty</div>
+                <div style={{ color: C.textDim, fontFamily: SANS, fontSize: 12 }}>Tap anywhere to close</div>
+              </div>
+            )}
+            </>
+          );
+        })()}
         {(() => {
           // Last time on this gym's machine; the other gym only when there is no history here.
           const here = activeEntry.location ?? "equinox";
@@ -2901,6 +2924,17 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
           </div>
         )}
 
+        <BottomNav tab={tab} setTab={setTab} onOpenMenu={() => setShowMoreMenu(true)} />
+        <MoreMenu open={showMoreMenu} onClose={() => setShowMoreMenu(false)} onSelect={(id) => { setShowMoreMenu(false); setTab(id); setView("journal"); }} />
+      </Shell>
+    );
+  }
+
+  // ── MACHINES REFERENCE ──
+  if (tab === "machines") {
+    return (
+      <Shell>
+        <MachinesScreen />
         <BottomNav tab={tab} setTab={setTab} onOpenMenu={() => setShowMoreMenu(true)} />
         <MoreMenu open={showMoreMenu} onClose={() => setShowMoreMenu(false)} onSelect={(id) => { setShowMoreMenu(false); setTab(id); setView("journal"); }} />
       </Shell>
