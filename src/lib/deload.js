@@ -64,7 +64,10 @@ export function isDeloadActive(entries, today) {
 export function deloadNow(entries, today, mesoIsDeload) {
   const d = loadDeload();
   if (!d) return !!mesoIsDeload;
-  return deloadStatus(d, entries, today).status === "active";
+  const st = deloadStatus(d, entries, today).status;
+  // An old, finished deload never hides the next block's deload cycle.
+  if (st === "done") return !!mesoIsDeload;
+  return st === "active";
 }
 
 // ── PRESCRIPTION ────────────────────────────────────────────────────────────

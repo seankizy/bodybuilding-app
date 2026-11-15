@@ -32,18 +32,34 @@ function localToday() {
 // sheet) is used as is. An older week-based override is trusted only as the block pin
 // (weekAtAnchor 1); any other week number meant calendar weeks, which would land on the
 // wrong cycle, so it is ignored and the automatic count from BLOCK_START is used.
-export function readMesoOverride(override) {
+//
+// A manual override also carries the block (mesocycle) number. Setting "cycle 1" by
+// hand once a block is finished starts the NEXT block, it never resets the count to
+// Mesocycle 1. Older overrides without blockAtAnchor get it from the automatic count
+// on the day before the anchor: a pick lower than the cycle he was in means a new block.
+export function blockForManual(entries, anchorDate, cycleAtAnchor) {
+  if (!entries) return 1;
+  const prev = new Date(anchorDate + "T12:00:00"); prev.setDate(prev.getDate() - 1);
+  const prevStr = `${prev.getFullYear()}-${String(prev.getMonth() + 1).padStart(2, "0")}-${String(prev.getDate()).padStart(2, "0")}`;
+  if (prevStr < BLOCK_START) return 1;
+  const p = blockPos(cycleIndexOn(entries, prevStr, null));
+  return cycleAtAnchor < p.cycleInBlock ? p.block + 1 : p.block;
+}
+
+export function readMesoOverride(override, entries) {
   const ov = override === undefined ? readOverride() : override;
   if (!ov || !ov.anchorDate) return { anchor: BLOCK_START, startCycle: 1, source: "auto", raw: ov ?? null };
   if (ov.unit === "cycle" || ov.cycleAtAnchor != null) {
-    return { anchor: ov.anchorDate, startCycle: Math.max(1, Number(ov.cycleAtAnchor) || 1), source: "manual", raw: ov };
+    const c = Math.min(MESO_LENGTH, Math.max(1, Number(ov.cycleAtAnchor) || 1));
+    const b = Math.max(1, Number(ov.blockAtAnchor) || blockForManual(entries, ov.anchorDate, c));
+    return { anchor: ov.anchorDate, startCycle: (b - 1) * MESO_LENGTH + c, source: "manual", raw: ov, blockAtAnchor: b };
   }
   if (Number(ov.weekAtAnchor ?? 1) === 1) return { anchor: ov.anchorDate, startCycle: 1, source: "block-pin", raw: ov };
   return { anchor: BLOCK_START, startCycle: 1, source: "legacy-ignored", raw: ov };
 }
 
 export function cycleTimeline(entries, override) {
-  const { anchor, startCycle, source, raw } = readMesoOverride(override);
+  const { anchor, startCycle, source, raw } = readMesoOverride(override, entries);
   // Only completed training sessions count; an in-progress session never moves the count.
   const done = (entries || [])
     .filter(e => e.completedAt && e.date >= anchor && PROGRAM[Number(e.programDay)]?.exercises?.length > 0)

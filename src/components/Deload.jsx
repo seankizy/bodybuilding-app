@@ -80,12 +80,17 @@ export function DeloadPlanLine({ plan }) {
 }
 
 // Today card section: the toggle, and the day's full prescription during the deload.
-export function DeloadToday({ status, startDate, suggestedStart, day, lines, onOn, onOff }) {
+// The "Plan deload" prompt only shows when the deload is actually close, counted in
+// cycles from the log: during cycle 5 of 6 ("next cycle") or in cycle 6 itself if no
+// plan was made. Never from a calendar date or an old block's finished deload.
+export function DeloadToday({ status, startDate, suggestedStart, day, lines, onOn, onOff, cycleInBlock, total }) {
   const small = { padding: "6px 10px", borderRadius: 8, border: "none", background: C.surface2, color: C.text, fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: SANS };
   if (status === "off" || status === "done") {
+    const inDeload = cycleInBlock === total;
+    if (!(cycleInBlock === total - 1 || inDeload)) return null;
     return (
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, marginTop: 12, fontSize: 12, color: C.textMid, fontFamily: SANS }}>
-        <span>Deload next cycle, from {fmtDay(suggestedStart)}</span>
+        <span>{inDeload ? "This is your deload cycle" : `Deload next cycle, from ${fmtDay(suggestedStart)}`}</span>
         <button onClick={onOn} style={small}>Plan deload</button>
       </div>
     );

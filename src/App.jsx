@@ -3497,8 +3497,9 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
             ) : null}
             <DeloadToday status={dlSt.status} startDate={dl?.startDate} suggestedStart={nextCycleStart(entries, today)}
               day={dlSt.status === "scheduled" ? 1 : dlDay} lines={dlLines}
+              cycleInBlock={meso0.cycleInBlock} total={meso0.total}
               onOn={() => {
-                const start = nextCycleStart(entries, today);
+                const start = meso0.cycleInBlock === meso0.total ? today : nextCycleStart(entries, today);
                 const pick = window.prompt("Deload starts on (YYYY-MM-DD). This is your next Day 1:", start);
                 if (!pick || !/^\d{4}-\d{2}-\d{2}$/.test(pick.trim())) return;
                 scheduleDeload(entries, today, pick.trim()); setDeloadRev(n => n + 1);
@@ -3789,7 +3790,7 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
                 const isDeloadWk = wk === MESO_LENGTH;
                 const current = mesocycleWeek(entries, mesoOverride).week === wk;
                 return (
-                  <button key={wk} onClick={() => { saveMesoOverride({ anchorDate: todayStr(), cycleAtAnchor: wk, unit: "cycle" }); setShowMesoEdit(false); }}
+                  <button key={wk} onClick={() => { { const cur = mesocycleWeek(entries, mesoOverride); saveMesoOverride({ anchorDate: todayStr(), cycleAtAnchor: wk, blockAtAnchor: wk < cur.cycleInBlock ? cur.block + 1 : cur.block, unit: "cycle" }); } setShowMesoEdit(false); }}
                     style={{ flex: 1, padding: "16px 0", borderRadius: 12, background: current ? STONE.carrara : C.surface2, cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
                     <span style={{ fontSize: 15, fontWeight: 600, fontFamily: MONO, fontVariantNumeric: "tabular-nums", color: current ? C.ink : C.text }}>{wk}</span>
                     <span style={{ fontSize: 12, fontFamily: SANS, fontWeight: 600, letterSpacing: 0.2, color: current ? C.ink : C.textDim }}>{isDeloadWk ? "Deload" : "Cycle"}</span>
