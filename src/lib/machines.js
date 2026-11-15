@@ -6,6 +6,13 @@ import { nameKey } from "../program.js";
 
 export const MACHINES = [
   {
+    id: "equinox-leg-press", gym: "equinox", name: "Leg Press",
+    brand: "Hoist", model: "CF-3355 Angled Linear Leg Press",
+    startLb: 140, maxLb: 1000, photo: "/machines/equinox-leg-press.jpg",
+    matches: ["Leg Press Machine", "Leg Press", "Leg Press Calf Raise"],
+    note: "Empty carriage is 140 lb. Total load is 140 lb plus your plates.",
+  },
+  {
     id: "equinox-hack-squat", gym: "equinox", name: "Hack Squat",
     brand: "Hoist", model: "CF-3356 Hack Squat",
     startLb: 88, maxLb: 630, photo: "/machines/equinox-hack-squat.jpg",
