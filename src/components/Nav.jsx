@@ -1,4 +1,4 @@
-import { BarChart3, Camera, ChevronRight, ClipboardList, Database, MoreHorizontal, Scale, TrendingUp, Utensils, X } from "../icons.jsx";
+import { BarChart3, Camera, ChevronRight, ClipboardList, Database, Dumbbell, MoreHorizontal, Scale, TrendingUp, Utensils, X } from "../icons.jsx";
 import { C, LAKE, SANS, STONE, INK } from "../theme.js";
 import { fmtDate, todayStr } from "../lib/utils.js";
 import { useKeyboardOpen } from "../lib/viewport.js";
@@ -9,6 +9,7 @@ export function MoreMenu({ open, onClose, onSelect }) {
   const items = [
     { id: "volume", label: "Volume", Icon: BarChart3, desc: "Sets per muscle vs MEV/MAV/MRV" },
     { id: "progress", label: "Progress", Icon: TrendingUp, desc: "Consistency, lifts, PRs, balance" },
+    { id: "machines", label: "Machines", Icon: Dumbbell, desc: "Photos and starting weights by gym" },
     { id: "photos", label: "Progress Photos", Icon: Camera, desc: "Compare two dates side by side" },
     { id: "data", label: "Data & Backup", Icon: Database, desc: "Export, import, session history" },
   ];

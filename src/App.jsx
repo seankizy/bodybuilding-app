@@ -24,6 +24,8 @@ import { BottomNav, MoreMenu, ResumeBar } from "./components/Nav.jsx";
 import { FoodSearchSheet } from "./components/FoodSearchSheet.jsx";
 import { DailyBrief } from "./components/DailyBrief.jsx";
 import { PhotoTakenLine, PhotoWeightCaption, SliderCompare, photoTakenLabel } from "./components/PhotoCompare.jsx";
+import { MachinesScreen } from "./components/Machines.jsx";
+import { machineFor } from "./lib/machines.js";
 import { BackBtn, GhostBtn, MvCard, Pill, SectionLabel, Shell, SwapSheet, TopBar, WarmupItem } from "./components/ui.jsx";
 import { SetRow } from "./components/SetRow.jsx";
 import { bigInput, btnStyle, ghostInput, labelStyle, modalInput, noteArea } from "./components/styles.js";
@@ -955,6 +957,16 @@ function AppInner({ onBrief }) {
           })()}
         </div>
 
+        {(() => {
+          const mach = machineFor(activeEntry.location ?? "equinox", activeMv.name);
+          if (!mach) return null;
+          return (
+            <div onClick={() => { setTab("machines"); setView("journal"); }} style={{ margin: "0 18px 10px", padding: "8px 12px", borderRadius: 12, background: C.surface, display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}>
+              <img src={mach.photo} alt="" style={{ width: 36, height: 36, borderRadius: 8, objectFit: "cover" }} />
+              <div style={{ flex: 1, fontSize: 12, color: C.textMid, fontFamily: SANS }}>{mach.brand} {mach.name} starts at <b style={{ color: C.text }}>{mach.startLb} lb</b> empty</div>
+            </div>
+          );
+        })()}
         {(() => {
           // Last time on this gym's machine; the other gym only when there is no history here.
           const here = activeEntry.location ?? "equinox";
@@ -2901,6 +2913,17 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
           </div>
         )}
 
+        <BottomNav tab={tab} setTab={setTab} onOpenMenu={() => setShowMoreMenu(true)} />
+        <MoreMenu open={showMoreMenu} onClose={() => setShowMoreMenu(false)} onSelect={(id) => { setShowMoreMenu(false); setTab(id); setView("journal"); }} />
+      </Shell>
+    );
+  }
+
+  // ── MACHINES REFERENCE ──
+  if (tab === "machines") {
+    return (
+      <Shell>
+        <MachinesScreen />
         <BottomNav tab={tab} setTab={setTab} onOpenMenu={() => setShowMoreMenu(true)} />
         <MoreMenu open={showMoreMenu} onClose={() => setShowMoreMenu(false)} onSelect={(id) => { setShowMoreMenu(false); setTab(id); setView("journal"); }} />
       </Shell>
