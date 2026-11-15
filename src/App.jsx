@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Camera, Check, ChevronLeft, ChevronRight, ClipboardList, Dumbbell, Flame, Moon, Pencil, Play, Plus, Scale, Search, Trophy, Utensils, X } from "./icons.jsx";
-import { C, LAKE, SANS, MONO, STONE, INK, fill, inkOn, TITLE, HERO, shadow } from "./theme.js";
+import { C, LAKE, SAFE_TOP, SANS, MONO, STONE, INK, fill, inkOn, TITLE, HERO, shadow } from "./theme.js";
 import { BLOCK_START, COACH_NOTES, COACH_SINCE, COACH_TARGETS, GYM_SUBS, LOCATIONS, MESO_LENGTH, PROGRAM, canonName, coachOrder, libFind, loggedSince, nameKey, programExFor, resolveExercise, saveSetOverride, searchLibrary } from "./program.js";
 import { buildSwappedMovement, lastMovementByName, migrateNames } from "./lib/movements.js";
 import { loadEquipment, machineMax, rawEquipment, saveRawEquipment, setMachineMax } from "./lib/equipment.js";
@@ -861,7 +861,7 @@ function AppInner({ onBrief }) {
           const mins = Math.floor(remaining / 60), secs = remaining % 60;
           const timeStr = mins > 0 ? `${mins}:${String(secs).padStart(2,"0")}` : `${secs}s`;
           return (
-            <div style={{ position: "sticky", top: 0, zIndex: 20, margin: "0 0 4px", padding: "10px 18px", background: done ? C.surface2 : C.surface, borderBottom: `2px solid ${done ? color + "88" : color + "44"}`, display: "flex", alignItems: "center", gap: 14 }}>
+            <div style={{ position: "sticky", top: "env(safe-area-inset-top, 0px)", zIndex: 20, margin: "0 0 4px", padding: "10px 18px", background: done ? C.surface2 : C.surface, borderBottom: `2px solid ${done ? color + "88" : color + "44"}`, display: "flex", alignItems: "center", gap: 14 }}>
               <div style={{ position: "relative", width: 44, height: 44, flexShrink: 0 }}>
                 <svg width="44" height="44" style={{ transform: "rotate(-90deg)" }}>
                   <circle cx="22" cy="22" r={R} fill="none" stroke={C.textFaint} strokeWidth="3" />
@@ -1244,7 +1244,7 @@ function AppInner({ onBrief }) {
         )}
         {prToast && (
           <div key={prToast.id} onClick={() => setPrToast(null)} role="status"
-            style={{ position: "fixed", top: 18, left: "50%", transform: "translateX(-50%)", zIndex: 300, display: "flex", alignItems: "center", gap: 10, padding: "12px 18px", borderRadius: 14, background: STONE.rosa, color: INK.rosa, boxShadow: "0 8px 30px rgba(0,0,0,0.5)", fontFamily: SANS, fontSize: 15, fontWeight: 600, whiteSpace: "nowrap", animation: "wjToast 2800ms ease-out forwards" }}>
+            style={{ position: "fixed", top: "calc(env(safe-area-inset-top, 0px) + 10px)", left: "50%", transform: "translateX(-50%)", zIndex: 300, display: "flex", alignItems: "center", gap: 10, padding: "12px 18px", borderRadius: 14, background: STONE.rosa, color: INK.rosa, boxShadow: "0 8px 30px rgba(0,0,0,0.5)", fontFamily: SANS, fontSize: 15, fontWeight: 600, whiteSpace: "nowrap", animation: "wjToast 2800ms ease-out forwards" }}>
             <Trophy size={18} color={INK.rosa} strokeWidth={2.4} /> {prToast.text}
           </div>
         )}
@@ -1883,7 +1883,7 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
 
     return (
       <Shell>
-        <div style={{ padding: "52px 18px 16px", background: "transparent" }}>
+        <div style={{ padding: "52px 18px 16px", paddingTop: SAFE_TOP, background: "transparent" }}>
           <div style={{ fontSize: 12, letterSpacing: 0.2, color: C.textDim, fontFamily: SANS, marginBottom: 4 }}>Nutrition</div>
           <div style={{ ...TITLE, color: C.text }}>Macros</div>
           {/* Date navigation */}
@@ -2260,7 +2260,7 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
       : (cycleAnchor ? new Date(cycleAnchor + "T12:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "cycle start");
     return (
       <Shell>
-        <div style={{ padding: "52px 18px 20px", background: "transparent" }}>
+        <div style={{ padding: "52px 18px 20px", paddingTop: SAFE_TOP, background: "transparent" }}>
           <div style={{ fontSize: 12, letterSpacing: 0.2, color: C.textDim, fontFamily: SANS, marginBottom: 4 }}>Sets Per Muscle</div>
           <div style={{ ...TITLE, color: C.text }}>Volume</div>
           <div style={{ fontSize: 12, color: C.textDim, marginTop: 6, fontFamily: SANS }}>
@@ -2470,7 +2470,7 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
 
     return (
       <Shell>
-        <div style={{ padding: "52px 18px 20px", background: "transparent" }}>
+        <div style={{ padding: "52px 18px 20px", paddingTop: SAFE_TOP, background: "transparent" }}>
           <div style={{ fontSize: 12, letterSpacing: 0.2, color: C.textDim, fontFamily: SANS, marginBottom: 4 }}>Performance</div>
           <div style={{ ...TITLE, color: C.text }}>Progress</div>
         </div>
@@ -2807,7 +2807,7 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
 
     return (
       <Shell>
-        <div style={{ padding: "52px 18px 20px", background: "transparent" }}>
+        <div style={{ padding: "52px 18px 20px", paddingTop: SAFE_TOP, background: "transparent" }}>
           <div style={{ fontSize: 12, letterSpacing: 0.2, color: C.textDim, fontFamily: SANS, marginBottom: 4 }}>Compare Dates</div>
           <div style={{ ...TITLE, color: C.text }}>Progress Photos</div>
           <div style={{ fontSize: 12, color: C.textDim, marginTop: 6, fontFamily: SANS }}>From your Google Drive folder</div>
@@ -2993,7 +2993,7 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
 
     return (
       <Shell>
-        <div style={{ padding: "52px 18px 20px", background: "transparent" }}>
+        <div style={{ padding: "52px 18px 20px", paddingTop: SAFE_TOP, background: "transparent" }}>
           <div style={{ fontSize: 12, letterSpacing: 0.2, color: C.textDim, fontFamily: SANS, marginBottom: 4 }}>Backup & History</div>
           <div style={{ ...TITLE, color: C.text }}>Data</div>
           <div style={{ fontSize: 11, color: C.textDim, fontFamily: SANS, marginTop: 4 }}>{buildLabel()}</div>
@@ -3165,7 +3165,7 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
     const CHART_H = 140, CHART_W = 340;
     return (
       <Shell>
-        <div style={{ padding: "52px 18px 16px", background: "transparent" }}>
+        <div style={{ padding: "52px 18px 16px", paddingTop: SAFE_TOP, background: "transparent" }}>
           <div style={{ fontSize: 12, letterSpacing: 0.2, color: C.textDim, fontFamily: SANS, marginBottom: 4 }}>Body Weight</div>
           <div style={{ ...TITLE, color: C.text }}>Weight Tracker</div>
           {latest && (
@@ -3391,7 +3391,7 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
   // ── JOURNAL HOME ──────────────────────────────────────────────────────────
   return (
     <Shell>
-      <div style={{ padding: "52px 18px 20px", background: "transparent" }}>
+      <div style={{ padding: "52px 18px 20px", paddingTop: SAFE_TOP, background: "transparent" }}>
         <div style={{ fontSize: 12, letterSpacing: 0.2, color: C.textDim, fontFamily: SANS, marginBottom: 4 }}>Training Journal</div>
         <div style={{ ...TITLE, color: C.text }}>My Workouts</div>
         <div style={{ marginTop: 6 }}>
