@@ -26,6 +26,13 @@ export const MACHINES = [
     matches: ["Hip Thrust Machine", "Machine Hip Thrust", "Plate Loaded Hip Thrust"],
     note: "Pelvic pad swivels open. Max load is 220 lb, so progress with reps and pauses past that.",
   },
+  {
+    id: "equinox-seated-calf", gym: "equinox", name: "Seated Calf Raise",
+    brand: "Precor", model: "Discovery DPL0616 Calf Raise",
+    startLb: 25, maxLb: 225, photo: "/machines/equinox-seated-calf.jpg",
+    matches: ["Seated Calf Raise Machine", "Seated Calf Raise", "Seated Calf Raises", "Seated Calf Machine", "Seated Calf"],
+    note: "Empty lever is 25 lb. Total load is 25 lb plus your plates. Max load is 225 lb.",
+  },
 ];
 
 export function machineFor(location, exerciseName) {
