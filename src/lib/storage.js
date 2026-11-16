@@ -91,6 +91,7 @@ export function backupFromStorage() {
     photoAlign: read("wj_photo_align", {}),
     deload: read("wj_deload", null),
     equipment: read("wj_equipment", null),
+    loadSteps: read("wj_load_steps", null),
   };
 }
 export function daysSinceBackup() {
@@ -144,6 +145,7 @@ export function downloadJSON(entries, weights, mesoOverride, cycleAnchor, macros
   const payload = { version: 4, exportedAt: new Date().toISOString(), entries, weights, mesoOverride: mesoOverride ?? null, cycleAnchor: cycleAnchor ?? null, macros: macros ?? {}, macroTargets: macroTargets ?? DEFAULT_MACRO_TARGETS };
   try { payload.deload = JSON.parse(localStorage.getItem("wj_deload") || "null"); } catch { payload.deload = null; }
   try { payload.equipment = JSON.parse(localStorage.getItem("wj_equipment") || "null"); } catch { payload.equipment = null; }
+  try { payload.loadSteps = JSON.parse(localStorage.getItem("wj_load_steps") || "null"); } catch { payload.loadSteps = null; }
   return saveBackupFile(payload);
 }
 export function readJSONBackup(file) {

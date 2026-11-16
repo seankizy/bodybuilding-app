@@ -13,7 +13,7 @@ import { PROGRAM, LOCATIONS, canonName, nameKey, resolveExercise } from "../prog
 import { lastMovementByName } from "./movements.js";
 import { addDays, daysBetween } from "./checkins.js";
 import { todayPlan } from "./dailyBrief.js";
-import { machineMax } from "./equipment.js";
+import { gymLoadStep, machineMax } from "./equipment.js";
 
 const KEY = "wj_deload";
 export const CYCLE_LEN = 8;
@@ -72,7 +72,9 @@ export function deloadNow(entries, today, mesoIsDeload) {
 
 // ── PRESCRIPTION ────────────────────────────────────────────────────────────
 const isDB = n => /\bDB\b|dumbbell/i.test(n);
-function increment(ex, top) {
+function increment(ex, top, location = null) {
+  const gs = ex.bodyweight ? null : gymLoadStep(location, ex.name);
+  if (gs) return gs;
   if (ex.loadStep) return ex.loadStep;
   if (isDB(ex.name)) return top <= 30 ? 2.5 : 5;
   return 5;
@@ -107,7 +109,7 @@ export function prescribe(entries, ex, startDate, location) {
   const capped = !!(top && max > 0 && top.w > max);
   const base = top ? (capped ? max : top.w) : 0;
   if (!ex.bodyweight && top && base > 0) {
-    const inc = increment(ex, base);
+    const inc = increment(ex, base, location);
     weight = Math.round((base * 0.875) / inc) * inc;
     if (weight > base * 0.9) weight -= inc;
     if (weight < base * 0.85 - 0.001 && weight + inc <= base * 0.9) weight += inc;
@@ -192,7 +194,7 @@ export function buildCue(entries, ex, startDate, location = "equinox") {
   let short = r?.short ?? null;
   let target = r?.target ?? null;
   if (r?.addLoad && top?.w > 0) {
-    target = top.w + increment(ex, top.w);
+    target = top.w + increment(ex, top.w, location);
     short = `Go up to ${target}, it has stalled`;
   }
   if (r) detail.push(r.why);
