@@ -4,7 +4,7 @@ import { isDeloadCycleOn } from "./mesocycle.js";
 import { fmtDate, localDateStr } from "./utils.js";
 import { daysBetween } from "./checkins.js";
 import { nextBlockTarget } from "./deload.js";
-import { capSuggestion, machineMax } from "./equipment.js";
+import { capSuggestion, gymLoadStep, machineMax, snapToStep } from "./equipment.js";
 
 // ── RIR FEEDBACK (movement-type aware) ────────────────────────────────────────
 // Compounds: leave 1–2 in the tank. Isolation: failure OK on the last set.
@@ -251,7 +251,13 @@ export function accessorySetsNeeded(totalSets) {
 // Public entry point: the engine's suggestion, capped at this gym's machine max
 // (see lib/equipment.js). Never suggests more than the machine can hold.
 export function suggestProgression(entries, mvName, repsTarget, type, opts = {}) {
-  const sug = suggestProgressionCore(entries, mvName, repsTarget, type, opts);
+  const gs = opts.bodyweight ? null : gymLoadStep(opts.location, mvName);
+  if (gs) opts = { ...opts, loadStep: gs, gymStep: gs };
+  let sug = suggestProgressionCore(entries, mvName, repsTarget, type, opts);
+  // Whatever path produced it, the weight must exist on this gym's gear.
+  if (sug && gs && sug.weight > 0 && sug.weight % gs !== 0) {
+    sug = { ...sug, weight: snapToStep(sug.weight, gs, sug.action === "add_weight" ? "up" : "down") };
+  }
   if (!sug || opts.bodyweight) return sug;
   const max = opts.machineMax !== undefined ? opts.machineMax : machineMax(opts.location, mvName);
   if (!(max > 0) || !(sug.weight > max)) return sug;
@@ -269,6 +275,7 @@ function suggestProgressionCore(entries, mvName, repsTarget, type, opts = {}) {
   const {
     isDeloadWeek = false, excludeEntryId = null,
     loadStep = null, bodyweight = false, startWeight = null, location = null, setsTarget = null,
+    gymStep = null,
   } = opts;
 
   // Coach's one-time target for the next session (see COACH_TARGETS).
@@ -315,10 +322,12 @@ function suggestProgressionCore(entries, mvName, repsTarget, type, opts = {}) {
     const prescribed = setsTarget && setsTarget > 0 ? setsTarget : recent.sets.length;
     const need = accessorySetsNeeded(prescribed);
     accessoryNeed = need;
-    const atMax = recent.sets.filter(s => s.r >= range.max).length;
+    // Only sets at the top weight count: 15 reps on a lighter back-off set does not
+    // earn a jump at the heavier load.
+    const atMax = recent.sets.filter(s => s.w >= topSet.w && s.r >= range.max).length;
     hitTopOfRange = atMax >= need;
     belowRange = topSet.r < range.min;
-    accessoryProgressNote = `${atMax} of ${recent.sets.length} sets logged at ${range.max}+ reps (need ${need} of your ${prescribed})`;
+    accessoryProgressNote = `${atMax} of ${recent.sets.length} sets logged at ${range.max}+ reps at ${topSet.w} (need ${need} of your ${prescribed})`;
   }
   // Per-exercise step override (e.g. hip thrust moves in 10 lb jumps only)
   const bump = loadStep ?? (type === "compound" ? 10 : 5);
@@ -328,6 +337,22 @@ function suggestProgressionCore(entries, mvName, repsTarget, type, opts = {}) {
   // back to dropping one full step whenever rounding erases the cut.
   const stepSize = loadStep ?? (type === "compound" ? 5 : 2.5);
   const down = (w, pct) => { const eased = rl(w * pct); return eased < w ? eased : Math.max(0, w - stepSize); };
+
+  // Fixed gear with coarse jumps (e.g. EZ bars in 10 lb steps): when the next real
+  // weight is more than a 10% jump, stay put and push reps past the range first.
+  if (gymStep && !isDeloadWeek && range && topSet.w > 0 && type !== "compound") {
+    const bigJump = gymStep / topSet.w > 0.1;
+    const goal = range.max + 3;
+    if (bigJump && hitTopOfRange) {
+      const atGoal = recent.sets.filter(s => s.w >= topSet.w && s.r >= goal).length;
+      if (atGoal < Math.max(1, accessoryNeed)) {
+        return {
+          action: "add_reps", weight: topSet.w, lastWeight: topSet.w, lastDate: recent.date,
+          reason: `The next bar here is ${topSet.w + gymStep}, a big jump from ${topSet.w}. Stay at ${topSet.w} and push sets past ${range.max} toward ${goal} reps, then move up.`,
+        };
+      }
+    }
+  }
 
   // First time at this gym for this movement: the other gym's numbers are only a
   // starting guess. Hold, calibrate, and let this gym's own log drive next week.
@@ -450,7 +475,7 @@ function suggestProgressionCore(entries, mvName, repsTarget, type, opts = {}) {
       lastWeight: topSet.w, lastDate,
       reason: type === "compound"
         ? `Last time: ${topSet.r} reps at ${topSet.w}, the top of your ${range.min} to ${range.max} range. That earns a jump.${trendNote}`
-        : `Last time: ${accessoryProgressNote} at ${topSet.w}. That earns a jump.${trendNote}`,
+        : `Last time: ${accessoryProgressNote}. That earns a jump.${trendNote}`,
     };
   }
 
@@ -597,7 +622,10 @@ export function detectPlateau(entries, mvName, o = {}) {
   let kind, fix, weight = null;
   if (avgRIR != null && avgRIR <= 0.75) {
     kind = "reset";
-    weight = top > 0 ? roundLoad(top * 0.9, o.type ?? "isolation", o.loadStep ?? null) : null;
+    const gs = o.bodyweight ? null : gymLoadStep(o.location, mvName);
+    const st = gs ?? o.loadStep ?? null;
+    weight = top > 0 ? roundLoad(top * 0.9, o.type ?? "isolation", st) : null;
+    if (weight != null && weight >= top) weight = Math.max(0, top - (st ?? 5)) || null;
     fix = weight
       ? `You are grinding every set (average RIR ${avgRIR.toFixed(1)}). Drop to ${weight} for one session, build reps back up, then climb past ${top}.`
       : `You are grinding every set (average RIR ${avgRIR.toFixed(1)}). Do one easier session, stop 2 reps short, then push again.`;

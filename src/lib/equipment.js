@@ -71,3 +71,54 @@ export function capSuggestion(sug, { max, location, label, repsTarget, lastTop, 
   return { ...sug, action: sug.action === "back_off" ? "back_off" : "hold", calibrate: false, weight: max, capped: max,
     reason: `${here}'s machine maxes out at ${max} lb, so the load stays at ${max}.${from} ${repsLine}` };
 }
+
+// ── LOAD STEPS PER GYM ──────────────────────────────────────────────────────
+// Some gear only comes in fixed jumps (Equinox's fixed EZ bars: 40, 50, 60...).
+// Stored in localStorage as wj_load_steps: { [location]: { [exercise name]: stepLb } }.
+// Every weight the app suggests for that movement at that gym lands on a multiple
+// of the step. Seeded defaults apply until Sean edits one (an edit, including a
+// clear, always wins). Included in the JSON export and the Drive backup.
+const STEP_KEY = "wj_load_steps";
+// Sean, Nov 16, 2026: Equinox EZ bars are fixed bars in 10 lb jumps (50, then 60).
+export const DEFAULT_LOAD_STEPS = {
+  equinox: { "EZ Bar Curl": 10 },
+};
+function readSteps() {
+  try { return JSON.parse(localStorage.getItem(STEP_KEY) || "null") || {}; } catch { return {}; }
+}
+export function rawLoadSteps() { return readSteps(); }
+export function saveRawLoadSteps(obj) {
+  try { if (obj && typeof obj === "object") localStorage.setItem(STEP_KEY, JSON.stringify(obj)); } catch {}
+}
+export function loadLoadSteps() {
+  const stored = readSteps();
+  const out = {};
+  for (const loc of new Set([...Object.keys(DEFAULT_LOAD_STEPS), ...Object.keys(stored)])) {
+    const merged = { ...(DEFAULT_LOAD_STEPS[loc] ?? {}), ...(stored[loc] ?? {}) };
+    out[loc] = Object.fromEntries(Object.entries(merged).filter(([, v]) => v != null && v !== "" && Number(v) > 0).map(([k, v]) => [k, Number(v)]));
+  }
+  return out;
+}
+export function gymLoadStep(location, name) {
+  if (!location || !name) return null;
+  const table = loadLoadSteps()[location] ?? {};
+  const want = nameKey(name);
+  for (const [k, v] of Object.entries(table)) if (nameKey(k) === want) return v;
+  return null;
+}
+export function setGymLoadStep(location, name, step) {
+  const stored = readSteps();
+  const table = { ...(stored[location] ?? {}) };
+  const want = nameKey(name);
+  for (const k of Object.keys(table)) if (nameKey(k) === want && k !== name) delete table[k];
+  const n = Number(step);
+  table[name] = step === null || step === "" || !(n > 0) ? null : n;
+  stored[location] = table;
+  saveRawLoadSteps(stored);
+}
+// Nearest weight that exists on this gear. dir: "down" never rounds up, "up" never down.
+export function snapToStep(w, step, dir = "nearest") {
+  if (!(step > 0) || !(w > 0)) return w;
+  const f = dir === "down" ? Math.floor : dir === "up" ? Math.ceil : Math.round;
+  return Math.max(step, f(w / step) * step);
+}

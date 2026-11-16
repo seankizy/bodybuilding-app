@@ -3,7 +3,7 @@ import { Camera, Check, ChevronLeft, ChevronRight, ClipboardList, Dumbbell, Flam
 import { C, LAKE, SAFE_TOP, SANS, MONO, STONE, INK, fill, inkOn, TITLE, HERO, shadow } from "./theme.js";
 import { BLOCK_START, COACH_NOTES, COACH_SINCE, COACH_TARGETS, GYM_SUBS, LOCATIONS, MESO_LENGTH, PROGRAM, canonName, coachOrder, libFind, loggedSince, nameKey, programExFor, resolveExercise, saveSetOverride, searchLibrary } from "./program.js";
 import { buildSwappedMovement, lastMovementByName, migrateNames } from "./lib/movements.js";
-import { loadEquipment, machineMax, rawEquipment, saveRawEquipment, setMachineMax } from "./lib/equipment.js";
+import { gymLoadStep, loadEquipment, loadLoadSteps, machineMax, rawEquipment, rawLoadSteps, saveRawEquipment, saveRawLoadSteps, setGymLoadStep, setMachineMax } from "./lib/equipment.js";
 import { fmtDate, localDateStr, newEntry, newMovement, restToSeconds, todayStr } from "./lib/utils.js";
 import { apiFetch, appHeaders, backupFromStorage, daysSinceBackup, downloadCSV, downloadJSON, getLastSession, isMacroOnlyBackup, loadEntries, loadWeights, readJSONBackup, saveBackupFile, saveEntries, saveWeights } from "./lib/storage.js";
 import { CYCLE_DAYS, READINESS_SLEEP, READINESS_SORE, READINESS_TEXT, VOLUME_LANDMARKS, allMovementNames, applyReadiness, bestSetForMovement, collectSessionPRs, cycleVolume, detailedPRForMovement, detectPlateau, estimateOneRM, getPersonalRecords, isNewPR, movementHistory, prForecast, pushPullBalance, readinessLevel, segmentPastCycles, sessionHeatmap, suggestProgression, suggestSetCount, volumeStatus } from "./lib/training.js";
@@ -98,12 +98,23 @@ function EquipmentCard({ onChange }) {
     if (!name || !name.trim()) return;
     edit(loc, name.trim(), null);
   };
+  const steps = loadLoadSteps();
+  const editStep = (loc, name, cur) => {
+    const v = window.prompt(`Weight jumps for ${name} at ${LOCATIONS[loc]?.label ?? loc} (lb). Suggestions only use multiples of this, e.g. 10 for fixed bars at 40, 50, 60. Leave blank to remove.`, cur ? String(cur) : "");
+    if (v === null) return;
+    setGymLoadStep(loc, name, v.trim()); bump();
+  };
+  const addStep = loc => {
+    const name = window.prompt(`Movement at ${LOCATIONS[loc]?.label ?? loc}: exercise name exactly as in the app (e.g. EZ Bar Curl)`, "");
+    if (!name || !name.trim()) return;
+    editStep(loc, name.trim(), null);
+  };
   return (
     <div style={{ padding: "16px 18px 4px" }}>
       <div style={{ fontSize: 12, letterSpacing: 0.2, color: C.textDim, fontFamily: SANS, fontWeight: 600, marginBottom: 10 }}>Gym equipment</div>
       <div style={{ padding: "12px 14px", borderRadius: 14, background: C.surface, border: C.cardBorder }}>
         <div style={{ fontSize: 12, color: C.textMid, fontFamily: SANS, lineHeight: 1.5, marginBottom: 8 }}>
-          Max load per machine. Suggestions never go above it; past the max they move to reps, tempo, pauses, then single-limb work.
+          Max load per machine, and the weight jumps fixed gear allows. Suggestions never go above the max and only land on weights that exist.
         </div>
         {Object.keys(LOCATIONS).map(loc => {
           const rows = Object.entries(eq[loc] ?? {});
@@ -118,6 +129,16 @@ function EquipmentCard({ onChange }) {
                 <div key={name} onClick={() => edit(loc, name, max)} style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: "1px solid rgba(255,255,255,0.06)", cursor: "pointer" }}>
                   <span style={{ fontSize: 12, color: C.textMid, fontFamily: SANS }}>{name}</span>
                   <span style={{ fontSize: 12, color: C.text, fontFamily: MONO, fontVariantNumeric: "tabular-nums" }}>{max} lb</span>
+                </div>
+              ))}
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 8 }}>
+                <span style={{ fontSize: 12, color: C.textDim, fontFamily: SANS }}>Weight jumps</span>
+                <button onClick={() => addStep(loc)} style={{ background: "transparent", border: "none", color: C.textMid, fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: SANS, padding: 0 }}>Add jumps</button>
+              </div>
+              {Object.entries(steps[loc] ?? {}).map(([name, st]) => (
+                <div key={"s" + name} onClick={() => editStep(loc, name, st)} style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: "1px solid rgba(255,255,255,0.06)", cursor: "pointer" }}>
+                  <span style={{ fontSize: 12, color: C.textMid, fontFamily: SANS }}>{name}</span>
+                  <span style={{ fontSize: 12, color: C.text, fontFamily: MONO, fontVariantNumeric: "tabular-nums" }}>{st} lb steps</span>
                 </div>
               ))}
             </div>
@@ -1076,7 +1097,7 @@ function AppInner({ onBrief }) {
                 const mx = machineMax(here, activeMv.name);
                 return (
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginTop: 10, fontSize: 12, color: C.textDim, fontFamily: SANS }}>
-                    <span>{LOCATIONS[here]?.short ?? here} · {mx ? `machine max ${mx} lb` : "no machine max set"}</span>
+                    <span>{LOCATIONS[here]?.short ?? here} · {mx ? `machine max ${mx} lb` : "no machine max set"}{gymLoadStep(here, activeMv.name) ? ` · ${gymLoadStep(here, activeMv.name)} lb jumps` : ""}</span>
                     <button onClick={() => {
                       const v = window.prompt(`Max load on this machine at ${LOCATIONS[here]?.label ?? here} (lb). Leave blank for no limit.`, mx ? String(mx) : "");
                       if (v === null) return;
@@ -2999,6 +3020,7 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
         if (newMeso) saveMesoOverride(newMeso);
         if (raw?.deload?.startDate && !loadDeload()) { saveDeload(raw.deload); setDeloadRev(n => n + 1); }
         if (raw?.equipment && typeof raw.equipment === "object" && Object.keys(rawEquipment()).length === 0) saveRawEquipment(raw.equipment);
+        if (raw?.loadSteps && typeof raw.loadSteps === "object" && Object.keys(rawLoadSteps()).length === 0) saveRawLoadSteps(raw.loadSteps);
         if (newAnchor) saveCycleAnchor(newAnchor);
         let macroNote = "";
         if (newMacros && Object.keys(newMacros).length > 0) {
