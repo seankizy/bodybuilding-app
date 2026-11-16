@@ -2080,7 +2080,7 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
                   <input value={aiPendingReview.name} onChange={e => setAiPendingReview({ ...aiPendingReview, name: e.target.value })}
                     style={{ width: "100%", background: C.surface3, borderRadius: 10, padding: "11px 14px", fontSize: 16, fontWeight: 600, color: C.text, outline: "none", fontFamily: SANS, boxSizing: "border-box", marginBottom: 10, border: "none" }} />
                   <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
-                    {[["Protein", "p"], ["Carbs", "c"], ["Fat", "f"]].map(([lbl, key]) => (
+                    {[["Fat", "f"], ["Carbs", "c"], ["Protein", "p"]].map(([lbl, key]) => (
                       <div key={key} style={{ flex: 1 }}>
                         <div style={{ fontSize: 12, letterSpacing: 0.2, color: C.textDim, fontFamily: SANS, marginBottom: 4, textAlign: "center" }}>{lbl} g</div>
                         <input type="number" inputMode="decimal" value={aiPendingReview[key]}
@@ -2185,7 +2185,7 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
               <input value={foodName} onChange={e => setFoodName(e.target.value)} placeholder="Food name"
                 style={{ width: "100%", background: C.surface2, borderRadius: 10, padding: "11px 14px", fontSize: 16, color: C.text, outline: "none", fontFamily: SANS, boxSizing: "border-box", marginBottom: 10 }} />
               <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
-                {[["Protein", foodP, setFoodP], ["Carbs", foodC, setFoodC], ["Fat", foodF, setFoodF]].map(([lbl, val, setter]) => (
+                {[["Fat", foodF, setFoodF], ["Carbs", foodC, setFoodC], ["Protein", foodP, setFoodP]].map(([lbl, val, setter]) => (
                   <div key={lbl} style={{ flex: 1 }}>
                     <div style={{ fontSize: 12, letterSpacing: 0.2, color: C.textDim, fontFamily: SANS, marginBottom: 4, textAlign: "center" }}>{lbl} g</div>
                     <input type="number" inputMode="decimal" value={val} onChange={e => setter(e.target.value)} placeholder="0"
@@ -2244,7 +2244,7 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
                     {dt === "training" ? "Training Day" : "Rest Day"} · {macroCals(macroTargets[dt].p, macroTargets[dt].c, macroTargets[dt].f)} kcal
                   </div>
                   <div style={{ display: "flex", gap: 8 }}>
-                    {[["p", "Protein"], ["c", "Carbs"], ["f", "Fat"]].map(([key, lbl]) => (
+                    {[["f", "Fat"], ["c", "Carbs"], ["p", "Protein"]].map(([key, lbl]) => (
                       <div key={key} style={{ flex: 1 }}>
                         <div style={{ fontSize: 12, letterSpacing: 0.2, color: C.textDim, fontFamily: SANS, marginBottom: 4, textAlign: "center" }}>{lbl}</div>
                         <input type="number" inputMode="numeric" value={macroTargets[dt][key]}
