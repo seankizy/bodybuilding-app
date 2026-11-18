@@ -1,6 +1,6 @@
 import { COACH_TARGETS, PROGRAM, coachOrder, resolveExercise } from "../program.js";
 import { lastMovementByName } from "./movements.js";
-import { CYCLE_DAYS, detectPlateau, parseRepRange, prForecast, suggestProgression } from "./training.js";
+import { CYCLE_DAYS, accessorySetsNeeded, detectPlateau, parseRepRange, prForecast, suggestProgression } from "./training.js";
 import { addDays, daysBetween } from "./checkins.js";
 import { mesocycleWeek } from "./mesocycle.js";
 import { macroCals } from "./macros.js";
@@ -232,12 +232,17 @@ export function briefLift(entries, ex, isDeload, location = null) {
   else if (sug.action === "add_reps") target = w > 0 ? `Stay at ${w}, beat ${top?.r ?? ""} reps` : `Beat ${top?.r ?? ""} reps`;
   else if (sug.action === "coach") target = `Coach target: ${w}. ${COACH_TARGETS[ex.name]?.note.replace(/^Coach: /, "") ?? ""}`;
   else if (sug.calibrate) target = `New machine here. Start near ${w}, find the load that fits ${ex.reps}`;
+  else if (sug.action === "hold" && range && top && top.w >= (w ?? 0) && top.r >= range.max && ex.type !== "compound") {
+    const need = accessorySetsNeeded(ex.sets ?? 3);
+    target = `Stay at ${w}, hit ${range.max} on ${need} of ${ex.sets ?? 3} sets`;
+  }
+  else if (sug.action === "hold" && range && top && top.r >= range.max) target = `Stay at ${w}, match ${top.r} reps on more sets`;
   else if (sug.action === "hold") target = w > 0 ? `Stay at ${w}, build toward ${range?.max ?? ""} reps` : `Build toward ${range?.max ?? ""} reps`;
   else if (sug.action === "back_off") target = `Ease back to ${w}`;
   else if (sug.action === "deload") target = w > 0 ? `Deload cycle, use ${w}` : "Deload cycle, 2 easy sets";
   else if (sug.action === "block_start") target = `Start at ${w}, log RIR every set`;
   else target = "Match it, then add a rep";
-  const plateau = detectPlateau(entries, ex.name, { bodyweight: !!ex.bodyweight, location, isDeloadWeek: isDeload, type: ex.type, loadStep: ex.loadStep ?? null });
+  const plateau = detectPlateau(entries, ex.name, { bodyweight: !!ex.bodyweight, location, isDeloadWeek: isDeload, type: ex.type, loadStep: ex.loadStep ?? null, repsTarget: ex.reps, setsTarget: ex.sets ?? null });
   const pr = !isDeload && sug?.action !== "back_off" ? prForecast(entries, ex.name, w ?? top?.w, ex.reps) : null;
   return {
     plateau: plateau ? `Stalled ${plateau.sessions} sessions. ${plateau.fix}` : null,

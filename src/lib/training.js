@@ -736,12 +736,17 @@ export function prForecast(entries, mvName, weight, repsTarget, excludeEntryId =
   if (!mvName || !(w > 0)) return null;
   const hist = movementHistory(entries.filter(e => e.id !== excludeEntryId), mvName);
   if (hist.length < 2) return null;
-  const best = hist.reduce((a, b) => (b.e1rm > a.e1rm ? b : a));
+  // The target must strictly beat the best set as logged. Compare raw weight x reps
+  // (no RIR credit, no rounding): a tie is not a PR, and assuming a rep in reserve
+  // made 70 x 15 look like it beat 70 x 15.
+  const raw = (ww, rr) => ww * (1 + rr / 30);
+  const best = hist.reduce((a, b) => (raw(b.w, b.r) > raw(a.w, a.r) + 1e-9 ? b : a));
+  const bestRaw = raw(best.w, best.r);
   const range = parseRepRange(repsTarget);
   const cap = (range?.max ?? 12) + 2;
   for (let r = 1; r <= cap; r++) {
-    if (estimateOneRM(w, r, 1) > best.e1rm) {
-      return { weight: w, reps: r, best: best.e1rm, bestW: best.w, bestR: best.r, bestDate: best.date };
+    if (raw(w, r) > bestRaw + 1e-9 && !(w === best.w && r <= best.r)) {
+      return { weight: w, reps: r, best: Math.round(bestRaw), bestW: best.w, bestR: best.r, bestDate: best.date };
     }
   }
   return null;
