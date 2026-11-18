@@ -669,6 +669,12 @@ function AppInner({ onBrief }) {
           r: (dlPlan || nb || useCoach || useStartWeight) ? "" : (lastSets[i]?.r ?? ""),
           rir: "",
         }));
+        // Set 1 carries the PR target when one is in reach at that weight, so the input
+        // and the "PR in reach" card agree (never last time's tied number).
+        if (!(dlPlan || nb || useCoach || useStartWeight) && !ex.bodyweight && seeded[0] && parseFloat(seeded[0].w) > 0) {
+          const prT = prForecast(entries, ex.name, seeded[0].w, ex.reps);
+          if (prT && prT.weight === parseFloat(seeded[0].w) && !(parseFloat(seeded[0].r) >= prT.reps)) seeded[0] = { ...seeded[0], r: String(prT.reps) };
+        }
         return {
           ...newMovement(ex.name),
           id: Date.now() + Math.random(),
