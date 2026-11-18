@@ -1145,7 +1145,9 @@ function AppInner({ onBrief }) {
             </div>
           );
           const applySets = (to, forward) => {
-            const logged = st => st.r !== "" && st.r != null;
+            // A set counts as logged only once it is checked off. Reps prefilled from last
+            // time are just suggestions, so they never stop "Drop a set" from removing it.
+            const logged = st => !!st.done;
             let sets = [...activeMv.sets];
             if (to > sets.length) while (sets.length < to) sets.push({ w: sets.at(-1)?.w ?? "", r: "", rir: "" });
             else while (sets.length > to && !logged(sets.at(-1))) sets.pop();
