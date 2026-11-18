@@ -234,6 +234,20 @@ export function movementSessions(entries, mvName, excludeEntryId = null, bodywei
 // Rule: all sets but one need to hit max reps (e.g. 4 sets needs 3, 3 sets needs
 // 2). With only 2 sets there is no room for a miss without losing the signal
 // entirely, so both are required. A single-set accessory just needs that set.
+// When the best set already reached the top of the range but not enough sets did,
+// say that plainly and name the exact target, instead of "work toward the top".
+// e.g. 5x20, 5x20, 5x15, 5x18 on 12 to 20 with 4 sets prescribed:
+// "2 of 4 sets hit 20 at 5 (the others got 15 and 18). Get 20 on 3 of your 4 sets, then go to 10."
+export function topOfRangeHold(sets, w, range, need, prescribed, nextW) {
+  if (!range || !(need > 0)) return null;
+  const atW = sets.filter(x => x.w >= w);
+  const hit = atW.filter(x => x.r >= range.max).length;
+  if (hit === 0 || hit >= need) return null;
+  const short = sets.filter(x => !(x.w >= w && x.r >= range.max)).map(x => x.w < w ? `${x.r} at ${x.w}` : String(x.r));
+  const others = short.length ? ` (the other${short.length > 1 ? "s" : ""} got ${short.length > 1 ? short.slice(0, -1).join(", ") + " and " + short[short.length - 1] : short[0]})` : "";
+  const next = nextW && nextW > w ? `, then go to ${nextW}` : ", then add load";
+  return `${hit} of ${sets.length} sets hit ${range.max} at ${w}${others}. Get ${range.max} on ${need} of your ${prescribed} sets${next}.`;
+}
 export function accessorySetsNeeded(totalSets) {
   if (totalSets <= 2) return totalSets;
   return totalSets - 1;
@@ -312,7 +326,7 @@ function suggestProgressionCore(entries, mvName, repsTarget, type, opts = {}) {
   // one working set (both, if there are only two) before load goes up. A single
   // set under the rep floor is still enough to back off either way; that's a
   // safety signal, not a "have you earned the jump" signal.
-  let hitTopOfRange, belowRange, accessoryProgressNote = "", accessoryNeed = 0;
+  let hitTopOfRange, belowRange, accessoryProgressNote = "", accessoryNeed = 0, accessoryPrescribed = 0;
   if (type === "compound" || !range) {
     hitTopOfRange = range ? topSet.r >= range.max : false;
     belowRange = range ? topSet.r < range.min : false;
@@ -328,6 +342,7 @@ function suggestProgressionCore(entries, mvName, repsTarget, type, opts = {}) {
     hitTopOfRange = atMax >= need;
     belowRange = topSet.r < range.min;
     accessoryProgressNote = `${atMax} of ${recent.sets.length} sets logged at ${range.max}+ reps at ${topSet.w} (need ${need} of your ${prescribed})`;
+    accessoryPrescribed = prescribed;
   }
   // Per-exercise step override (e.g. hip thrust moves in 10 lb jumps only)
   const bump = loadStep ?? (type === "compound" ? 10 : 5);
@@ -337,6 +352,9 @@ function suggestProgressionCore(entries, mvName, repsTarget, type, opts = {}) {
   // back to dropping one full step whenever rounding erases the cut.
   const stepSize = loadStep ?? (type === "compound" ? 5 : 2.5);
   const down = (w, pct) => { const eased = rl(w * pct); return eased < w ? eased : Math.max(0, w - stepSize); };
+  const topHold = type !== "compound" && range && !hitTopOfRange && topSet.w > 0
+    ? topOfRangeHold(recent.sets, topSet.w, range, accessoryNeed, accessoryPrescribed, rl(topSet.w + bump))
+    : null;
 
   // Fixed gear with coarse jumps (e.g. EZ bars in 10 lb steps): when the next real
   // weight is more than a 10% jump, stay put and push reps past the range first.
@@ -452,7 +470,7 @@ function suggestProgressionCore(entries, mvName, repsTarget, type, opts = {}) {
         ? `Hold ${topSet.w} and progress reps before adding load.`
         : type === "compound"
           ? (hitTopOfRange ? `Hold ${topSet.w} and progress reps before adding load.` : `Hold ${topSet.w} and work toward ${range.max} reps before adding load.`)
-          : `Hold ${topSet.w}. ${accessoryProgressNote} so far, work toward ${accessoryNeed} before adding load.`,
+          : topHold ?? `Hold ${topSet.w}. ${accessoryProgressNote} so far, work toward ${accessoryNeed} before adding load.`,
     };
   }
 
@@ -488,6 +506,14 @@ function suggestProgressionCore(entries, mvName, repsTarget, type, opts = {}) {
     };
   }
 
+  if (topHold) {
+    return {
+      action: "hold", topHold: true,
+      weight: topSet.w, lastWeight: topSet.w, lastDate,
+      reason: `${topHold}${trendNote}`,
+    };
+  }
+
   if (prior && prior.topSet.w === topSet.w) {
     const repDelta = recent.totalReps - prior.totalReps;
     if (repDelta > 0) {
@@ -510,7 +536,9 @@ function suggestProgressionCore(entries, mvName, repsTarget, type, opts = {}) {
     action: "hold",
     weight: topSet.w, lastWeight: topSet.w, lastDate,
     reason: range
-      ? `Last time: ${topSet.r} reps at ${topSet.w}. Work toward ${range.max} reps before adding load.${trendNote}`
+      ? (topSet.r >= range.max
+        ? `Last time: ${topSet.r} reps at ${topSet.w}, the top of the range. Hold ${topSet.w} and match it on more sets before adding load.${trendNote}`
+        : `Last time: ${topSet.r} reps at ${topSet.w}. Work toward ${range.max} reps before adding load.${trendNote}`)
       : `Hold ${topSet.w} and progress reps before adding load.${trendNote}`,
   };
 }
@@ -637,7 +665,14 @@ export function detectPlateau(entries, mvName, o = {}) {
     fix = `${n} sessions without a new best. Swap to ${alt} for the rest of the block; a new angle restarts progress.`;
   } else {
     kind = "reps";
-    fix = top > 0
+    const range = parseRepRange(o.repsTarget);
+    const presc = o.setsTarget > 0 ? o.setsTarget : sess[0].sets.length;
+    const st = (o.bodyweight ? null : gymLoadStep(o.location, mvName)) ?? o.loadStep ?? null;
+    const bumpP = st ?? ((o.type ?? "isolation") === "compound" ? 10 : 5);
+    const th = (o.type ?? "isolation") !== "compound" && top > 0
+      ? topOfRangeHold(sess[0].sets, top, range, accessorySetsNeeded(presc), presc, roundLoad(top + bumpP, o.type ?? "isolation", st))
+      : null;
+    fix = th ? `Stay at ${top}. ${th}` : top > 0
       ? `Stay at ${top} and add one rep to a single set each session. Small wins break a stall.${avgRIR == null ? " Log RIR so the app can tell fatigue from effort." : ""}`
       : `Add one rep to a single set each session. Small wins break a stall.`;
   }
