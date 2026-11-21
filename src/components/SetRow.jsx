@@ -46,7 +46,7 @@ export function SetRow({ num, weight, reps, rir, repsTarget, type, isLastSet, do
   }
 
   return (
-    <div style={{ margin: "0 18px 4px", padding: "12px 14px", borderRadius: 14, background: done ? DONE_ROW : "rgba(10,10,10,0.22)", backdropFilter: done ? undefined : "blur(10px) saturate(0.9)", WebkitBackdropFilter: done ? undefined : "blur(10px) saturate(0.9)", border: done ? "1px solid rgba(185,199,180,0.35)" : C.cardBorder, transition: "background 0.2s" }}>
+    <div style={{ margin: "0 18px 4px", padding: "12px 14px", borderRadius: 14, background: done ? DONE_ROW : "rgba(255,255,255,0.1)", border: done ? "1px solid rgba(185,199,180,0.35)" : C.cardBorder, transition: "background 0.2s" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
         <div style={{ width: 34, height: 34, borderRadius: 9, background: C.surface2, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, fontWeight: 600, color: C.textMid, fontFamily: SANS, flexShrink: 0 }}>{num}</div>
         <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
