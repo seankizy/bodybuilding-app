@@ -9,6 +9,7 @@ export function Shell({ children }) {
     <div style={{ background: C.bg, minHeight: "100vh", color: C.text, fontFamily: SANS, maxWidth: 430, margin: "0 auto", overflowX: "hidden" }}>
       <style>{`@keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.4;transform:scale(1.5)} }
 .wj-set-input::placeholder { color: #8c877f; opacity: 1; font-weight: 700; }
+.wj-set-row-glass, .wj-set-row-glass input, .wj-set-row-glass button { text-shadow: 0 1px 2px rgba(0,0,0,0.9), 0 0 6px rgba(0,0,0,0.75); }
 @keyframes wjFlash { 0% { background-color: rgba(185,199,180,0.45); } 100% { background-color: rgba(185,199,180,0); } }
 @keyframes wjHighlight { 0% { box-shadow: inset 0 0 0 1.5px rgba(185,199,180,0.9); background-color: rgba(185,199,180,0.18); } 100% { box-shadow: inset 0 0 0 1.5px rgba(185,199,180,0); background-color: rgba(185,199,180,0); } }
 @keyframes wjPop { 0% { transform: scale(0.6); } 60% { transform: scale(1.15); } 100% { transform: scale(1); } }
