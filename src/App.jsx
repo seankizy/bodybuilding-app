@@ -667,14 +667,16 @@ function AppInner({ onBrief }) {
         const capW = w => (mMax > 0 && parseFloat(w) > mMax ? String(mMax) : w);
         const seeded = Array.from({ length: nSets }, (_, i) => ({
           w: capW(dlPlan ? (dlPlan.weight ? String(dlPlan.weight) : "") : nb ? String(nb.weight) : useCoach ? String(coachT.weight) : useStartWeight ? String(ex.startWeight) : (lastSets[i]?.w ?? "")),
-          r: (dlPlan || nb || useCoach || useStartWeight) ? "" : (lastSets[i]?.r ?? ""),
+          // Reps always start empty: last time's reps show as ghost placeholders only.
+          r: "",
           rir: "",
         }));
         // Set 1 carries the PR target when one is in reach at that weight, so the input
         // and the "PR in reach" card agree (never last time's tied number).
         if (!(dlPlan || nb || useCoach || useStartWeight) && !ex.bodyweight && seeded[0] && parseFloat(seeded[0].w) > 0) {
           const prT = prForecast(entries, ex.name, seeded[0].w, ex.reps);
-          if (prT && prT.weight === parseFloat(seeded[0].w) && !(parseFloat(seeded[0].r) >= prT.reps)) seeded[0] = { ...seeded[0], r: String(prT.reps) };
+          // Shown as the ghost placeholder, never as a typed value.
+          if (prT && prT.weight === parseFloat(seeded[0].w)) seeded[0] = { ...seeded[0], rTarget: String(prT.reps) };
         }
         return {
           ...newMovement(ex.name),
@@ -857,7 +859,7 @@ function AppInner({ onBrief }) {
         return;
       }
       const ts = new Date().toISOString();
-      const best = bestSetForMovement(activeMv);
+      const best = bestSetForMovement(activeMv, true);
       if (best) checkSetPR(activeEntry, activeMv, activeMv.sets[best.setIdx]);
       updateMovement(activeEntry.id, activeMv.id, { doneAt: ts });
       dismissTimer();
@@ -928,7 +930,7 @@ function AppInner({ onBrief }) {
           )}
           {(() => {
             const pr = detailedPRForMovement(activeEntry, activeMv, entries);
-            const best = pr ? bestSetForMovement(activeMv) : null;
+            const best = pr ? bestSetForMovement(activeMv, !activeEntry.completedAt) : null;
             return pr && best ? (
               <div style={{ display: "inline-flex", alignItems: "center", gap: 6, marginBottom: 8, padding: "4px 10px", borderRadius: 8, background: STONE.rosa }}>
                 <Trophy size={13} color={INK.rosa} strokeWidth={2.2} />
@@ -1212,7 +1214,7 @@ function AppInner({ onBrief }) {
             <div key={i}>
               <SetRow
                 num={i + 1}
-                ghost={ghostSets[i] ?? null}
+                ghost={s.rTarget && !s.r ? { ...(ghostSets[i] ?? {}), r: s.rTarget } : (ghostSets[i] ?? null)}
                 weight={s.w} reps={s.r} rir={s.rir ?? ""}
                 repsTarget={activeMv.repsTarget ?? null}
                 type={activeMv.type ?? (activeEntry.programDay && activeMv.programRef ? (programExFor(activeEntry, activeMv)?.type ?? "compound") : "compound")}

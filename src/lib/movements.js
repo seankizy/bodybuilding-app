@@ -18,7 +18,7 @@ export function buildSwappedMovement(m, entry, entries, ex, reason) {
   const useStart = ex.startWeight != null && !loggedSince(others, ex.name, BLOCK_START);
   const seed = i => ({
     w: useCoach ? String(COACH_TARGETS[ex.name].weight) : useStart ? String(ex.startWeight) : (histSets[i]?.w ?? ""),
-    r: (useCoach || useStart) ? "" : (histSets[i]?.r ?? ""),
+    r: "", // last time's reps are ghost placeholders, never prefilled
     rir: "",
   });
   const kept = (m.sets ?? []).filter(setIsLogged);

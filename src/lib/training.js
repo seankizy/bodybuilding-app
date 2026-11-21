@@ -112,10 +112,13 @@ export function estimateOneRM(weight, reps, rir = 0) {
 }
 
 // Best set per session for a given movement (by estimated 1RM)
-export function bestSetForMovement(mv) {
+// strict: count only sets checked off (an in-progress session, where unchecked
+// numbers are suggestions, not reps done today).
+export function bestSetForMovement(mv, strict = false) {
   let best = null;
   mv.sets.forEach((s, i) => {
     if (!s.w || !s.r) return;
+    if (strict && !s.done) return;
     const e1rm = estimateOneRM(s.w, s.r, s.rir);
     if (e1rm && (!best || e1rm > best.e1rm)) {
       best = { w: parseFloat(s.w), r: parseFloat(s.r), rir: s.rir || 0, e1rm, setIdx: i };
@@ -568,7 +571,7 @@ export function getPersonalRecords(entries) {
 
 // Check if this session's movement is a new PR
 export function isNewPR(entry, mv, allEntries) {
-  const best = bestSetForMovement(mv);
+  const best = bestSetForMovement(mv, !entry.completedAt);
   if (!best) return false;
   const prevEntries = allEntries.filter(e => e.date < entry.date);
   const prior = movementHistory(prevEntries, mv.name);
@@ -579,7 +582,7 @@ export function isNewPR(entry, mv, allEntries) {
 // Detailed PR info for a single movement in a session — used by the Complete Workout
 // summary to show exactly what improved (weight, reps, or estimated 1RM) and by how much.
 export function detailedPRForMovement(entry, mv, allEntries) {
-  const best = bestSetForMovement(mv);
+  const best = bestSetForMovement(mv, !entry.completedAt);
   if (!best || !mv.name) return null;
   const prevEntries = allEntries.filter(e => e.date < entry.date);
   const priorHistory = movementHistory(prevEntries, mv.name);
