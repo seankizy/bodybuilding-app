@@ -181,3 +181,131 @@ export function SliderCompare({ a, b }) {
     </div>
   );
 }
+
+// Pinch to zoom (up to 4x), drag to pan once zoomed, double tap to reset.
+// Lives at module scope so a parent re-render never remounts it (which used to
+// drop the zoom and refetch the photo). Touch listeners attach natively with
+// { passive: false } once the image is on screen: the old version attached them
+// on first render, while the "Loading" placeholder had no ref, so they never ran.
+export function ZoomableImage({ fileId, alt, fit = "cover" }) {
+  const containerRef = useRef(null);
+  const [scale, setScale] = useState(1);
+  const [translate, setTranslate] = useState({ x: 0, y: 0 });
+  const [blobUrl, setBlobUrl] = useState(null);
+  const [loadError, setLoadError] = useState("");
+  const st = useRef({ scale: 1, translate: { x: 0, y: 0 } });
+  st.current = { scale, translate };
+  const g = useRef({ startDist: 0, startScale: 1, startMid: { x: 0, y: 0 }, startT: { x: 0, y: 0 }, panning: false, lastPan: { x: 0, y: 0 }, lastTap: 0 });
+
+  useEffect(() => {
+    let cancelled = false, local = null;
+    setBlobUrl(null); setLoadError(""); setScale(1); setTranslate({ x: 0, y: 0 });
+    if (!fileId) return;
+    (async () => {
+      try {
+        const resp = await apiFetch(`/api/photos?id=${encodeURIComponent(fileId)}`, { headers: appHeaders() });
+        if (!resp.ok) throw new Error(`Drive fetch failed (${resp.status})`);
+        const blob = await resp.blob();
+        if (cancelled) return;
+        local = URL.createObjectURL(blob);
+        setBlobUrl(local);
+      } catch (err) { if (!cancelled) setLoadError(err.message || "Could not load photo"); }
+    })();
+    return () => { cancelled = true; if (local) URL.revokeObjectURL(local); };
+  }, [fileId]);
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el || !blobUrl) return;
+    const dist = t => Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
+    const mid = t => ({ x: (t[0].clientX + t[1].clientX) / 2, y: (t[0].clientY + t[1].clientY) / 2 });
+    const clamp = (t, s) => {
+      const maxX = (el.clientWidth * (s - 1)) / 2, maxY = (el.clientHeight * (s - 1)) / 2;
+      return { x: Math.max(-maxX, Math.min(maxX, t.x)), y: Math.max(-maxY, Math.min(maxY, t.y)) };
+    };
+    const reset = () => { setScale(1); setTranslate({ x: 0, y: 0 }); };
+    function onStart(e) {
+      const r = g.current;
+      if (e.touches.length === 2) {
+        e.preventDefault();
+        r.startDist = dist(e.touches); r.startScale = st.current.scale;
+        r.startMid = mid(e.touches); r.startT = st.current.translate; r.panning = false;
+      } else if (e.touches.length === 1) {
+        const now = Date.now();
+        if (now - r.lastTap < 280) { e.preventDefault(); reset(); r.lastTap = 0; return; }
+        r.lastTap = now;
+        if (st.current.scale > 1) {
+          r.panning = true;
+          r.lastPan = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+          r.startT = st.current.translate;
+        }
+      }
+    }
+    function onMove(e) {
+      const r = g.current;
+      if (e.touches.length === 2 && r.startDist > 0) {
+        e.preventDefault();
+        const s = Math.max(1, Math.min(4, r.startScale * (dist(e.touches) / r.startDist)));
+        const m = mid(e.touches);
+        setScale(s);
+        setTranslate(clamp({ x: r.startT.x + (m.x - r.startMid.x), y: r.startT.y + (m.y - r.startMid.y) }, s));
+      } else if (e.touches.length === 1 && r.panning) {
+        e.preventDefault();
+        const dx = e.touches[0].clientX - r.lastPan.x, dy = e.touches[0].clientY - r.lastPan.y;
+        setTranslate(clamp({ x: r.startT.x + dx, y: r.startT.y + dy }, st.current.scale));
+      }
+    }
+    function onEnd(e) {
+      const r = g.current;
+      if (e.touches.length < 2) r.startDist = 0;
+      if (e.touches.length === 1 && st.current.scale > 1) {
+        r.panning = true;
+        r.lastPan = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+        r.startT = st.current.translate;
+      }
+      if (e.touches.length === 0) r.panning = false;
+      if (st.current.scale <= 1.02) reset();
+    }
+    el.addEventListener("touchstart", onStart, { passive: false });
+    el.addEventListener("touchmove", onMove, { passive: false });
+    el.addEventListener("touchend", onEnd, { passive: false });
+    el.addEventListener("touchcancel", onEnd, { passive: false });
+    return () => {
+      el.removeEventListener("touchstart", onStart);
+      el.removeEventListener("touchmove", onMove);
+      el.removeEventListener("touchend", onEnd);
+      el.removeEventListener("touchcancel", onEnd);
+    };
+  }, [blobUrl]);
+
+  const center = { width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", padding: 16, textAlign: "center", boxSizing: "border-box" };
+  if (loadError) return <div style={center}><div style={{ fontSize: 12, color: C.red, fontFamily: SANS }}>{loadError}</div></div>;
+  if (!blobUrl) return <div style={center}><div style={{ fontSize: 12, color: C.textDim, fontFamily: SANS }}>Loading…</div></div>;
+  const resting = scale === 1 && translate.x === 0 && translate.y === 0;
+  return (
+    <div ref={containerRef} style={{ width: "100%", height: "100%", overflow: "hidden", touchAction: "none", userSelect: "none", WebkitUserSelect: "none" }}>
+      <img src={blobUrl} alt={alt} draggable={false} style={{
+        width: "100%", height: "100%", objectFit: fit, pointerEvents: "none",
+        transform: `translate(${translate.x}px, ${translate.y}px) scale(${scale})`,
+        transformOrigin: "center center", transition: resting ? "transform 0.2s ease-out" : "none", willChange: "transform",
+      }} />
+    </div>
+  );
+}
+
+// Full screen viewer for one photo: pinch, pan, double tap to reset.
+export function PhotoFullscreen({ photo, onClose }) {
+  if (!photo) return null;
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 200, background: "#000", display: "flex", flexDirection: "column" }}>
+      <div style={{ position: "absolute", top: "max(env(safe-area-inset-top), 12px)", left: 0, right: 0, zIndex: 2, display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 16px" }}>
+        <div style={{ fontSize: 12, fontWeight: 600, color: C.text, fontFamily: SANS, background: "rgba(0,0,0,0.6)", padding: "4px 10px", borderRadius: 8 }}>{photoTakenLabel(photo, { short: true })}</div>
+        <button onClick={onClose} style={{ padding: "8px 14px", borderRadius: 10, border: "none", background: STONE.carrara, color: C.ink, fontSize: 12, fontWeight: 600, fontFamily: SANS, cursor: "pointer" }}>Done</button>
+      </div>
+      <div style={{ flex: 1 }}>
+        <ZoomableImage fileId={photo.id} alt={photo.name} fit="contain" />
+      </div>
+      <div style={{ position: "absolute", bottom: "max(env(safe-area-inset-bottom), 16px)", left: 0, right: 0, textAlign: "center", fontSize: 12, color: C.textDim, fontFamily: SANS, pointerEvents: "none" }}>Pinch to zoom, drag to move, double tap to reset</div>
+    </div>
+  );
+}

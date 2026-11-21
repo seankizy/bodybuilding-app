@@ -23,7 +23,7 @@ import { CompletionSummary } from "./components/CompletionSummary.jsx";
 import { BottomNav, MoreMenu, ResumeBar } from "./components/Nav.jsx";
 import { FoodSearchSheet } from "./components/FoodSearchSheet.jsx";
 import { DailyBrief } from "./components/DailyBrief.jsx";
-import { PhotoTakenLine, PhotoWeightCaption, SliderCompare, photoTakenLabel } from "./components/PhotoCompare.jsx";
+import { PhotoTakenLine, PhotoWeightCaption, SliderCompare, photoTakenLabel, ZoomableImage, PhotoFullscreen } from "./components/PhotoCompare.jsx";
 import { MachinesScreen } from "./components/Machines.jsx";
 import { machineFor } from "./lib/machines.js";
 import { BackBtn, GhostBtn, MvCard, Pill, SectionLabel, Shell, SwapSheet, TopBar, WarmupItem } from "./components/ui.jsx";
@@ -339,6 +339,7 @@ function AppInner({ onBrief }) {
   const [photoSlotB, setPhotoSlotB] = useState(null); // selected photo object for right slot
   const [photoCompareMode, setPhotoCompareMode] = useState("side"); // "side" | "slider"
   const [photoPickerSlot, setPhotoPickerSlot] = useState(null); // "A" | "B" | null — which slot is being picked
+  const [photoFull, setPhotoFull] = useState(null); // photo open in the full screen zoom viewer
   const [dismissedResumeIds, setDismissedResumeIds] = useState(() => {
     try { return JSON.parse(localStorage.getItem("wj_dismissed_resume") || "[]"); } catch { return []; }
   });
@@ -2666,162 +2667,6 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
     });
     const dates = Object.keys(photosByDate).sort((a, b) => (a === "unknown") - (b === "unknown") || b.localeCompare(a));
 
-    function ZoomableImage({ fileId, alt }) {
-      const containerRef = useRef(null);
-      const [scale, setScale] = useState(1);
-      const [translate, setTranslate] = useState({ x: 0, y: 0 });
-      const [blobUrl, setBlobUrl] = useState(null);
-      const [loadError, setLoadError] = useState("");
-      const stateRef = useRef({ scale: 1, translate: { x: 0, y: 0 } });
-      stateRef.current.scale = scale;
-      stateRef.current.translate = translate;
-      const gestureRef = useRef({
-        startDist: 0, startScale: 1,
-        startTranslate: { x: 0, y: 0 }, startMid: { x: 0, y: 0 },
-        panning: false, lastPan: { x: 0, y: 0 },
-        lastTapTime: 0,
-      });
-
-      // Fetch the image via JS fetch() rather than a raw <img src="...">. Google Drive's
-      // alt=media endpoint has known CORS/redirect quirks when hit directly by an <img> tag
-      // (307 redirect to a googleusercontent.com URL that browsers don't always follow
-      // cleanly for image requests) — this was the actual cause of the broken-image icons.
-      // fetch() handles the redirect properly; we then convert the response to a blob URL.
-      useEffect(() => {
-        let cancelled = false;
-        let localBlobUrl = null;
-        setBlobUrl(null);
-        setLoadError("");
-        (async () => {
-          try {
-            const resp = await apiFetch(`/api/photos?id=${encodeURIComponent(fileId)}`, { headers: appHeaders() });
-            if (!resp.ok) throw new Error(`Drive fetch failed (${resp.status})`);
-            const blob = await resp.blob();
-            if (cancelled) return;
-            localBlobUrl = URL.createObjectURL(blob);
-            setBlobUrl(localBlobUrl);
-          } catch (err) {
-            if (!cancelled) setLoadError(err.message || "Could not load photo");
-          }
-        })();
-        return () => {
-          cancelled = true;
-          if (localBlobUrl) URL.revokeObjectURL(localBlobUrl);
-        };
-      }, [fileId]);
-
-      function dist(touches) {
-        const [a, b] = touches;
-        return Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
-      }
-      function midpoint(touches) {
-        const [a, b] = touches;
-        return { x: (a.clientX + b.clientX) / 2, y: (a.clientY + b.clientY) / 2 };
-      }
-      function clampTranslate(t, s) {
-        const el = containerRef.current;
-        if (!el) return t;
-        const maxX = (el.clientWidth * (s - 1)) / 2;
-        const maxY = (el.clientHeight * (s - 1)) / 2;
-        return { x: Math.max(-maxX, Math.min(maxX, t.x)), y: Math.max(-maxY, Math.min(maxY, t.y)) };
-      }
-
-      // IMPORTANT: attach touch listeners natively with { passive: false }, not via React's
-      // onTouchMove prop. React attaches touch handlers as PASSIVE listeners by default (for
-      // scroll performance), which means calling e.preventDefault() inside a JSX onTouchMove
-      // silently does nothing in modern React + Safari — the browser has already committed to
-      // its native gesture before the handler runs. This was the actual reason pinch-zoom
-      // appeared to do "nothing at all": the code ran, but preventDefault() was a no-op, so
-      // neither our zoom nor the browser's own zoom (blocked separately by user-scalable=no)
-      // took effect.
-      useEffect(() => {
-        const el = containerRef.current;
-        if (!el) return;
-
-        function onTouchStart(e) {
-          const g = gestureRef.current;
-          if (e.touches.length === 2) {
-            g.startDist = dist(e.touches);
-            g.startScale = stateRef.current.scale;
-            g.startMid = midpoint(e.touches);
-            g.startTranslate = stateRef.current.translate;
-            g.panning = false;
-          } else if (e.touches.length === 1) {
-            const now = Date.now();
-            if (now - g.lastTapTime < 280) {
-              setScale(1); setTranslate({ x: 0, y: 0 });
-              g.lastTapTime = 0;
-              return;
-            }
-            g.lastTapTime = now;
-            if (stateRef.current.scale > 1) {
-              g.panning = true;
-              g.lastPan = { x: e.touches[0].clientX, y: e.touches[0].clientY };
-              g.startTranslate = stateRef.current.translate;
-            }
-          }
-        }
-        function onTouchMove(e) {
-          const g = gestureRef.current;
-          if (e.touches.length === 2 && g.startDist > 0) {
-            e.preventDefault();
-            const newDist = dist(e.touches);
-            const nextScale = Math.max(1, Math.min(4, g.startScale * (newDist / g.startDist)));
-            setScale(nextScale);
-            setTranslate(clampTranslate(g.startTranslate, nextScale));
-          } else if (e.touches.length === 1 && g.panning) {
-            e.preventDefault();
-            const dx = e.touches[0].clientX - g.lastPan.x;
-            const dy = e.touches[0].clientY - g.lastPan.y;
-            setTranslate(clampTranslate({ x: g.startTranslate.x + dx, y: g.startTranslate.y + dy }, stateRef.current.scale));
-          }
-        }
-        function onTouchEnd(e) {
-          const g = gestureRef.current;
-          if (e.touches.length < 2) g.startDist = 0;
-          if (e.touches.length === 0) g.panning = false;
-          if (stateRef.current.scale <= 1.02) { setScale(1); setTranslate({ x: 0, y: 0 }); }
-        }
-
-        el.addEventListener("touchstart", onTouchStart, { passive: false });
-        el.addEventListener("touchmove", onTouchMove, { passive: false });
-        el.addEventListener("touchend", onTouchEnd, { passive: false });
-        el.addEventListener("touchcancel", onTouchEnd, { passive: false });
-        return () => {
-          el.removeEventListener("touchstart", onTouchStart);
-          el.removeEventListener("touchmove", onTouchMove);
-          el.removeEventListener("touchend", onTouchEnd);
-          el.removeEventListener("touchcancel", onTouchEnd);
-        };
-      }, []);
-
-      if (loadError) {
-        return (
-          <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", padding: 16, textAlign: "center" }}>
-            <div style={{ fontSize: 12, color: C.red, fontFamily: SANS }}>{loadError}</div>
-          </div>
-        );
-      }
-      if (!blobUrl) {
-        return (
-          <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <div style={{ fontSize: 12, color: C.textDim, fontFamily: SANS }}>Loading…</div>
-          </div>
-        );
-      }
-      return (
-        <div ref={containerRef} style={{ width: "100%", height: "100%", overflow: "hidden", touchAction: "none" }}>
-          <img src={blobUrl} alt={alt} draggable={false} style={{
-            width: "100%", height: "100%", objectFit: "cover",
-            transform: `translate(${translate.x}px, ${translate.y}px) scale(${scale})`,
-            transformOrigin: "center center",
-            transition: scale === 1 && translate.x === 0 && translate.y === 0 ? "transform 0.2s ease-out" : "none",
-            willChange: "transform",
-          }} />
-        </div>
-      );
-    }
-
     function PhotoSlot({ label, photo, onPick }) {
       return (
         <div style={{ flex: 1 }}>
@@ -2832,7 +2677,13 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
             border: photo ? "none" : `1.5px dashed ${C.line}`, position: "relative",
           }}>
             {photo ? (
-              <ZoomableImage key={photo.id} fileId={photo.id} alt={photo.name} />
+              <>
+                <ZoomableImage key={photo.id} fileId={photo.id} alt={photo.name} />
+                <button onClick={() => setPhotoFull(photo)} aria-label="Full screen" style={{
+                  position: "absolute", top: 8, right: 8, width: 32, height: 32, borderRadius: 9, border: "none",
+                  background: "rgba(0,0,0,0.6)", color: C.text, fontSize: 15, lineHeight: "32px", cursor: "pointer", padding: 0,
+                }}>⤢</button>
+              </>
             ) : (
               <div onClick={onPick} style={{ textAlign: "center", padding: 16, cursor: "pointer", width: "100%", height: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
                 <Camera size={26} color={C.textDim} strokeWidth={1.6} />
@@ -2927,6 +2778,8 @@ The totals MUST equal the sum of the items. Do not let the totals disagree with 
             </>
           )}
         </div>
+
+        <PhotoFullscreen photo={photoFull} onClose={() => setPhotoFull(null)} />
 
         {/* Date/photo picker sheet */}
         {photoPickerSlot && (
